@@ -1,28 +1,3 @@
-library(shiny)
-library(leaflet)
-library(RColorBrewer)
-library(scales)
-library(lattice)
-library(dplyr)
-library(geojsonio)
-library(shinyjs)
-library(leaflet.extras)
-library(sp)
-library(rvest)
-
-# # variables
-url <- "https://phenocam.sr.unh.edu/webcam/network/table/"
-cams <- url %>%
-  read_html() %>%
-  html_nodes(xpath='//*[@id="main"]/table') %>%
-  html_table()
-# 
-cams_ = cams[[1]]
-# 
-# # Site names to select from the list of sites
-site_names = cams_$Camera
-layers_ = providers[0:-1]
-
 
 # Initiate the UI
 ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",

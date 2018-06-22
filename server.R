@@ -1,27 +1,4 @@
-library(leaflet)
-library(RColorBrewer)
-library(scales)
-library(lattice)
-library(dplyr)
-library(geojsonio)
-library(shiny)
-library(shinyjs)
-library(leaflet.extras)
-library(sp)
-library(rvest)
-
 server = function(input, output, session) {
-  # # variables
-  url <- "https://phenocam.sr.unh.edu/webcam/network/table/"
-  cams <- url %>%
-    read_html() %>%
-    html_nodes(xpath='//*[@id="main"]/table') %>%
-    html_table()
-
-  cams_ = cams[[1]]
-  site_names = cams_$Camera
-  layers_ = providers[0:-1]
-  
   # # Create the map
   output$map <- renderLeaflet({
     leaflet(data= cams_) %>%
