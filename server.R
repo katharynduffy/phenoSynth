@@ -1,12 +1,12 @@
 server = function(input, output, session) {
   # # Create the map
   output$map <- renderLeaflet({
-    leaflet(data= cams_) %>%
+    leaflet(data = cams_) %>%
       addTiles() %>%
       addProviderTiles('Esri.WorldImagery')%>%
-      # addMarkers(~Lon, ~Lat, label=~Camera,
-      #            labelOptions = labelOptions(noHide = F, direction = "bottom",
-      #                                        style = get_marker_style())) %>%
+      addMarkers(~lon, ~lat, label=~site,
+                 labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                             style = get_marker_style())) %>%
       addDrawToolbar(
         targetGroup='draw',
         singleFeature = TRUE,
@@ -61,7 +61,7 @@ server = function(input, output, session) {
     showAll = input$showSites
     print('Running add All sites back to map')
     leafletProxy("map", data = cams_) %>%
-      addMarkers(~Lon, ~Lat, label=~Camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
+      addMarkers(~lon, ~lat, label=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
                                                                         style = get_marker_style()))
   })
 
@@ -69,7 +69,6 @@ server = function(input, output, session) {
   observe({
     layers = input$layer
     print('Running Change MAp Layer 1')
-    print (layers)
     leafletProxy("map", data = cams_) %>%
       clearTiles() %>%
       addProviderTiles(layers)
@@ -132,15 +131,22 @@ server = function(input, output, session) {
       lat = event$lat
       lon = event$lng
 
-      site_ = get_site_name(lat,lon)
+      site_data = get_site_info(site, site_names)
+      # 
+      description = site_data$site_description
+      elevation =site_data$elev
+      camera = site_data$site
+      site_type = site_data$site_type
+      nimage = site_data$nimage
+      camera_orientation = site_data$camera_orientation
+      active = site_data$active
+      date_end = site_data$date_end
+      date_start = site_data$date_start
+      
 
-      site_data = get_site_info(site_, site_names)
 
-      description = site_data$`Site Description`
-      elevation =site_data$`Elev(m)`
-      camera = site_data$Camera
-
-      get_site_popup(camera, lat, lon, description, elevation)
+      get_site_popup(camera, lat, lon, description, elevation, site_type, camera_orientation, nimage,
+                     active, date_end, date_start)
     })
   })
   
@@ -149,6 +155,7 @@ server = function(input, output, session) {
     site = input$site
     print('Running Zoom to selected site')
     zoom = TRUE
+    
     site_data = zoom_to_site(site, site_names, zoom)
   })
 
@@ -163,8 +170,8 @@ server = function(input, output, session) {
   # Given row from sites, create points for polyline from site
   run_add_polyline = function(site_data_, azm_){
     los = .02
-    lat =  site_data_$Lat
-    lon =  site_data_$Lon
+    lat =  site_data_$lat
+    lon =  site_data_$lon
     dst = sqrt(los**2 + los**2)
     c = rotate_pt(lon, lat, (azm_-25), dst)
     b = rotate_pt(lon, lat, (azm_+25), dst)
@@ -175,16 +182,16 @@ server = function(input, output, session) {
     
     datalon = c(lon,cx,bx,lon)
     datalat = c(lat,cy,by,lat)
-    camera = site_data_$Camera
+    camera = site_data_$site
     id_ = paste('fov',camera, sep='')
     add_polyline(datalon, datalat, id_, .45, 'red')
   }
   
   run_add_polyline_2 = function(site_data_, azm_){
     
-    lat =  site_data_$Lat
-    lon =  site_data_$Lon 
-    camera = site_data_$Camera
+    lat =  site_data_$lat
+    lon =  site_data_$lon 
+    camera = site_data_$site
     # Line of site far
     los = .02
     # Line of site Near
@@ -252,11 +259,11 @@ server = function(input, output, session) {
   # Zoom to site
   zoom_to_site = function(site_, site_names_, zoom){
     site_data = get_site_info(site_, site_names_)
-    lat =  site_data$Lat
-    lon =  site_data$Lon
-    description = site_data$`Site Description`
-    elevation =site_data$`Elev(m)`
-    camera = site_data$Camera
+    lat =  site_data$lat
+    lon =  site_data$lon
+    description = site_data$site_description
+    elevation =site_data$elev
+    camera = site_data$site
     
     if (zoom == TRUE){
     leafletProxy('map', data = cams_) %>%
@@ -279,24 +286,26 @@ server = function(input, output, session) {
     lat_ = lat + (r * cos(rad))
     return (list(lon_, lat_))
   }
-  
 
-  # Get site name using lat long coordinates
-  get_site_name = function(lat, lon){
-    site_data_ = subset(cams_, cams_$Lon == lon & cams_$Lat == lat)
-    cam = site_data_$Camera
-    return (cam)
-  }
-
-  # displays the site info when a site is clicked
-  get_site_popup <- function(camera, lat, lng, description, elevation) {
-    website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera)
+  #displays the site info when a site is clicked
+  get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_, 
+                             camera_orientation_, nimage_,
+                             active_, date_end_, date_start_) {
+    website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera_)
 
     pop = paste0('<div class="leaflet-popup-content">',
-                 '<h4>','Site name: ', camera,'</br></h4>',
-                 '<strong>','lat, long: ','</strong>',lat,', ', lng,'</br>',
-                '<strong>','Site Description: ','</strong>', description ,'</br>',
-                '<strong>','Elevation: ','</strong>', elevation ,'</br>',
+                 '<h4>','Site name: ', camera_,'</br></h4>',
+                 '<strong>','lat, long: ','</strong>',lat_,', ', lng_,'</br>',
+                '<strong>','Site Description: ','</strong>', description_ ,'</br>',
+                '<strong>','Elevation: ','</strong>', elevation_ ,'</br>',
+                
+                '<strong>','Site type: ','</strong>', site_type_ ,'</br>',
+                '<strong>','Orientation (direction): ','</strong>', camera_orientation_ ,'</br>',
+                '<strong>','Number of Images: ','</strong>', nimage_ ,'</br>',
+                '<strong>','Active: ','</strong>', active_ ,'</br>',
+                '<strong>','Start date: ','</strong>', date_start_ ,'</br>',
+                '<strong>','End date: ','</strong>', date_end_ ,'</br>',
+                
                 '<a id="info" href=', website ,' style="text-indent: 0px;"
                 class="action-button shiny-bound-input"
                 onclick="{Shiny.onInputChange(\'info\', (Math.random() * 1000) + 1);}">',
@@ -304,7 +313,7 @@ server = function(input, output, session) {
                 '<a type="submit" href=', website ,' class="button">Go to Phenocam website</a>')
                 
 
-    leafletProxy("map",data = cams_) %>% addPopups(lng, lat, popup = pop, layerId = camera)
+    leafletProxy("map",data = cams_) %>% addPopups(lng_, lat_, popup = pop, layerId = camera_)
   }
 
   # Get specific site data and returns lon/lat/camera/description/elevation

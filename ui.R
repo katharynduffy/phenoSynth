@@ -26,7 +26,11 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
 
-                                      selectInput("site", "Phenocam Site Name", site_names, selected = 'poudreriver' ),
+                                      selectInput("site", "Phenocam Site Name", site_names, selected = 'unca' ),
+                                      # link to the phenocam site or you can use popup link
+                                      a("Google", href='www.google.com', target="_blank"),
+                                      
+                                      
                                       selectInput("layer", "Layer", layers_, selected = 'Esri.WorldImagery' ),
                                       # checkboxInput("drawFOV", "DrawFOV", value = FALSE),
                                       checkboxInput("drawROI", "DrawROI", value = FALSE),
