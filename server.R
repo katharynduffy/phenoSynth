@@ -1,4 +1,6 @@
+
 server = function(input, output, session) {
+  
   # # Create the map
   output$map <- renderLeaflet({
     leaflet(data = cams_) %>%
@@ -41,9 +43,36 @@ server = function(input, output, session) {
       #use over from the sp package to identify selected cities
       selected_cities <- cities_coordinates %over% SpatialPolygons(list(Polygons(list(drawn_polygon),"drawn_polygon")))
     } 
-    
   })
   
+  observe({
+    test = input$testbutton
+    
+    if(is.null(test))
+      return()
+    
+    isolate({
+      event = input$site
+      site_data = get_site_info(event, site_names)
+      lat = site_data$lat
+      lon = site_data$lon
+      description = site_data$site_description
+      elevation =site_data$elev
+      camera = site_data$site
+      site_type = site_data$site_type
+      nimage = site_data$nimage
+      cam_orientation = as.character(site_data$camera_orientation)
+      degrees = as.numeric(orientation_key[cam_orientation])
+      
+      print (cam_orientation)
+      print (degrees)
+      
+      active = site_data$active
+      date_end = site_data$date_end
+      date_start = site_data$date_start
+      })
+  })
+
 
   # Zoom contiguous US
   observe({
@@ -74,31 +103,41 @@ server = function(input, output, session) {
       addProviderTiles(layers)
   })
 
-  # Change map Layer 2 (with transparency/opacity)
-  observe({
-    layers = input$layer2
-    transparency = input$opacity
-    print('Running Change map Layer 2')
-    leafletProxy("map", data = cams_) %>%
-      addProviderTiles(layers, options=providerTileOptions(opacity = transparency))
-  })
+  # # Change map Layer 2 (with transparency/opacity)
+  # observe({
+  #   layers = input$layer2
+  #   transparency = input$opacity
+  #   print('Running Change map Layer 2')
+  #   leafletProxy("map", data = cams_) %>%
+  #     addProviderTiles(layers, options=providerTileOptions(opacity = transparency))
+  # })
   
+  # Observer for the azm changes from 0-360 on the slider
+  observe({
+    azm = input$azm
+    if(is.null(azm))
+      return()
+    isolate({
+      if (input$drawROI){
+        site = input$site
+        site_data = get_site_info(site, site_names)
+        run_add_polyline_2(site_data, azm)
+      }
+    })
+  })
   
   # Draws roi polyline for a site location
   observe({
     roi_bool = input$drawROI
     if (roi_bool == TRUE){
       site = input$site
-      print('Running Draw a polyline roi for a site')
-      azm = input$azm
-      zoom = FALSE
-      site_data = zoom_to_site(site, site_names, zoom)
-      run_add_polyline_2(site_data, azm)
+      site_data = get_site_info(site, site_names)
+      cam_orientation = as.character(site_data$camera_orientation)
+      degrees = as.numeric(orientation_key[cam_orientation])
+      run_add_polyline_2(site_data, degrees)
     }
     else if (roi_bool == FALSE){
       remove_polyline()} 
-    
-
   })
   
   # # Draws fov polyline for a site location
@@ -128,35 +167,41 @@ server = function(input, output, session) {
       leafletProxy("map", data = cams_) %>% clearPopups()
       site = input$site
 
-      lat = event$lat
-      lon = event$lng
-
       site_data = get_site_info(site, site_names)
-      # 
+      
+      lat = site_data$lat
+      lon = site_data$lon
       description = site_data$site_description
       elevation =site_data$elev
       camera = site_data$site
       site_type = site_data$site_type
       nimage = site_data$nimage
-      camera_orientation = site_data$camera_orientation
+      cam_orientation = as.character(site_data$camera_orientation)
+      degrees = as.numeric(orientation_key[cam_orientation])
       active = site_data$active
       date_end = site_data$date_end
       date_start = site_data$date_start
       
 
 
-      get_site_popup(camera, lat, lon, description, elevation, site_type, camera_orientation, nimage,
+      get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees , nimage,
                      active, date_end, date_start)
     })
   })
   
   # Zoom to selected Site
   observe({
-    site = input$site
-    print('Running Zoom to selected site')
-    zoom = TRUE
+    event = input$site
+
+    if(is.null(event))
+      return()
     
-    site_data = zoom_to_site(site, site_names, zoom)
+    isolate({
+        print('Running Zoom to selected site')
+        zoom = TRUE
+        
+        site_data = zoom_to_site(event, site_names, zoom)
+    })
   })
 
 
@@ -235,6 +280,8 @@ server = function(input, output, session) {
     datalat = c(ay,by,cy,dy,ay)
     id_ = paste('roi',camera, sep='')
     add_polyline(datalon, datalat, id_, .45, 'red')
+    
+    updateSliderInput(session, 'azm', value = azm_)
   }
   
   
@@ -250,6 +297,7 @@ server = function(input, output, session) {
                     color = color_)
   }
   
+   
   # remove all polylines
   remove_polyline = function(id_){
     leafletProxy("map", data=cams_) %>%
@@ -259,13 +307,18 @@ server = function(input, output, session) {
   # Zoom to site
   zoom_to_site = function(site_, site_names_, zoom){
     site_data = get_site_info(site_, site_names_)
-    lat =  site_data$lat
-    lon =  site_data$lon
     description = site_data$site_description
-    elevation =site_data$elev
+    camera_orientation = site_data$camera_orientation
+    lat = site_data$lat
+    lon = site_data$lon
+    cam_orientation = as.character(site_data$camera_orientation)
+    degrees = as.numeric(orientation_key[cam_orientation])
+    elevation = site_data$elev
     camera = site_data$site
+    drawROI = FALSE
     
     if (zoom == TRUE){
+    drawROI = input$drawROI
     leafletProxy('map', data = cams_) %>%
       clearPopups() %>%
       clearMarkers() %>%
@@ -273,6 +326,10 @@ server = function(input, output, session) {
       addMarkers(lng=lon,lat=lat,label=site_, labelOptions = labelOptions(noHide = F, direction = "bottom",
                                                                           style = get_marker_style())) %>%
       setView(lng = lon, lat = lat, zoom = 15)
+    }
+    
+    if (drawROI){
+      run_add_polyline_2(site_data, degrees)
     }
 
     return (site_data)
@@ -289,9 +346,11 @@ server = function(input, output, session) {
 
   #displays the site info when a site is clicked
   get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_, 
-                             camera_orientation_, nimage_,
+                             camera_orientation_, degrees_, nimage_,
                              active_, date_end_, date_start_) {
     website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera_)
+    
+    
 
     pop = paste0('<div class="leaflet-popup-content">',
                  '<h4>','Site name: ', camera_,'</br></h4>',

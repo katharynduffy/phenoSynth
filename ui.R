@@ -25,8 +25,9 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
+                                      actionButton('testbutton', 'Test Button'),
 
-                                      selectInput("site", "Phenocam Site Name", site_names, selected = 'unca' ),
+                                      selectInput("site", "Phenocam Site Name", site_names, selected = NULL),
                                       # link to the phenocam site or you can use popup link
                                       a("Google", href='www.google.com', target="_blank"),
                                       
