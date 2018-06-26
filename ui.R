@@ -26,7 +26,6 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
                                       actionButton('testbutton', 'Test Button'),
-
                                       selectInput("site", "Phenocam Site Name", site_names, selected = NULL),
                                       # link to the phenocam site or you can use popup link
                                       a("Google", href='www.google.com', target="_blank"),
@@ -34,7 +33,7 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       
                                       selectInput("layer", "Layer", layers_, selected = 'Esri.WorldImagery' ),
                                       # checkboxInput("drawFOV", "DrawFOV", value = FALSE),
-                                      checkboxInput("drawROI", "DrawROI", value = FALSE),
+                                      checkboxInput("drawROI", "Draw ROI", value = FALSE),
                                       # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),
                                       # selectInput("layer2", "Add Transparent Layer", layers_, 'Esri.NatGeoWorldMap')
                                       sliderInput("azm", "Azm:", min = 0, max = 360, value = 0.0, step = 5)

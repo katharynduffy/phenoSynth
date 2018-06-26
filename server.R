@@ -1,12 +1,12 @@
 
 server = function(input, output, session) {
-  
-  # # Create the map
+  counter <- reactiveValues(countervalue = 0)
+  ## Create the map
   output$map <- renderLeaflet({
     leaflet(data = cams_) %>%
       addTiles() %>%
       addProviderTiles('Esri.WorldImagery')%>%
-      addMarkers(~lon, ~lat, label=~site,
+      addMarkers(~lon, ~lat, label=~site, layerId=~site,
                  labelOptions = labelOptions(noHide = F, direction = "bottom",
                                              style = get_marker_style())) %>%
       addDrawToolbar(
@@ -22,10 +22,11 @@ server = function(input, output, session) {
         circleOptions = FALSE)  %>%
       addLayersControl(overlayGroups = c('draw'), options =
                          layersControlOptions(collapsed=FALSE),
-                       position = "topleft") 
-      # setView(lng = -93.85, lat = 37.45, zoom = 4)
+                       position = "topleft")%>%
+      setView(lng = -93.85, lat = 37.45, zoom = 4)
   })
 
+  # output for
   output$createROI <- renderText({
     #use the draw_stop event to detect when users finished drawing
     req(input$map_draw_stop)
@@ -40,14 +41,22 @@ server = function(input, output, session) {
       #transform them to an sp Polygon
       drawn_polygon <- Polygon(do.call(rbind,lapply(polygon_coordinates,function(x){c(x[[1]][1],x[[2]][1])})))
       
-      #use over from the sp package to identify selected cities
-      selected_cities <- cities_coordinates %over% SpatialPolygons(list(Polygons(list(drawn_polygon),"drawn_polygon")))
     } 
   })
   
+  
+  # # Zoom to selected Site
+  observeEvent(input$site, {
+    site = isolate(input$site)
+    if (counter$countervalue >0){
+      print ('Running Zoom to selected site')
+      site_data = zoom_to_site(site, site_names, zoom=TRUE)
+    }
+  })
+  
+  #an observer for a test button for quality control
   observe({
     test = input$testbutton
-    
     if(is.null(test))
       return()
     
@@ -77,11 +86,16 @@ server = function(input, output, session) {
   # Zoom contiguous US
   observe({
     z = input$usZoom
-    print('Running Zoom to contiguous US')
-    lo = -105.06
-    la = 40.55
-    leafletProxy("map", data = cams_) %>%
-      setView(lng = lo, lat = la, zoom = 4.5)
+    
+    if (z > 0){
+      isolate({
+        print('Running Zoom to contiguous US')
+        lo = -105.06
+        la = 40.55
+        leafletProxy("map", data = cams_) %>%
+          setView(lng = lo, lat = la, zoom = 4.5)
+    })
+    }
   })
   
 
@@ -90,14 +104,15 @@ server = function(input, output, session) {
     showAll = input$showSites
     print('Running add All sites back to map')
     leafletProxy("map", data = cams_) %>%
-      addMarkers(~lon, ~lat, label=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
+      addMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
                                                                         style = get_marker_style()))
+    count()
   })
 
   # Change Map Layer 1
   observe({
     layers = input$layer
-    print('Running Change MAp Layer 1')
+    print('Running Change Map Layer 1')
     leafletProxy("map", data = cams_) %>%
       clearTiles() %>%
       addProviderTiles(layers)
@@ -118,7 +133,7 @@ server = function(input, output, session) {
     if(is.null(azm))
       return()
     isolate({
-      if (input$drawROI){
+      if (input$drawROI == TRUE){
         site = input$site
         site_data = get_site_info(site, site_names)
         run_add_polyline_2(site_data, azm)
@@ -130,14 +145,14 @@ server = function(input, output, session) {
   observe({
     roi_bool = input$drawROI
     if (roi_bool == TRUE){
-      site = input$site
+      site = isolate(input$site)
       site_data = get_site_info(site, site_names)
       cam_orientation = as.character(site_data$camera_orientation)
       degrees = as.numeric(orientation_key[cam_orientation])
       run_add_polyline_2(site_data, degrees)
     }
     else if (roi_bool == FALSE){
-      remove_polyline()} 
+      remove_polyline()}
   })
   
   # # Draws fov polyline for a site location
@@ -159,6 +174,13 @@ server = function(input, output, session) {
   # Show Popup box for site when clicked
   observe({
     event = input$map_marker_click
+    
+    print (event$id)
+    if (is.not.null(event$id)){
+      zoom_to_site(event$id, site_names, zoom=TRUE)
+      updateSelectInput(session, 'site', selected = event$id)
+    }
+    
     print('Running show a popup box for Site')
     if(is.null(event))
       return()
@@ -181,26 +203,9 @@ server = function(input, output, session) {
       active = site_data$active
       date_end = site_data$date_end
       date_start = site_data$date_start
-      
-
 
       get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees , nimage,
                      active, date_end, date_start)
-    })
-  })
-  
-  # Zoom to selected Site
-  observe({
-    event = input$site
-
-    if(is.null(event))
-      return()
-    
-    isolate({
-        print('Running Zoom to selected site')
-        zoom = TRUE
-        
-        site_data = zoom_to_site(event, site_names, zoom)
     })
   })
 
@@ -318,7 +323,7 @@ server = function(input, output, session) {
     drawROI = FALSE
     
     if (zoom == TRUE){
-    drawROI = input$drawROI
+    drawROI = isolate(input$drawROI)
     leafletProxy('map', data = cams_) %>%
       clearPopups() %>%
       clearMarkers() %>%
@@ -331,7 +336,6 @@ server = function(input, output, session) {
     if (drawROI){
       run_add_polyline_2(site_data, degrees)
     }
-
     return (site_data)
   }
   
@@ -400,4 +404,13 @@ server = function(input, output, session) {
     )
     return(style)
   }
+  
+  count = function(){
+  isolate({
+    counter$countervalue = counter$countervalue + 1
+    print (counter$countervalue)
+    })
+  }
+  
+  
 }

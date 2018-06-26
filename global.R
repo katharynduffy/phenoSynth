@@ -47,5 +47,7 @@ orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW'
 #   date_end = last date images collected on
 #   date_start = first date images collected on
 
+# is not null function
+is.not.null <- function(x) ! is.null(x)
 
 
