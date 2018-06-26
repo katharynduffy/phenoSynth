@@ -15,7 +15,7 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
 
                         # If not using custom CSS, set height of leafletOutput to a number instead of percent
                         leafletOutput("map", width="100%", height="100%"),
-                        textOutput("createROI"),
+                        textOutput("See Field of View (FOV)"),
 
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
@@ -25,23 +25,23 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
-                                      actionButton('testbutton', 'Test Button'),
+                                      #actionButton('testbutton', 'Test Button'), #What is this for Kyle?
                                       selectInput("site", "Phenocam Site Name", site_names, selected = NULL),
                                       # link to the phenocam site or you can use popup link
-                                      a("Google", href='www.google.com', target="_blank"),
+                                      #a("Google", href='www.google.com', target="_blank"),
                                       
                                       
                                       selectInput("layer", "Layer", layers_, selected = 'Esri.WorldImagery' ),
                                       # checkboxInput("drawFOV", "DrawFOV", value = FALSE),
-                                      checkboxInput("drawROI", "Draw ROI", value = FALSE),
+                                      checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),
                                       # selectInput("layer2", "Add Transparent Layer", layers_, 'Esri.NatGeoWorldMap')
-                                      sliderInput("azm", "Azm:", min = 0, max = 360, value = 0.0, step = 5)
+                                      sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5)
 
                         ),
 
                         tags$div(id="cite",
-                                 'Data compiled for ', tags$em('Coming Apart: The State of White America, 1960-2010'), ' by Charles Murray (Crown Forum, 2012).'
+                                 ' ', tags$em(''), ' '#eventually we can put some APIS text here so I'm saving it for now
                         )
                     )
            ),
@@ -57,7 +57,7 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
 
                                   h2("Site explorer"),
                                   actionButton("showimage", "Show Phenocam Image"),
-                                  actionButton('showroi', 'Toggle Phenocam ROI'),
+                                  actionButton('showroi', 'Toggle Phenocam FOV'),
 
                                   selectInput("site1", "Phenocam Site Name", site_names)
                                   # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),
