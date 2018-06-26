@@ -1,14 +1,14 @@
-
 server = function(input, output, session) {
   counter <- reactiveValues(countervalue = 0)
   ## Create the map
   output$map <- renderLeaflet({
     leaflet(data = cams_) %>%
       addTiles() %>%
-      addProviderTiles('Esri.WorldImagery')%>%
-      addMarkers(~lon, ~lat, label=~site, layerId=~site,
-                 labelOptions = labelOptions(noHide = F, direction = "bottom",
-                                             style = get_marker_style())) %>%
+      addProviderTiles('Esri.WorldTopoMap')%>%
+                                                    
+      # addMarkers(~lon, ~lat, label=~site, layerId=~site, icon=icons,
+      #            labelOptions = labelOptions(noHide = F, direction = "bottom",
+      #                                        style = get_marker_style())) %>%
       addDrawToolbar(
         targetGroup='draw',
         singleFeature = TRUE,
@@ -25,7 +25,7 @@ server = function(input, output, session) {
                        position = "topleft")%>%
       setView(lng = -93.85, lat = 37.45, zoom = 4)
   })
-
+  
   # output for
   output$createROI <- renderText({
     #use the draw_stop event to detect when users finished drawing
@@ -79,10 +79,10 @@ server = function(input, output, session) {
       active = site_data$active
       date_end = site_data$date_end
       date_start = site_data$date_start
-      })
+    })
   })
-
-
+  
+  
   # Zoom contiguous US
   observe({
     z = input$usZoom
@@ -94,21 +94,31 @@ server = function(input, output, session) {
         la = 40.55
         leafletProxy("map", data = cams_) %>%
           setView(lng = lo, lat = la, zoom = 4.5)
-    })
+      })
     }
   })
   
-
+  
   # Add All sites back to map
   observe({
     showAll = input$showSites
     print('Running add All sites back to map')
     leafletProxy("map", data = cams_) %>%
-      addMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
-                                                                        style = get_marker_style()))
+      addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
+                        style = get_marker_style()), opacity = .80, fillColor = getColor(cams_), color = getColor(cams_),
+                       radius = 10, fillOpacity = .20, weight=3)
+                                                                                              
+
+      # addAwesomeMarkers(~lon, ~lat, label=~site, layerId=~site, icon=icons,
+      #                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+      #                                               style = get_marker_style()))
+
+      # addMarkers(~lon, ~lat, label=~site, layerId=~site, icon=leafIcons, labelOptions = labelOptions(noHide = F, direction = "bottom",
+      #                                                                                style = get_marker_style())) %>%
+      # addControl(html = html_legend, position = "bottomleft")
     count()
   })
-
+  
   # Change Map Layer 1
   observe({
     layers = input$layer
@@ -117,7 +127,7 @@ server = function(input, output, session) {
       clearTiles() %>%
       addProviderTiles(layers)
   })
-
+  
   # # Change map Layer 2 (with transparency/opacity)
   # observe({
   #   layers = input$layer2
@@ -184,11 +194,11 @@ server = function(input, output, session) {
     print('Running show a popup box for Site')
     if(is.null(event))
       return()
-
+    
     isolate({
       leafletProxy("map", data = cams_) %>% clearPopups()
       site = input$site
-
+      
       site_data = get_site_info(site, site_names)
       
       lat = site_data$lat
@@ -203,17 +213,17 @@ server = function(input, output, session) {
       active = site_data$active
       date_end = site_data$date_end
       date_start = site_data$date_start
-
+      
       get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees , nimage,
                      active, date_end, date_start)
     })
   })
-
-
+  
+  
   #---------------------------------------------------------------------------------------
   #  FUNCTIONS
   #---------------------------------------------------------------------------------------
-
+  
   # Radians to degrees
   rad2deg <- function(rad) {(rad * 180) / (pi)}
   
@@ -252,7 +262,7 @@ server = function(input, output, session) {
     # half of the Distance across at los
     dnlos = nlos/2
     
-
+    
     # closest left point
     angle = rad2deg((atan(-dlos /los)))
     hyp = los / cos(atan(-dlos / los))
@@ -302,7 +312,7 @@ server = function(input, output, session) {
                     color = color_)
   }
   
-   
+  
   # remove all polylines
   remove_polyline = function(id_){
     leafletProxy("map", data=cams_) %>%
@@ -323,14 +333,17 @@ server = function(input, output, session) {
     drawROI = FALSE
     
     if (zoom == TRUE){
-    drawROI = isolate(input$drawROI)
-    leafletProxy('map', data = cams_) %>%
-      clearPopups() %>%
-      clearMarkers() %>%
-      clearShapes() %>%
-      addMarkers(lng=lon,lat=lat,label=site_, labelOptions = labelOptions(noHide = F, direction = "bottom",
-                                                                          style = get_marker_style())) %>%
-      setView(lng = lon, lat = lat, zoom = 15)
+      drawROI = isolate(input$drawROI)
+      leafletProxy('map', data = cams_) %>%
+        clearPopups() %>%
+        clearMarkers() %>%
+        clearShapes() %>%
+        addAwesomeMarkers(lng=lon,lat=lat,label=site_, icon = icons, labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                                                                   style = get_marker_style())) %>%
+        # addMarkers(lng=lon,lat=lat,label=site_, icon=leafIcons, labelOptions = labelOptions(noHide = F, direction = "bottom",
+        #                                                                     style = get_marker_style())) %>%
+        # addControl(html = html_legend, position = "bottomleft") %>%
+        setView(lng = lon, lat = lat, zoom = 15)
     }
     
     if (drawROI){
@@ -347,7 +360,7 @@ server = function(input, output, session) {
     lat_ = lat + (r * cos(rad))
     return (list(lon_, lat_))
   }
-
+  
   #displays the site info when a site is clicked
   get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_, 
                              camera_orientation_, degrees_, nimage_,
@@ -355,30 +368,30 @@ server = function(input, output, session) {
     website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera_)
     
     
-
+    
     pop = paste0('<div class="leaflet-popup-content">',
                  '<h4>','Site name: ', camera_,'</br></h4>',
                  '<strong>','lat, long: ','</strong>',lat_,', ', lng_,'</br>',
-                '<strong>','Site Description: ','</strong>', description_ ,'</br>',
-                '<strong>','Elevation: ','</strong>', elevation_ ,'</br>',
-                
-                '<strong>','Site type: ','</strong>', site_type_ ,'</br>',
-                '<strong>','Orientation (direction): ','</strong>', camera_orientation_ ,'</br>',
-                '<strong>','Number of Images: ','</strong>', nimage_ ,'</br>',
-                '<strong>','Active: ','</strong>', active_ ,'</br>',
-                '<strong>','Start date: ','</strong>', date_start_ ,'</br>',
-                '<strong>','End date: ','</strong>', date_end_ ,'</br>',
-                
-                '<a id="info" href=', website ,' style="text-indent: 0px;"
-                class="action-button shiny-bound-input"
-                onclick="{Shiny.onInputChange(\'info\', (Math.random() * 1000) + 1);}">',
-
-                '<a type="submit" href=', website ,' class="button">Go to Phenocam website</a>')
-                
-
+                 '<strong>','Site Description: ','</strong>', description_ ,'</br>',
+                 '<strong>','Elevation: ','</strong>', elevation_ ,'</br>',
+                 
+                 '<strong>','Site type: ','</strong>', site_type_ ,'</br>',
+                 '<strong>','Orientation (direction): ','</strong>', camera_orientation_ ,'</br>',
+                 '<strong>','Number of Images: ','</strong>', nimage_ ,'</br>',
+                 '<strong>','Active: ','</strong>', active_ ,'</br>',
+                 '<strong>','Start date: ','</strong>', date_start_ ,'</br>',
+                 '<strong>','End date: ','</strong>', date_end_ ,'</br>',
+                 
+                 '<a id="info" href=', website ,' style="text-indent: 0px;"
+                 class="action-button shiny-bound-input"
+                 onclick="{Shiny.onInputChange(\'info\', (Math.random() * 1000) + 1);}">',
+                 
+                 '<a type="submit" href=', website ,' class="button">Go to Phenocam website</a>')
+    
+    
     leafletProxy("map",data = cams_) %>% addPopups(lng_, lat_, popup = pop, layerId = camera_)
   }
-
+  
   # Get specific site data and returns lon/lat/camera/description/elevation
   get_site_info = function(site, data){
     c = 0
@@ -391,7 +404,7 @@ server = function(input, output, session) {
     site_data = cams_ %>% slice(r)
     return (site_data)
   }
-
+  
   # Style marker to add to the map when redrawing
   get_marker_style = function(){
     style = list(
@@ -406,9 +419,9 @@ server = function(input, output, session) {
   }
   
   count = function(){
-  isolate({
-    counter$countervalue = counter$countervalue + 1
-    print (counter$countervalue)
+    isolate({
+      counter$countervalue = counter$countervalue + 1
+      print (counter$countervalue)
     })
   }
   

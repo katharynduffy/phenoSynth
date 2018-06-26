@@ -31,7 +31,7 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       a("Google", href='www.google.com', target="_blank"),
                                       
                                       
-                                      selectInput("layer", "Layer", layers_, selected = 'Esri.WorldImagery' ),
+                                      selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
                                       # checkboxInput("drawFOV", "DrawFOV", value = FALSE),
                                       checkboxInput("drawROI", "Draw ROI", value = FALSE),
                                       # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),

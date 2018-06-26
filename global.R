@@ -16,7 +16,6 @@ library(rvest)
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))
 colnames(df)
-
 layers_ = providers[0:-1]
 # Data for all the sites
 cams_ = df
@@ -29,10 +28,6 @@ cams_$camera_orientation[cams_$camera_orientation == ''] = 'N'
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
-
-# orientation = as.character(cams_$camera_orientation[5])
-# orientation_key[orientation]
-  
 
 # Variables being used in code :
 #   site = Name of the phenocam site
@@ -50,4 +45,31 @@ orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW'
 # is not null function
 is.not.null <- function(x) ! is.null(x)
 
-
+# custom markers created for Active/nonActive
+getColor <- function(cams_) {
+  sapply(cams_$active, function(active) {
+    if(active == 'True') {
+      "green"
+    } else if(active == 'False') {
+      "red"
+    } else {
+      "orange"
+    } })
+}
+icons <- awesomeIcons(
+  icon = 'ios-box',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = getColor(cams_)
+)
+?awesomeIcons
+# Choose Icon:
+leafIcons <- icons(
+  iconUrl = ifelse(cams_$active == 'True',
+                   "/users/kenns/downloads/grass.png",
+                   "http://leafletjs.com/docs/images/leaf-red.png"
+  ),
+  iconWidth = 38, iconHeight = 95,
+  iconAnchorX = 22, iconAnchorY = 94)
+html_legend <- "<img src='http://leafletjs.com/docs/images/leaf-green.png'>green<br/>
+<img src='http://leafletjs.com/docs/images/leaf-red.png'>red"
