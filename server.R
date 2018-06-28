@@ -37,7 +37,7 @@ server = function(input, output, session) {
   # Grab lon/lat values from s4 class -> matrix -> list
   observeEvent(input$map_draw_new_feature,{
     feature_type = isolate(input$map_draw_new_feature$properties$feature_type)
-    print (isolate(input$map_draw_new_feature))
+    # print (isolate(input$map_draw_new_feature))
     if (feature_type %in% c('polygon')){
       polygon_coordinates = isolate(input$map_draw_new_feature$geometry$coordinates[[1]])
       drawn_polygon = Polygon(do.call(rbind,lapply(polygon_coordinates,function(x){c(x[[1]][1],x[[2]][1])})))
@@ -55,8 +55,7 @@ server = function(input, output, session) {
     print (lat_)
     print (site_)
     
-    
-    
+    # print (session$input$pAOIchart$geometry)
     
     output$pAOIchart <- renderUI({
     #   # locations <- routeVehicleLocations()
