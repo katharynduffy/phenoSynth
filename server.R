@@ -56,27 +56,28 @@ server = function(input, output, session) {
     print (site_)
     
     
-    # output$pAOIchart <- renderUI({
+    
+    
+    output$pAOIchart <- renderUI({
     #   # locations <- routeVehicleLocations()
     #   # if (length(locations) == 0 || nrow(locations) == 0)
     #   #   return(NULL)
     #   # 
-    #   # Create a Bootstrap-styled table
-    #   tags$table(class = "table",
-    #              tags$thead(tags$tr(
-    #                tags$th("Color"),
-    #                tags$th("Direction"),
-    #                tags$th("Number of vehicles")
-    #              )),
-    #              tags$tbody(
-    #                tags$tr(
-    #                  tags$td(span(style = sprintf(
-    #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
-    #                    dirColors[4]
-    #                  ))),
-    #                  tags$td("Northbound"),
-    #                  tags$td(nrow(locations[locations$Direction == "4",]))
-    #                ),
+      # Create a Bootstrap-styled table
+      tags$table(class = "table",
+                 tags$thead(tags$tr(
+                   tags$th("Site"),
+                   tags$th("Run"),
+                   tags$th("Lon"),
+                   tags$th("Lan")
+                 )),
+                 tags$tbody(
+                   tags$tr(
+                     tags$td(site_),
+                     tags$td('1'),
+                     tags$td(lon_),
+                     tags$td(lat_))
+                   )
     #                tags$tr(
     #                  tags$td(span(style = sprintf(
     #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
@@ -106,9 +107,9 @@ server = function(input, output, session) {
     #                        tags$td("Total"),
     #                        tags$td(nrow(locations))
     #                )
-    #              )
-    #   )
-    # })
+                 # )
+      )
+    })
     
   }
   

@@ -42,10 +42,6 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                     
                     tags$div(id='info1',
                              'This is the info about our phenocamsite'),
-                    
-                    # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
-                    #   some point......
-                    uiOutput("pAOIchart"),
 
                     absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                   draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
@@ -63,6 +59,18 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                     )
                   ),
 
+           
+           tabPanel('pAOI Management',
+                    
+                    tags$div(id='pAOItab',
+                             'Adding shapefile data below as it is created in the Home tab'),
+                    
+                    # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
+                    #   some point......
+                    tableOutput("pAOIchart")
+
+           ),
+           
            conditionalPanel("false", icon("crosshair"))
   )
 )
