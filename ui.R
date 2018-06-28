@@ -1,3 +1,4 @@
+# UI file for Shiny App phenoRemote
 
 # Initiate the UI
 ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
@@ -21,21 +22,12 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                       draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
                                       width = 330, height = "auto",
-
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
-                                      #actionButton('testbutton', 'Test Button'), #What is this for Kyle?
                                       selectInput("site", "Phenocam Site Name", site_names, selected = NULL),
-                                      # link to the phenocam site or you can use popup link
-                                      #a("Google", href='www.google.com', target="_blank"),
-                                      
-                                      
-                                      selectInput("layer", "Layer", layers_, selected = 'Esri.WorldImagery' ),
-                                      # checkboxInput("drawFOV", "DrawFOV", value = FALSE),
+                                      selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
-                                      # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),
-                                      # selectInput("layer2", "Add Transparent Layer", layers_, 'Esri.NatGeoWorldMap')
                                       sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5)
 
                         ),
@@ -47,7 +39,7 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
            ),
 
            tabPanel('Site information',
-
+                    
                     tags$div(id='info1',
                              'This is the info about our phenocamsite'),
 
@@ -67,6 +59,18 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                     )
                   ),
 
+           
+           tabPanel('pAOI Management',
+                    
+                    tags$div(id='pAOItab',
+                             'Adding shapefile data below as it is created in the Home tab'),
+                    
+                    # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
+                    #   some point......
+                    tableOutput("pAOIchart")
+
+           ),
+           
            conditionalPanel("false", icon("crosshair"))
   )
 )
