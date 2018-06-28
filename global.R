@@ -1,3 +1,6 @@
+# Global file for Shiny App phenoRemote
+
+
 # Libraries
 library(shiny)
 library(leaflet)
@@ -56,20 +59,16 @@ getColor <- function(cams_) {
       "orange"
     } })
 }
-icons <- awesomeIcons(
-  icon = 'ios-box',
-  iconColor = 'black',
-  library = 'ion',
-  markerColor = getColor(cams_)
-)
-?awesomeIcons
-# Choose Icon:
-leafIcons <- icons(
-  iconUrl = ifelse(cams_$active == 'True',
-                   "/users/kenns/downloads/grass.png",
-                   "http://leafletjs.com/docs/images/leaf-red.png"
-  ),
-  iconWidth = 38, iconHeight = 95,
-  iconAnchorX = 22, iconAnchorY = 94)
-html_legend <- "<img src='http://leafletjs.com/docs/images/leaf-green.png'>green<br/>
-<img src='http://leafletjs.com/docs/images/leaf-red.png'>red"
+
+##### Gives us the option to add our own images from our computer or a website.
+#####   Leaving here for now.
+# # Choose Icon:
+# leafIcons <- icons(
+#   iconUrl = ifelse(cams_$active == 'True',
+#                    "/users/kenns/downloads/grass.png",
+#                    "http://leafletjs.com/docs/images/leaf-red.png"
+#   ),
+#   iconWidth = 38, iconHeight = 95,
+#   iconAnchorX = 22, iconAnchorY = 94)
+# html_legend <- "<img src='http://leafletjs.com/docs/images/leaf-green.png'>green<br/>
+# <img src='http://leafletjs.com/docs/images/leaf-red.png'>red"
