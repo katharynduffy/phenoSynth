@@ -16,6 +16,7 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
 
                         # If not using custom CSS, set height of leafletOutput to a number instead of percent
                         leafletOutput("map", width="100%", height="100%"),
+
                         textOutput("See Field of View (FOV)"),
 
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
@@ -24,11 +25,15 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       width = 330, height = "auto",
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
+                                      actionButton("add_custom_polyline", "Add Polygons"),
                                       actionButton('showSites', 'Show all Sites'),
-                                      selectInput("site", "Phenocam Site Name", site_names, selected = NULL),
+                                      selectInput("site", "Phenocam Site Name", site_names, selected = 'NEON.D09.NOGP.DP1.00042'),
                                       selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
-                                      sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5)
+                                      sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5),
+                                      verbatimTextOutput("mouse")
+                                      
+                                      
 
                         ),
 
@@ -64,12 +69,35 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                     
                     tags$div(id='pAOItab',
                              'Adding shapefile data below as it is created in the Home tab'),
+                    tags$table(class = "hidden_table",
+                               hidden = TRUE,
+                               tags$thead(tags$tr(
+                                 tags$th("Site"),
+                                 tags$th("Run"),
+                                 tags$th("Lon"),
+                                 tags$th("Lan")
+                               )),
+                               tags$tbody(
+                                 tags$tr(
+                                   tags$td('Name of the site'),
+                                   tags$td('run number 1'),
+                                   tags$td('-105'),
+                                   tags$td('40.4'))
+                               )
+                    ),
+
                     
                     # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
                     #   some point......
                     tableOutput("pAOIchart")
 
            ),
+           
+           
+           tabPanel('Phenocam Table',
+                    DTOutput('x1')
+           ),
+           
            
            conditionalPanel("false", icon("crosshair"))
   )

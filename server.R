@@ -8,10 +8,11 @@ server = function(input, output, session) {
   #  OUTPUTS
   #---------------------------------------------------------------------------------------
   
-
+  
+  
   ## Create the map
   output$map <- renderLeaflet({
-    leaflet(data = cams_) %>%
+    leaflet(data = cams_, options= leafletOptions(zoomControl=FALSE)) %>%
       addTiles() %>%
       addProviderTiles('Esri.WorldTopoMap')%>%
       addDrawToolbar(
@@ -25,7 +26,27 @@ server = function(input, output, session) {
           shapeOptions = drawShapeOptions(clickable=TRUE,
                                           color='blue',
                                           fillColor='blue')))  %>%
+      # Rendering the mouseoutput (aka lat / lon)
+      onRender("function(el,x){
+        this.on('mousemove', function(e) {
+        var lat = e.latlng.lat;
+        var lng = e.latlng.lng;
+        var coord = [lat, lng];
+        Shiny.onInputChange('hover_coordinates', coord)});
+        this.on('mouseout', function(e) {
+        Shiny.onInputChange('hover_coordinates', null)})
+      }")  %>%
       setView(lng = -93.85, lat = 37.45, zoom = 4)
+  })
+  
+  # adds the mouse lat / lon to an output (we can change this to anything)
+  output$mouse <- renderText({
+    if(is.null(input$hover_coordinates)) {
+      "Mouse outside of map"
+    } else {
+      paste0("Lat: ", input$hover_coordinates[1], 
+             "\nLng: ", input$hover_coordinates[2])
+    }
   })
 
   
@@ -33,6 +54,17 @@ server = function(input, output, session) {
   #  OBSERVERS
   #---------------------------------------------------------------------------------------
   
+  #  # This observer was used to help Jeff answer some questions about NEON sites that might overlap some of their cameras
+  #  #   field of views.
+  observe({
+    input$add_custom_polyline
+    print ('attempting to add the two polygons')
+    add_polygon(c(-100.91624,-100.91493,-100.913622,-100.914982,-100.91624),c(46.770616,46.770637,46.77066,46.771534,46.770616), 'nogp_092', .45,  'green')
+    add_polygon(c(-99.107953,-99.106625,-99.105297,-99.10663,-99.107953),c(47.162625,47.162628,47.162632,47.163524,47.162625), 'nogp_42', .45,  'green')
+
+    # add_polyline(c(-100.91624,-100.91493,-100.913622,-100.914982,-100.91624),c(46.770616,46.770637,46.77066,46.771534,46.770616), 'nogp_092b', .45,  'green')
+    # add_polyline(c(-99.107953,-99.106625,-99.105297,-99.10663,-99.107953),c(47.162625,47.162628,47.162632,47.163524,47.162625), 'nogp_042b', .45,  'green')
+  })
   
   # Grab lon/lat values from s4 class -> matrix -> list
   observeEvent(input$map_draw_new_feature,{
@@ -55,7 +87,7 @@ server = function(input, output, session) {
     print (lat_)
     print (site_)
     
-    # print (session$input$pAOIchart$geometry)
+    print (session$clientData)
     
     output$pAOIchart <- renderUI({
     #   # locations <- routeVehicleLocations()
@@ -173,7 +205,7 @@ server = function(input, output, session) {
       if (input$drawROI == TRUE){
         site = input$site
         site_data = get_site_info(site, site_names)
-        run_add_polyline_2(site_data, azm)
+        run_add_polyline(site_data, azm)
       }
     })
   })
@@ -187,7 +219,7 @@ server = function(input, output, session) {
       site_data = get_site_info(site, site_names)
       cam_orientation = as.character(site_data$camera_orientation)
       degrees = as.numeric(orientation_key[cam_orientation])
-      run_add_polyline_2(site_data, degrees)
+      run_add_polyline(site_data, degrees)
     }
     else if (roi_bool == FALSE){
       remove_polyline()}
@@ -319,12 +351,21 @@ server = function(input, output, session) {
     updateSliderInput(session, 'azm', value = azm_)
   }
   
-  
   # Add a polyline layer to the map
   add_polyline = function(datalon_, datalat_, id_, opacity_, color_){
     leafletProxy("map", data = cams_) %>%
       # clearShapes()%>%
       addPolylines( datalon_,
+                    datalat_,
+                    layerId=id_,
+                    opacity=opacity_,
+                    color = color_)
+  }
+  
+  add_polygon = function(datalon_, datalat_, id_, opacity_, color_){
+    leafletProxy("map", data = cams_) %>%
+      # clearShapes()%>%
+      addPolygons( datalon_,
                     datalat_,
                     layerId=id_,
                     opacity=opacity_,
