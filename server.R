@@ -2,16 +2,39 @@
 
 server = function(input, output, session) {
   
-  counter <- reactiveValues(countervalue = 0)
-  
+  counter = reactiveValues(countervalue = 0)
+  data = reactiveValues(
+    headers = c('Name', 'Site', 'Run', 'Notes'),
+    lons = c(),
+    lats = c(),
+    names = c(),
+    run = 0,
+    run_log = c(),
+    df = data.frame())
   #---------------------------------------------------------------------------------------
   #  OUTPUTS
   #---------------------------------------------------------------------------------------
   
+  ## Create the Phenocam Datatable with basic info
+  x = cams_
+  x$Date = Sys.time() + seq_len(nrow(x))
+  output$x1 = renderDT(x, selection = 'none', editable = FALSE)
+  
+  proxy = dataTableProxy('x1')
+  
+  observeEvent(input$x1_cell_edit, {
+    info = input$x1_cell_edit
+    str(info)
+    i = info$row
+    j = info$col
+    v = info$value
+    x[i, j] <<- DT::coerceValue(v, x[i, j])
+    replaceData(proxy, x, resetPaging = FALSE)  # important
+  })
   
   
   ## Create the map
-  output$map <- renderLeaflet({
+  output$map = renderLeaflet({
     leaflet(data = cams_, options= leafletOptions(zoomControl=FALSE)) %>%
       addTiles() %>%
       addProviderTiles('Esri.WorldTopoMap')%>%
@@ -62,8 +85,8 @@ server = function(input, output, session) {
     add_polygon(c(-100.91624,-100.91493,-100.913622,-100.914982,-100.91624),c(46.770616,46.770637,46.77066,46.771534,46.770616), 'nogp_092', .45,  'green')
     add_polygon(c(-99.107953,-99.106625,-99.105297,-99.10663,-99.107953),c(47.162625,47.162628,47.162632,47.163524,47.162625), 'nogp_42', .45,  'green')
 
-    # add_polyline(c(-100.91624,-100.91493,-100.913622,-100.914982,-100.91624),c(46.770616,46.770637,46.77066,46.771534,46.770616), 'nogp_092b', .45,  'green')
-    # add_polyline(c(-99.107953,-99.106625,-99.105297,-99.10663,-99.107953),c(47.162625,47.162628,47.162632,47.163524,47.162625), 'nogp_042b', .45,  'green')
+    add_polyline(c(-100.91624,-100.91493,-100.913622,-100.914982,-100.91624),c(46.770616,46.770637,46.77066,46.771534,46.770616), 'nogp_092b', .45,  'green')
+    add_polyline(c(-99.107953,-99.106625,-99.105297,-99.10663,-99.107953),c(47.162625,47.162628,47.162632,47.163524,47.162625), 'nogp_042b', .45,  'green')
   })
   
   # Grab lon/lat values from s4 class -> matrix -> list
@@ -78,69 +101,93 @@ server = function(input, output, session) {
       lon = coords[,1]
       lat = coords[,2]
       # Run function that adds these lon/latitudes to a new tab
-      add_polygon(isolate(input$site),lon,lat)
+      add_polygon_table(isolate(input$site), lon, lat)
     }
   })
   
-  add_polygon = function(site_,lon_,lat_){
-    print (lon_)
-    print (lat_)
-    print (site_)
+  add_polygon_table = function(site_,lon_,lat_){
+    data$run = data$run + 1
     
-    print (session$clientData)
+    data$lats = c(data$lats, lat_[1])
+    data$lons = c(data$lons, lon_[1])
+    name_ = paste(c(site_,data$run), collapse='_')
+    data$names = c(data$names, name_)
+    data$run_log = c(data$run_log, data$run)
     
-    output$pAOIchart <- renderUI({
-    #   # locations <- routeVehicleLocations()
-    #   # if (length(locations) == 0 || nrow(locations) == 0)
-    #   #   return(NULL)
-    #   # 
-      # Create a Bootstrap-styled table
-      tags$table(class = "table",
-                 tags$thead(tags$tr(
-                   tags$th("Site"),
-                   tags$th("Run"),
-                   tags$th("Lon"),
-                   tags$th("Lan")
-                 )),
-                 tags$tbody(
-                   tags$tr(
-                     tags$td(site_),
-                     tags$td('1'),
-                     tags$td(lon_),
-                     tags$td(lat_))
-                   )
-    #                tags$tr(
-    #                  tags$td(span(style = sprintf(
-    #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
-    #                    dirColors[1]
-    #                  ))),
-    #                  tags$td("Southbound"),
-    #                  tags$td(nrow(locations[locations$Direction == "1",]))
-    #                ),
-    #                tags$tr(
-    #                  tags$td(span(style = sprintf(
-    #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
-    #                    dirColors[2]
-    #                  ))),
-    #                  tags$td("Eastbound"),
-    #                  tags$td(nrow(locations[locations$Direction == "2",]))
-    #                ),
-    #                tags$tr(
-    #                  tags$td(span(style = sprintf(
-    #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
-    #                    dirColors[3]
-    #                  ))),
-    #                  tags$td("Westbound"),
-    #                  tags$td(nrow(locations[locations$Direction == "3",]))
-    #                ),
-    #                tags$tr(class = "active",
-    #                        tags$td(),
-    #                        tags$td("Total"),
-    #                        tags$td(nrow(locations))
-    #                )
-                 # )
-      )
+    data$df = data.frame(Name = data$names,Longitude = data$lons, Latitude = data$lats, Run = data$run_log)
+    df = data$df[,c(1,4)]
+    print (data$df)
+    
+    
+    ## Create the Phenocam Datatable with basic info
+    x = df
+    x$Date = Sys.time() + seq_len(nrow(x))
+    output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
+    
+    proxy = dataTableProxy('pAOIchart')
+      
+    observeEvent(input$pAOIchart_cell_edit, {
+      info = input$pAOIchart_cell_edit
+      str(info)
+      i = info$row
+      j = info$col
+      v = info$value
+      x[i, j] <<- DT::coerceValue(v, x[i, j])
+      replaceData(proxy, x, resetPaging = FALSE)  # important
     })
+        
+    # output$pAOIchart = renderUI({
+    # #   # locations <- routeVehicleLocations()
+    # #   # if (length(locations) == 0 || nrow(locations) == 0)
+    # #   #   return(NULL)
+    # #   # 
+    #   # Create a Bootstrap-styled table
+    #   tags$table(class = "table",
+    #              tags$thead(tags$tr(
+    #                tags$th("Name"),
+    #                tags$th("Site"),
+    #                tags$th("Run"),
+    #                tags$th("Notes")
+    #              )),
+    #              tags$tbody(
+    #                tags$tr(
+    #                  tags$td(site_),
+    #                  tags$td(site_),
+    #                  tags$td('1'),
+    #                  tags$td(''))
+    #                )
+    # #                tags$tr(
+    # #                  tags$td(span(style = sprintf(
+    # #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
+    # #                    dirColors[1]
+    # #                  ))),
+    # #                  tags$td("Southbound"),
+    # #                  tags$td(nrow(locations[locations$Direction == "1",]))
+    # #                ),
+    # #                tags$tr(
+    # #                  tags$td(span(style = sprintf(
+    # #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
+    # #                    dirColors[2]
+    # #                  ))),
+    # #                  tags$td("Eastbound"),
+    # #                  tags$td(nrow(locations[locations$Direction == "2",]))
+    # #                ),
+    # #                tags$tr(
+    # #                  tags$td(span(style = sprintf(
+    # #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
+    # #                    dirColors[3]
+    # #                  ))),
+    # #                  tags$td("Westbound"),
+    # #                  tags$td(nrow(locations[locations$Direction == "3",]))
+    # #                ),
+    # #                tags$tr(class = "active",
+    # #                        tags$td(),
+    # #                        tags$td("Total"),
+    # #                        tags$td(nrow(locations))
+    # #                )
+    #              # )
+    #   )
+    # })
     
   }
   
@@ -352,7 +399,7 @@ server = function(input, output, session) {
   }
   
   # Add a polyline layer to the map
-  add_polyline = function(datalon_, datalat_, id_, opacity_, color_){
+  add_polyline = function(datalon_, datalat_, id_, opacity_, color_='red'){
     leafletProxy("map", data = cams_) %>%
       # clearShapes()%>%
       addPolylines( datalon_,
@@ -362,7 +409,7 @@ server = function(input, output, session) {
                     color = color_)
   }
   
-  add_polygon = function(datalon_, datalat_, id_, opacity_, color_){
+  add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red'){
     leafletProxy("map", data = cams_) %>%
       # clearShapes()%>%
       addPolygons( datalon_,
@@ -400,8 +447,9 @@ server = function(input, output, session) {
         clearMarkers() %>%
         clearShapes() %>%
         # Can add differen't markers when we zoom in at some point, but for now we will use these circle markers from above
+
         addCircleMarkers(lng=lon,lat=lat,label=camera, layerId=camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
-                         style = get_marker_style()), opacity = .80, fillColor = getColor(cams_), color = getColor(cams_),
+                         style = get_marker_style()), opacity = .80, fillColor = getColor(cams=site_data), color = getColor(cams=site_data),
                          radius = 10, fillOpacity = .20, weight=3) %>%
         setView(lng = lon, lat = lat, zoom = 14)
     }

@@ -69,27 +69,11 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                     
                     tags$div(id='pAOItab',
                              'Adding shapefile data below as it is created in the Home tab'),
-                    tags$table(class = "hidden_table",
-                               hidden = TRUE,
-                               tags$thead(tags$tr(
-                                 tags$th("Site"),
-                                 tags$th("Run"),
-                                 tags$th("Lon"),
-                                 tags$th("Lan")
-                               )),
-                               tags$tbody(
-                                 tags$tr(
-                                   tags$td('Name of the site'),
-                                   tags$td('run number 1'),
-                                   tags$td('-105'),
-                                   tags$td('40.4'))
-                               )
-                    ),
 
                     
                     # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
                     #   some point......
-                    tableOutput("pAOIchart")
+                    DTOutput("pAOIchart")
 
            ),
            

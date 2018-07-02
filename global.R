@@ -16,7 +16,6 @@ library(sp)
 library(rvest)
 
 library(htmlwidgets)
-
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))
@@ -51,8 +50,8 @@ orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW'
 is.not.null <- function(x) ! is.null(x)
 
 # custom markers created for Active/nonActive
-getColor <- function(cams_) {
-  sapply(cams_$active, function(active) {
+getColor <- function(cams = cams_) {
+  sapply(cams$active, function(active) {
     if(active == 'True') {
       "green"
     } else if(active == 'False') {
