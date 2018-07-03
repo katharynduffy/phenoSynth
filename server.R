@@ -4,13 +4,22 @@ server = function(input, output, session) {
   
   counter = reactiveValues(countervalue = 0)
   data = reactiveValues(
-    headers = c('Name', 'Site', 'Run', 'Notes'),
+    run = 0,
     lons = c(),
     lats = c(),
     names = c(),
-    run = 0,
-    run_log = c(),
-    df = data.frame())
+    df = data.frame(),
+    headers = c('Name', 'Site', 'Run', 'Notes'))
+  
+  # Temporary holding space for lat/longs
+  latlongs = reactiveValues(df2 = data.frame(Longitude = numeric(0), Latitude = numeric(0)))
+  # Empty reactive spdf
+  value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()), 
+                                                              data=data.frame(notes=character(0), stringsAsFactors = F)))
+  
+
+  
+  
   #---------------------------------------------------------------------------------------
   #  OUTPUTS
   #---------------------------------------------------------------------------------------
@@ -31,21 +40,24 @@ server = function(input, output, session) {
     x[i, j] <<- DT::coerceValue(v, x[i, j])
     replaceData(proxy, x, resetPaging = FALSE)  # important
   })
-  
-  
+
   ## Create the map
   output$map = renderLeaflet({
-    leaflet(data = cams_, options= leafletOptions(zoomControl=FALSE)) %>%
+    leaflet('map', data = cams_, options= leafletOptions(zoomControl=FALSE)) %>%
       addTiles() %>%
       addProviderTiles('Esri.WorldTopoMap')%>%
       addDrawToolbar(
-        singleFeature = TRUE,
+        # singleFeature = TRUE,
+        targetGroup = 'Initialize',
         polylineOptions=FALSE,
         rectangleOptions = FALSE,
         markerOptions = FALSE,
         circleMarkerOptions = FALSE,
         circleOptions = FALSE,
+        editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
         polygonOptions = drawPolygonOptions(
+          showArea = TRUE,
+          repeatMode = F,
           shapeOptions = drawShapeOptions(clickable=TRUE,
                                           color='blue',
                                           fillColor='blue')))  %>%
@@ -59,10 +71,11 @@ server = function(input, output, session) {
         this.on('mouseout', function(e) {
         Shiny.onInputChange('hover_coordinates', null)})
       }")  %>%
-      setView(lng = -93.85, lat = 37.45, zoom = 4)
+      setView(lng = -93.85, lat = 37.45, zoom = 4) %>%
+      addStyleEditor()
   })
   
-  # adds the mouse lat / lon to an output (we can change this to anything)
+  # Adds the mouse lat / lon to an output (we can change this to anything)
   output$mouse <- renderText({
     if(is.null(input$hover_coordinates)) {
       "Mouse outside of map"
@@ -77,53 +90,106 @@ server = function(input, output, session) {
   #  OBSERVERS
   #---------------------------------------------------------------------------------------
   
-  #  # This observer was used to help Jeff answer some questions about NEON sites that might overlap some of their cameras
-  #  #   field of views.
-  observe({
-    input$add_custom_polyline
-    print ('attempting to add the two polygons')
-    add_polygon(c(-100.91624,-100.91493,-100.913622,-100.914982,-100.91624),c(46.770616,46.770637,46.77066,46.771534,46.770616), 'nogp_092', .45,  'green')
-    add_polygon(c(-99.107953,-99.106625,-99.105297,-99.10663,-99.107953),c(47.162625,47.162628,47.162632,47.163524,47.162625), 'nogp_42', .45,  'green')
-
-    add_polyline(c(-100.91624,-100.91493,-100.913622,-100.914982,-100.91624),c(46.770616,46.770637,46.77066,46.771534,46.770616), 'nogp_092b', .45,  'green')
-    add_polyline(c(-99.107953,-99.106625,-99.105297,-99.10663,-99.107953),c(47.162625,47.162628,47.162632,47.163524,47.162625), 'nogp_042b', .45,  'green')
-  })
-  
-  # Grab lon/lat values from s4 class -> matrix -> list
-  observeEvent(input$map_draw_new_feature,{
-    feature_type = isolate(input$map_draw_new_feature$properties$feature_type)
-    # print (isolate(input$map_draw_new_feature))
-    if (feature_type %in% c('polygon')){
-      polygon_coordinates = isolate(input$map_draw_new_feature$geometry$coordinates[[1]])
+  # Event occurs when drawing a new feature starts
+  observeEvent(input$map_draw_new_feature, {
+      polygon_coordinates = input$map_draw_new_feature$geometry$coordinates[[1]]
       drawn_polygon = Polygon(do.call(rbind,lapply(polygon_coordinates,function(x){c(x[[1]][1],x[[2]][1])})))
-      coords = drawn_polygon@coords
-      print (coords)
-      lon = coords[,1]
-      lat = coords[,2]
-      # Run function that adds these lon/latitudes to a new tab
-      add_polygon_table(isolate(input$site), lon, lat)
-    }
+      # coords = drawn_polygon@coords
+      # print ('observerEvent map_draw_new_feature')
+      # print (coords)
+      
+      data$run = data$run + 1                                        # PolygonCounter for unique name creation
+      name_ = paste(c(isolate(input$site),data$run), collapse='_')   # Creationg Unique Identifier data for polygon using run+site
+      
+      coor = unlist(input$map_draw_new_feature$geometry$coordinates)
+      
+      Longitude = coor[seq(1, length(coor), 2)] 
+      Latitude = coor[seq(2, length(coor), 2)]
+      
+      isolate(latlongs$df2<-rbind(latlongs$df2, cbind(Longitude, Latitude)))
+      
+      poly = Polygon(cbind(latlongs$df2$Longitude, latlongs$df2$Latitude))
+      polys = Polygons(list(poly), ID = name_)
+      spPolys = SpatialPolygons(list(polys))
+      
+      value$drawnPoly = rbind(value$drawnPoly,
+                             SpatialPolygonsDataFrame(spPolys, data = data.frame(notes = NA,
+                                                               row.names = row.names(spPolys))))
+
+      # print (value$drawnPoly)
+      c = 0
+      sites = c()
+      reset_polygon_values()
+      for (x in value$drawnPoly@polygons){
+        c = c + 1
+        lon = value$drawnPoly@polygons[[c]]@Polygons[[1]]@coords[,1]
+        lat = value$drawnPoly@polygons[[c]]@Polygons[[1]]@coords[,2]
+        site = tail(value$drawnPoly@polygons[[c]]@ID, n=1)
+        data$lats = c(data$lats, lat)
+        data$lons = c(data$lons, lon)
+
+        for (x in lon){
+          sites = c(sites, site)
+        }
+      }
+      data$names = c(data$names, sites)
+      add_polygon_table()
+      print (length(data$lats))
+      print (length(data$lons))
+      print (length(data$names))
+    
+
+      observeEvent(input$map_draw_stop, {
+        leafletProxy('map') %>%  removeDrawToolbar(clearFeatures=TRUE) %>%
+          removeShape('temp') %>%
+          clearGroup('drawnPoly') %>%
+          addPolygons(data=value$drawnPoly, popup=row.names(value$drawnPoly),   group='drawnPoly', color="red", layerId= row.names(value$drawnPoly)) %>%
+          addDrawToolbar(targetGroup = "drawnPoly",
+                         rectangleOptions = F,
+                         polylineOptions = F,
+                         markerOptions = F,
+                         editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
+                         circleOptions=F,
+                         polygonOptions=drawPolygonOptions(showArea=TRUE, repeatMode=F  , shapeOptions=drawShapeOptions( fillColor="red",clickable = TRUE)))
+        
+      })
+      latlongs$df2 <- data.frame(Longitude = numeric(0), Latitude = numeric(0))   #clear df
   })
   
-  add_polygon_table = function(site_,lon_,lat_){
-    data$run = data$run + 1
-    
-    data$lats = c(data$lats, lat_[1])
-    data$lons = c(data$lons, lon_[1])
-    name_ = paste(c(site_,data$run), collapse='_')
-    data$names = c(data$names, name_)
-    data$run_log = c(data$run_log, data$run)
-    
-    data$df = data.frame(Name = data$names,Longitude = data$lons, Latitude = data$lats, Run = data$run_log)
-    df = data$df[,c(1,4)]
-    print (data$df)
-    
-    
-    ## Create the Phenocam Datatable with basic info
+  # When edited feature gets saved
+  observeEvent(input$map_draw_edited_features, {
+    print ('map_draw_edited_features')
+  })
+  
+  # When deleted feature gets deleted
+  observeEvent(input$map_draw_deleted_features, {
+    print ('map_draw_deleted_features')
+  })
+  
+  
+  
+  reset_polygon_values = function(){
+    data$lats = c()
+    data$lons = c()
+    data$names = c()
+  }
+  
+  add_polygon_table = function(){
+
+    # Building dataframe from above reactive variables
+    print ('trying to build df')
+    data$df = data.frame(Name = data$names,Longitude = data$lons, Latitude = data$lats)
+    # Slicing df to just display specific Columns
+    print ('trying to aggregate df')
+    df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
+    ## Create the pAOI datatable
+    ##   --This can potentially be editable
+    print ('about to set up the chart with df')
     x = df
-    x$Date = Sys.time() + seq_len(nrow(x))
+    # x$Date = Sys.time() + seq_len(nrow(x))
     output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
     
+    # Name of output table
     proxy = dataTableProxy('pAOIchart')
       
     observeEvent(input$pAOIchart_cell_edit, {
@@ -135,65 +201,7 @@ server = function(input, output, session) {
       x[i, j] <<- DT::coerceValue(v, x[i, j])
       replaceData(proxy, x, resetPaging = FALSE)  # important
     })
-        
-    # output$pAOIchart = renderUI({
-    # #   # locations <- routeVehicleLocations()
-    # #   # if (length(locations) == 0 || nrow(locations) == 0)
-    # #   #   return(NULL)
-    # #   # 
-    #   # Create a Bootstrap-styled table
-    #   tags$table(class = "table",
-    #              tags$thead(tags$tr(
-    #                tags$th("Name"),
-    #                tags$th("Site"),
-    #                tags$th("Run"),
-    #                tags$th("Notes")
-    #              )),
-    #              tags$tbody(
-    #                tags$tr(
-    #                  tags$td(site_),
-    #                  tags$td(site_),
-    #                  tags$td('1'),
-    #                  tags$td(''))
-    #                )
-    # #                tags$tr(
-    # #                  tags$td(span(style = sprintf(
-    # #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
-    # #                    dirColors[1]
-    # #                  ))),
-    # #                  tags$td("Southbound"),
-    # #                  tags$td(nrow(locations[locations$Direction == "1",]))
-    # #                ),
-    # #                tags$tr(
-    # #                  tags$td(span(style = sprintf(
-    # #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
-    # #                    dirColors[2]
-    # #                  ))),
-    # #                  tags$td("Eastbound"),
-    # #                  tags$td(nrow(locations[locations$Direction == "2",]))
-    # #                ),
-    # #                tags$tr(
-    # #                  tags$td(span(style = sprintf(
-    # #                    "width:1.1em; height:1.1em; background-color:%s; display:inline-block;",
-    # #                    dirColors[3]
-    # #                  ))),
-    # #                  tags$td("Westbound"),
-    # #                  tags$td(nrow(locations[locations$Direction == "3",]))
-    # #                ),
-    # #                tags$tr(class = "active",
-    # #                        tags$td(),
-    # #                        tags$td("Total"),
-    # #                        tags$td(nrow(locations))
-    # #                )
-    #              # )
-    #   )
-    # })
-    
   }
-  
-  
-  
-  
   
   
   # # Zoom to selected Site
@@ -455,7 +463,7 @@ server = function(input, output, session) {
     }
     
     if (drawROI){
-      run_add_polyline_2(site_data, degrees)
+      run_add_polyline(site_data, degrees)
     }
     return (site_data)
   }

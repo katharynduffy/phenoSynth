@@ -15,6 +15,8 @@ library(leaflet.extras)
 library(sp)
 library(rvest)
 
+library(geojsonio)
+
 library(htmlwidgets)
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
