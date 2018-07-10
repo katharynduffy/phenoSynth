@@ -2,12 +2,17 @@
 
 server = function(input, output, session) {
   
+  #---------------------------------------------------------------------------------------
+  #  REACTIVE VALUES
+  #---------------------------------------------------------------------------------------
+  
   variables = reactiveValues(
     filter = 'All',
     sites_df = cams_,
-    sites = site_names
-  )
+    sites = site_names)
+  
   counter = reactiveValues(countervalue = 0)
+  
   data = reactiveValues(
     run = 0,
     lons = c(),
@@ -23,8 +28,6 @@ server = function(input, output, session) {
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
   
 
-  
-  
   #---------------------------------------------------------------------------------------
   #  OUTPUTS
   #---------------------------------------------------------------------------------------
@@ -76,7 +79,7 @@ server = function(input, output, session) {
       setView(lng = -93.85, lat = 37.45, zoom = 4) %>%
       addStyleEditor()
   })
-  
+
   # Adds the mouse lat / lon to an output (we can change this to anything)
   output$mouse <- renderText({
     if(is.null(input$hover_coordinates)) {
@@ -91,6 +94,7 @@ server = function(input, output, session) {
   #---------------------------------------------------------------------------------------
   #  OBSERVERS
   #---------------------------------------------------------------------------------------
+  
   
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
@@ -117,8 +121,6 @@ server = function(input, output, session) {
       value$drawnPoly = rbind(value$drawnPoly,
                              SpatialPolygonsDataFrame(spPolys, data = data.frame(notes = NA,
                                                                row.names = row.names(spPolys))))
-
-      # print (value$drawnPoly)
       c = 0
       sites = c()
       reset_polygon_values()
@@ -139,6 +141,9 @@ server = function(input, output, session) {
 
       observeEvent(input$map_draw_stop, {
         print ('stop_draw')
+        ###  USE THIS CODE BELOW TO ADD OPTION TO SHOW WHAT EACH SHAPEFILE IS NAMED.
+        ###     SHOW/HIDE the SHAPEFILE (BECAUSE THIS CREATES A DUPLICATE)
+        
         # leafletProxy('map') %>%  
         #   removeDrawToolbar(clearFeatures=TRUE) %>%
         #   removeShape('temp') %>%
@@ -156,52 +161,18 @@ server = function(input, output, session) {
       latlongs$df2 <- data.frame(Longitude = numeric(0), Latitude = numeric(0))   #clear df
   })
   
+  
   # When edited feature gets saved
   observeEvent(input$map_draw_edited_features, {
     print ('map_draw_edited_features')
   })
+  
   
   # When deleted feature gets deleted
   observeEvent(input$map_draw_deleted_features, {
     print ('map_draw_deleted_features')
   })
   
-  
-  
-  reset_polygon_values = function(){
-    data$lats = c()
-    data$lons = c()
-    data$names = c()
-  }
-  
-  add_polygon_table = function(){
-
-    # Building dataframe from above reactive variables
-    print ('trying to build df')
-    data$df = data.frame(Name = data$names,Longitude = data$lons, Latitude = data$lats)
-    # Slicing df to just display specific Columns
-    print ('trying to aggregate df')
-    df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
-    ## Create the pAOI datatable
-    ##   --This can potentially be editable
-    print ('about to set up the chart with df')
-    x = df
-    # x$Date = Sys.time() + seq_len(nrow(x))
-    output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
-    
-    # Name of output table
-    proxy = dataTableProxy('pAOIchart')
-      
-    observeEvent(input$pAOIchart_cell_edit, {
-      info = input$pAOIchart_cell_edit
-      str(info)
-      i = info$row
-      j = info$col
-      v = info$value
-      x[i, j] <<- DT::coerceValue(v, x[i, j])
-      replaceData(proxy, x, resetPaging = FALSE)  # important
-    })
-  }
   
   # SELECT INPUT
   # Filter based on Filter Sites dropdown
@@ -230,10 +201,11 @@ server = function(input, output, session) {
         variables$sites_df = subset(cams_, group == 'NEON')
       }
     }
-    show_all_sites()
     variables$sites = variables$sites_df$site
     updateSelectInput(session, 'site', choices = variables$sites)
+    show_all_sites()
   })
+  
   
   # BUTTON
   # Zooms to the selected site in the Sites dropdown option with BUTTON
@@ -243,21 +215,20 @@ server = function(input, output, session) {
     site_data = zoom_to_site(site, site_names, zoom=TRUE)
   })
   
+  
   # BUTTON
   # Zoom to contiguous US
   observeEvent(input$usZoom, {
       print('Running Zoom to contiguous US')
-      lo = -105.06
-      la = 40.55
       leafletProxy("map", data = variables$sites_df) %>%
-        setView(lng = lo, lat = la, zoom = 4)
+        setView(lng = -93.85, lat = 37.45, zoom = 4)
   })
   
   
   # Add All sites back to map
   observeEvent(input$showSites, {
     showAll = input$showSites
-    variables$sites_df = cams_
+    # variables$sites_df = cams_
     print('Running add All sites back to map')
     show_all_sites()
     # leafletProxy("map", data = variables$sites_df) %>%
@@ -266,6 +237,7 @@ server = function(input, output, session) {
     #                    radius = 10, fillOpacity = .20, weight=3)
     count()
   })
+  
   
   # Change Map Layer 1
   observeEvent(input$layer, {
@@ -285,7 +257,7 @@ server = function(input, output, session) {
     isolate({
       if (input$drawROI == TRUE){
         site = input$site
-        site_data = get_site_info(site, site_names)
+        site_data = get_site_info(site)
         run_add_polyline(site_data, azm)
       }
     })
@@ -293,11 +265,11 @@ server = function(input, output, session) {
   
   
   # Draws roi polyline for a site location
-  observe({
+  observeEvent(input$drawROI, {
     roi_bool = input$drawROI
     if (roi_bool == TRUE){
       site = isolate(input$site)
-      site_data = get_site_info(site, site_names)
+      site_data = get_site_info(site)
       cam_orientation = as.character(site_data$camera_orientation)
       degrees = as.numeric(orientation_key[cam_orientation])
       run_add_polyline(site_data, degrees)
@@ -325,7 +297,7 @@ server = function(input, output, session) {
       leafletProxy("map", data = variables$sites_df) %>% clearPopups()
       site = event$id
 
-      site_data = get_site_info(site, site_names)
+      site_data = get_site_info(site)
 
       lat = site_data$lat
       lon = site_data$lon
@@ -353,7 +325,6 @@ server = function(input, output, session) {
   
   # add all of these sites back to the leaflet map
   show_all_sites = function(){
-    print (variables$sites_df)
     leafletProxy("map", data = variables$sites_df) %>%
       clearMarkers() %>%
       addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
@@ -387,61 +358,7 @@ server = function(input, output, session) {
     id_ = paste('fov',camera, sep='')
     add_polyline(datalon, datalat, id_, .45, 'red')
   }
-  
-  
-  # Draws a FOV as well but is different in that it uses a different
-  #   method and creates a 4 point polygon using line of site near 
-  #   and far and the distances across (left to right in image) for 
-  #   the near and far.
-  run_add_polyline_2 = function(site_data_, azm_){
-    lat =  site_data_$lat
-    lon =  site_data_$lon 
-    camera = site_data_$site
-    # Line of site far
-    los = .02
-    # Line of site Near
-    nlos = .001
-    
-    # half of the Distance across at los
-    dlos = .010
-    # half of the Distance across at los
-    dnlos = nlos/2
-    
-    # closest left point
-    angle = rad2deg((atan(-dlos /los)))
-    hyp = los / cos(atan(-dlos / los))
-    pt1 = rotate_pt(lon, lat, azm_ + angle, hyp)
-    ax = pt1[[1]]
-    ay = pt1[[2]]
-    
-    # closest right point
-    angle = rad2deg((atan(dlos /los)))
-    hyp = los / cos(atan(dlos / los))
-    pt2 = rotate_pt(lon, lat, azm_ + angle, hyp)
-    bx = pt2[[1]]
-    by = pt2[[2]]
-    
-    # furthest right point
-    angle = rad2deg((atan(dnlos / nlos)))
-    hyp = nlos / cos(atan(dnlos / nlos))
-    pt3 = rotate_pt(lon, lat, azm_ + angle, hyp)
-    cx = pt3[[1]]
-    cy = pt3[[2]]
-    
-    # furthest left point
-    angle = rad2deg((atan(-dnlos / nlos)))
-    hyp = nlos / cos(atan(-dnlos / nlos))
-    pt4 = rotate_pt(lon, lat, azm_ + angle, hyp)
-    dx = pt4[[1]]
-    dy = pt4[[2]]
-    
-    datalon = c(ax,bx,cx,dx,ax)
-    datalat = c(ay,by,cy,dy,ay)
-    id_ = paste('roi',camera, sep='')
-    add_polyline(datalon, datalat, id_, .45, 'red')
-    
-    updateSliderInput(session, 'azm', value = azm_)
-  }
+
   
   # Add a polyline layer to the map
   add_polyline = function(datalon_, datalat_, id_, opacity_, color_='red'){
@@ -453,6 +370,7 @@ server = function(input, output, session) {
                     opacity=opacity_,
                     color = color_)
   }
+  
   
   add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red'){
     leafletProxy("map", data = variables$sites_df) %>%
@@ -474,15 +392,12 @@ server = function(input, output, session) {
   
   # Zoom to site
   zoom_to_site = function(site_, site_names_, zoom){
-    site_data = get_site_info(site_, site_names_)
-    print (site_data)
+    site_data = get_site_info(site_)
     description = site_data$site_description
     camera_orientation = site_data$camera_orientation
     lat = site_data$lat
     lon = site_data$lon
     cam_orientation = as.character(site_data$camera_orientation)
-    
-    print (cam_orientation)
     
     degrees = as.numeric(orientation_key[cam_orientation])
     elevation = site_data$elev
@@ -496,13 +411,11 @@ server = function(input, output, session) {
         clearMarkers() %>%
         clearShapes() %>%
         # Can add differen't markers when we zoom in at some point, but for now we will use these circle markers from above
-
         addCircleMarkers(lng=lon,lat=lat,label=camera, layerId=camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
                          style = get_marker_style()), opacity = .80, fillColor = getColor(cams=site_data), color = getColor(cams=site_data),
                          radius = 10, fillOpacity = .20, weight=3) %>%
         setView(lng = lon, lat = lat, zoom = 14)
     }
-    
     if (drawROI){
       run_add_polyline(site_data, degrees)
     }
@@ -551,19 +464,8 @@ server = function(input, output, session) {
   
   
   # Get specific site data and returns lon/lat/camera/description/elevation
-  get_site_info = function(site_name, data){
-    
+  get_site_info = function(site_name){
     site_data = subset(cams_, site == site_name)
-    
-    
-    # c = 0
-    # for (x in data){
-    #   c =  c+ 1
-    #   if (x == site){
-    #     r = c
-    #   }
-    # }
-    # site_data = cams_ %>% slice(r)
     return (site_data)
   }
   
@@ -581,6 +483,7 @@ server = function(input, output, session) {
     return(style)
   }
   
+  
   # Creating a label from the phenocamsite name
   new_label = function(name_){
     label = sprintf('This is the test label/n%s',name_)
@@ -591,6 +494,42 @@ server = function(input, output, session) {
     isolate({
       counter$countervalue = counter$countervalue + 1
       print (counter$countervalue)
+    })
+  }
+  
+  
+  reset_polygon_values = function(){
+    data$lats = c()
+    data$lons = c()
+    data$names = c()
+  }
+  
+  
+  add_polygon_table = function(){
+    # Building dataframe from above reactive variables
+    print ('trying to build df')
+    data$df = data.frame(Name = data$names,Longitude = data$lons, Latitude = data$lats)
+    # Slicing df to just display specific Columns
+    print ('trying to aggregate df')
+    df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
+    ## Create the pAOI datatable
+    ##   --This can potentially be editable
+    print ('about to set up the chart with df')
+    x = df
+    # x$Date = Sys.time() + seq_len(nrow(x))
+    output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
+    
+    # Name of output table
+    proxy = dataTableProxy('pAOIchart')
+    
+    observeEvent(input$pAOIchart_cell_edit, {
+      info = input$pAOIchart_cell_edit
+      str(info)
+      i = info$row
+      j = info$col
+      v = info$value
+      x[i, j] <<- DT::coerceValue(v, x[i, j])
+      replaceData(proxy, x, resetPaging = FALSE)  # important
     })
   }
   
