@@ -137,6 +137,7 @@ server = function(input, output, session) {
         }
       }
       data$names = c(data$names, sites)
+      updateSelectInput(session, 'shapefiles', choices = unique(data$names))
       add_polygon_table()
 
       observeEvent(input$map_draw_stop, {
@@ -171,8 +172,32 @@ server = function(input, output, session) {
   # When deleted feature gets deleted
   observeEvent(input$map_draw_deleted_features, {
     print ('map_draw_deleted_features')
+
+    
   })
   
+  observeEvent(input$saveshp,{
+    WGScoor = data$df
+    coordinates(WGScoor) = ~Longitude + Latitude
+    proj4string(WGScoor) = CRS("+proj=longlat +datum=WGS84")
+    LLcoor<-spTransform(WGScoor,CRS("+proj=longlat"))
+    file = isolate(input$shapefiles)
+    folder = get_download_folder()
+    filename = paste(folder, file, set='')
+    
+    
+    raster::shapefile(LLcoor, filename)
+
+  })
+  
+  get_download_folder = function(){
+    if (Sys.info()['sysname'] == 'Darwin'){
+      folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
+    }else{
+      folder = ''
+    }
+    return (folder)
+  }
   
   # SELECT INPUT
   # Filter based on Filter Sites dropdown

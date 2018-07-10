@@ -15,6 +15,8 @@ library(leaflet.extras)
 library(sp)
 library(rvest)
 
+library(rgdal)
+
 library (DT)
 library(geojsonio)
 

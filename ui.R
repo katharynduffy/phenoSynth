@@ -44,32 +44,36 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                     )
            ),
 
-           tabPanel('Site information',
-                    
-                    tags$div(id='info1',
-                             'This is the info about our phenocamsite'),
-
-                    absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                                  draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
-                                  width = 330, height = "auto",
-
-                                  h2("Site explorer"),
-                                  actionButton("showimage", "Show Phenocam Image"),
-                                  actionButton('showroi', 'Toggle Phenocam FOV'),
-
-                                  selectInput("site1", "Phenocam Site Name", site_names)
-                                  # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),
-                                  # selectInput("layer2", "Add Transparent Layer", layers_, 'Esri.NatGeoWorldMap')
-
-
-                    )
-                  ),
+           # tabPanel('Site information',
+           #          
+           #          tags$div(id='info1',
+           #                   'This is the info about our phenocamsite'),
+           # 
+           #          absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
+           #                        draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
+           #                        width = 330, height = "auto",
+           # 
+           #                        h2("Site explorer"),
+           #                        actionButton("showimage", "Show Phenocam Image"),
+           #                        actionButton('showroi', 'Toggle Phenocam FOV'),
+           # 
+           #                        selectInput("site1", "Phenocam Site Name", site_names)
+           #                        # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),
+           #                        # selectInput("layer2", "Add Transparent Layer", layers_, 'Esri.NatGeoWorldMap')
+           # 
+           # 
+           #          )
+           #        ),
 
            
            tabPanel('pAOI Management',
                     
                     tags$div(id='pAOItab',
                              'Adding shapefile data below as it is created in the Home tab'),
+                    selectInput('shapefiles', "Select Shapefile", c('None')),
+                    actionButton('saveshp', 'Save Shapefile'),
+                    br(),
+                    br(), br(),
 
                     
                     # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
