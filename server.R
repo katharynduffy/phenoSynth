@@ -2,6 +2,11 @@
 
 server = function(input, output, session) {
   
+  variables = reactiveValues(
+    filter = 'All',
+    sites_df = cams_,
+    sites = site_names
+  )
   counter = reactiveValues(countervalue = 0)
   data = reactiveValues(
     run = 0,
@@ -24,13 +29,11 @@ server = function(input, output, session) {
   #  OUTPUTS
   #---------------------------------------------------------------------------------------
   
-  ## Create the Phenocam Datatable with basic info
+  ## Create the Phenocam Datatable with basic info (Tab named phenocam Table)
   x = cams_
   x$Date = Sys.time() + seq_len(nrow(x))
   output$x1 = renderDT(x, selection = 'none', editable = FALSE)
-  
   proxy = dataTableProxy('x1')
-  
   observeEvent(input$x1_cell_edit, {
     info = input$x1_cell_edit
     str(info)
@@ -43,12 +46,11 @@ server = function(input, output, session) {
 
   ## Create the map
   output$map = renderLeaflet({
-    leaflet('map', data = cams_, options= leafletOptions(zoomControl=FALSE)) %>%
+    leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE)) %>%
       addTiles() %>%
       addProviderTiles('Esri.WorldTopoMap')%>%
       addDrawToolbar(
-        # singleFeature = TRUE,
-        targetGroup = 'Initialize',
+        targetGroup = 'drawnPoly',
         polylineOptions=FALSE,
         rectangleOptions = FALSE,
         markerOptions = FALSE,
@@ -59,8 +61,8 @@ server = function(input, output, session) {
           showArea = TRUE,
           repeatMode = F,
           shapeOptions = drawShapeOptions(clickable=TRUE,
-                                          color='blue',
-                                          fillColor='blue')))  %>%
+                                          color='green',
+                                          fillColor='green')))  %>%
       # Rendering the mouseoutput (aka lat / lon)
       onRender("function(el,x){
         this.on('mousemove', function(e) {
@@ -134,23 +136,21 @@ server = function(input, output, session) {
       }
       data$names = c(data$names, sites)
       add_polygon_table()
-      print (length(data$lats))
-      print (length(data$lons))
-      print (length(data$names))
-    
 
       observeEvent(input$map_draw_stop, {
-        leafletProxy('map') %>%  removeDrawToolbar(clearFeatures=TRUE) %>%
-          removeShape('temp') %>%
-          clearGroup('drawnPoly') %>%
-          addPolygons(data=value$drawnPoly, popup=row.names(value$drawnPoly),   group='drawnPoly', color="red", layerId= row.names(value$drawnPoly)) %>%
-          addDrawToolbar(targetGroup = "drawnPoly",
-                         rectangleOptions = F,
-                         polylineOptions = F,
-                         markerOptions = F,
-                         editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
-                         circleOptions=F,
-                         polygonOptions=drawPolygonOptions(showArea=TRUE, repeatMode=F  , shapeOptions=drawShapeOptions( fillColor="red",clickable = TRUE)))
+        print ('stop_draw')
+        # leafletProxy('map') %>%  
+        #   removeDrawToolbar(clearFeatures=TRUE) %>%
+        #   removeShape('temp') %>%
+        #   clearGroup('drawnPoly') %>%
+        #   addPolygons(data=value$drawnPoly, popup=row.names(value$drawnPoly),   group='drawnPoly', color="red", layerId= row.names(value$drawnPoly)) %>%
+        #   addDrawToolbar(targetGroup = "drawnPoly",
+        #                  rectangleOptions = F,
+        #                  polylineOptions = F,
+        #                  markerOptions = F,
+        #                  editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
+        #                  circleOptions=F,
+        #                  polygonOptions=drawPolygonOptions(showArea=TRUE, repeatMode=F  , shapeOptions=drawShapeOptions( fillColor="red",clickable = TRUE)))
         
       })
       latlongs$df2 <- data.frame(Longitude = numeric(0), Latitude = numeric(0))   #clear df
@@ -203,56 +203,82 @@ server = function(input, output, session) {
     })
   }
   
-  
-  # # Zoom to selected Site
-  observeEvent(input$site, {
-    site = isolate(input$site)
-    if (counter$countervalue >0){
-      print ('Running Zoom to selected site')
-      site_data = zoom_to_site(site, site_names, zoom=TRUE)
+  # SELECT INPUT
+  # Filter based on Filter Sites dropdown
+  observeEvent(input$filterSites, {
+    variables$filter = input$filterSites
+    print ('Running Filter Sites')
+    if ('All' %in% variables$filter){
+      variables$sites_df = cams_
+    }else{
+      if ('Active' %in% variables$filter){
+        variables$sites_df = subset(cams_, active == 'True')
+      }
+      if ('Inactive' %in% variables$filter){
+        variables$sites_df = subset(cams_, active == 'False')
+      }
+      if ('Type1' %in% variables$filter){
+        variables$sites_df = subset(cams_, site_type == 'I')
+      }
+      if ('Type2' %in% variables$filter){
+        variables$sites_df = subset(cams_, site_type == 'II')
+      }
+      if ('Type3' %in% variables$filter){
+        variables$sites_df = subset(cams_, site_type == 'III')
+      }
+      if ('NEON' %in% variables$filter){
+        variables$sites_df = subset(cams_, group == 'NEON')
+      }
     }
+    show_all_sites()
+    variables$sites = variables$sites_df$site
+    updateSelectInput(session, 'site', choices = variables$sites)
   })
   
+  # BUTTON
+  # Zooms to the selected site in the Sites dropdown option with BUTTON
+  observeEvent(input$siteZoom, {
+    print('Running BUTTON Zoom to Selected Site')
+    site = isolate(input$site)
+    site_data = zoom_to_site(site, site_names, zoom=TRUE)
+  })
   
-  # Zoom contiguous US
-  observe({
-    z = input$usZoom
-    if (z > 0){
-      isolate({
-        print('Running Zoom to contiguous US')
-        lo = -105.06
-        la = 40.55
-        leafletProxy("map", data = cams_) %>%
-          setView(lng = lo, lat = la, zoom = 4.5)
-      })
-    }
+  # BUTTON
+  # Zoom to contiguous US
+  observeEvent(input$usZoom, {
+      print('Running Zoom to contiguous US')
+      lo = -105.06
+      la = 40.55
+      leafletProxy("map", data = variables$sites_df) %>%
+        setView(lng = lo, lat = la, zoom = 4)
   })
   
   
   # Add All sites back to map
-  observe({
+  observeEvent(input$showSites, {
     showAll = input$showSites
+    variables$sites_df = cams_
     print('Running add All sites back to map')
-    leafletProxy("map", data = cams_) %>%
-      addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
-                        style = get_marker_style()), opacity = .80, fillColor = getColor(cams_), color = getColor(cams_),
-                       radius = 10, fillOpacity = .20, weight=3)
+    show_all_sites()
+    # leafletProxy("map", data = variables$sites_df) %>%
+    #   addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
+    #                     style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
+    #                    radius = 10, fillOpacity = .20, weight=3)
     count()
   })
   
-  
   # Change Map Layer 1
-  observe({
+  observeEvent(input$layer, {
     layers = input$layer
     print('Running Change Map Layer 1')
-    leafletProxy("map", data = cams_) %>%
+    leafletProxy("map", data = variables$sites_df) %>%
       clearTiles() %>%
       addProviderTiles(layers)
   })
   
   
   # Observer for the azm changes from 0-360 on the slider
-  observe({
+  observeEvent(input$azm, {
     azm = input$azm
     if(is.null(azm))
       return()
@@ -282,7 +308,7 @@ server = function(input, output, session) {
   
   
   # Show Popup box for site when clicked
-  observe({
+  observeEvent(input$map_marker_click, {
     event = input$map_marker_click
     
     print (event$id)
@@ -296,7 +322,7 @@ server = function(input, output, session) {
       return()
 
     isolate({
-      leafletProxy("map", data = cams_) %>% clearPopups()
+      leafletProxy("map", data = variables$sites_df) %>% clearPopups()
       site = event$id
 
       site_data = get_site_info(site, site_names)
@@ -325,8 +351,19 @@ server = function(input, output, session) {
   #---------------------------------------------------------------------------------------
   
   
+  # add all of these sites back to the leaflet map
+  show_all_sites = function(){
+    print (variables$sites_df)
+    leafletProxy("map", data = variables$sites_df) %>%
+      clearMarkers() %>%
+      addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
+                       style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
+                       radius = 10, fillOpacity = .20, weight=3)
+  }
+  
+  
   # Radians to degrees
-  rad2deg <- function(rad) {(rad * 180) / (pi)}
+  rad2deg = function(rad) {(rad * 180) / (pi)}
   
   
   # Given row from sites, create points for polyline from site.
@@ -408,7 +445,7 @@ server = function(input, output, session) {
   
   # Add a polyline layer to the map
   add_polyline = function(datalon_, datalat_, id_, opacity_, color_='red'){
-    leafletProxy("map", data = cams_) %>%
+    leafletProxy("map", data = variables$sites_df) %>%
       # clearShapes()%>%
       addPolylines( datalon_,
                     datalat_,
@@ -418,7 +455,7 @@ server = function(input, output, session) {
   }
   
   add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red'){
-    leafletProxy("map", data = cams_) %>%
+    leafletProxy("map", data = variables$sites_df) %>%
       # clearShapes()%>%
       addPolygons( datalon_,
                     datalat_,
@@ -430,7 +467,7 @@ server = function(input, output, session) {
   
   # remove all polylines
   remove_polyline = function(id_){
-    leafletProxy("map", data=cams_) %>%
+    leafletProxy("map", data = variables$sites_df) %>%
       clearShapes()
   }
   
@@ -438,11 +475,15 @@ server = function(input, output, session) {
   # Zoom to site
   zoom_to_site = function(site_, site_names_, zoom){
     site_data = get_site_info(site_, site_names_)
+    print (site_data)
     description = site_data$site_description
     camera_orientation = site_data$camera_orientation
     lat = site_data$lat
     lon = site_data$lon
     cam_orientation = as.character(site_data$camera_orientation)
+    
+    print (cam_orientation)
+    
     degrees = as.numeric(orientation_key[cam_orientation])
     elevation = site_data$elev
     camera = site_data$site
@@ -450,7 +491,7 @@ server = function(input, output, session) {
     
     if (zoom == TRUE){
       drawROI = isolate(input$drawROI)
-      leafletProxy('map', data = cams_) %>%
+      leafletProxy('map', data = variables$sites_df) %>%
         clearPopups() %>%
         clearMarkers() %>%
         clearShapes() %>%
@@ -505,20 +546,24 @@ server = function(input, output, session) {
                  '<a type="submit" href=', website ,' class="button">Go to Phenocam website</a>')
     
     
-    leafletProxy("map",data = cams_) %>% addPopups(lng_, lat_, popup = pop, layerId = camera_)
+    leafletProxy("map",data = variables$sites_df) %>% addPopups(lng_, lat_, popup = pop, layerId = camera_)
   }
   
   
   # Get specific site data and returns lon/lat/camera/description/elevation
-  get_site_info = function(site, data){
-    c = 0
-    for (x in data){
-      c =  c+ 1
-      if (x == site){
-        r = c
-      }
-    }
-    site_data = cams_ %>% slice(r)
+  get_site_info = function(site_name, data){
+    
+    site_data = subset(cams_, site == site_name)
+    
+    
+    # c = 0
+    # for (x in data){
+    #   c =  c+ 1
+    #   if (x == site){
+    #     r = c
+    #   }
+    # }
+    # site_data = cams_ %>% slice(r)
     return (site_data)
   }
   

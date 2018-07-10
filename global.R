@@ -15,6 +15,7 @@ library(leaflet.extras)
 library(sp)
 library(rvest)
 
+library (DT)
 library(geojsonio)
 
 library(htmlwidgets)
@@ -34,6 +35,7 @@ cams_$camera_orientation[cams_$camera_orientation == ''] = 'N'
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
+site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
 # Variables being used in code :
 #   site = Name of the phenocam site
@@ -52,7 +54,7 @@ orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW'
 is.not.null <- function(x) ! is.null(x)
 
 # custom markers created for Active/nonActive
-getColor <- function(cams = cams_) {
+getColor <- function(cams) {
   sapply(cams$active, function(active) {
     if(active == 'True') {
       "green"
