@@ -184,21 +184,23 @@ server = function(input, output, session) {
     file = isolate(input$shapefiles)
     folder = get_download_folder()
     filename = paste(folder, file, set='')
-    
-    
-    raster::shapefile(LLcoor, filename)
+    print (filename)
+
+    shapefile(LLcoor, filename, overwrite=TRUE)
 
   })
   
   get_download_folder = function(){
     if (Sys.info()['sysname'] == 'Darwin'){
       folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
+    # }else if (Sys.info()['sysname'] == 'Windows'){
+    #   folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
     }else{
       folder = ''
     }
     return (folder)
   }
-  
+
   # SELECT INPUT
   # Filter based on Filter Sites dropdown
   observeEvent(input$filterSites, {
