@@ -22,8 +22,8 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                         
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                                      draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
-                                      width = 330, height = "auto",
+                                      draggable = FALSE, top = 40, left = "auto", right = 20, bottom = "auto",
+                                      width = 280, height = "auto",
                                       uiOutput('test'),
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
@@ -37,8 +37,8 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       verbatimTextOutput("mouse")
                         ),
                         absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
-                                      draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 20,
-                                      width = 550, height = 350,
+                                      draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 15,
+                                      width = 250, height = 150,
                                       uiOutput('phenoImage')
 
                         ),
