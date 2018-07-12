@@ -61,7 +61,7 @@ is.not.null <- function(x) ! is.null(x)
 getColor <- function(cams) {
   sapply(cams$active, function(active) {
     if(active == 'True') {
-      "green"
+      "blue"
     } else if(active == 'False') {
       "red"
     } else {

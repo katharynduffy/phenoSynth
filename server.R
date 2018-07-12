@@ -27,10 +27,11 @@ server = function(input, output, session) {
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()), 
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
   
-
+  
   #---------------------------------------------------------------------------------------
   #  OUTPUTS
   #---------------------------------------------------------------------------------------
+
   
   ## Create the Phenocam Datatable with basic info (Tab named phenocam Table)
   x = cams_
@@ -46,7 +47,7 @@ server = function(input, output, session) {
     x[i, j] <<- DT::coerceValue(v, x[i, j])
     replaceData(proxy, x, resetPaging = FALSE)  # important
   })
-
+  
   ## Create the map
   output$map = renderLeaflet({
     leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE)) %>%
@@ -64,22 +65,22 @@ server = function(input, output, session) {
           showArea = TRUE,
           repeatMode = F,
           shapeOptions = drawShapeOptions(clickable=TRUE,
-                                          color='green',
-                                          fillColor='green')))  %>%
+                                          color='red',
+                                          fillColor='red')))  %>%
       # Rendering the mouseoutput (aka lat / lon)
       onRender("function(el,x){
-        this.on('mousemove', function(e) {
-        var lat = e.latlng.lat;
-        var lng = e.latlng.lng;
-        var coord = [lat, lng];
-        Shiny.onInputChange('hover_coordinates', coord)});
-        this.on('mouseout', function(e) {
-        Shiny.onInputChange('hover_coordinates', null)})
-      }")  %>%
+               this.on('mousemove', function(e) {
+               var lat = e.latlng.lat;
+               var lng = e.latlng.lng;
+               var coord = [lat, lng];
+               Shiny.onInputChange('hover_coordinates', coord)});
+               this.on('mouseout', function(e) {
+               Shiny.onInputChange('hover_coordinates', null)})
+  }")  %>%
       setView(lng = -93.85, lat = 37.45, zoom = 4) %>%
       addStyleEditor()
-  })
-
+    })
+  
   # Adds the mouse lat / lon to an output (we can change this to anything)
   output$mouse <- renderText({
     if(is.null(input$hover_coordinates)) {
@@ -89,6 +90,7 @@ server = function(input, output, session) {
              "\nLng: ", input$hover_coordinates[2])
     }
   })
+  
 
   
   #---------------------------------------------------------------------------------------
@@ -176,6 +178,7 @@ server = function(input, output, session) {
     
   })
   
+  # Save shapefile button
   observeEvent(input$saveshp,{
     WGScoor = data$df
     coordinates(WGScoor) = ~Longitude + Latitude
@@ -183,7 +186,7 @@ server = function(input, output, session) {
     LLcoor<-spTransform(WGScoor,CRS("+proj=longlat"))
     file = isolate(input$shapefiles)
     folder = get_download_folder()
-    filename = paste(folder, file, set='')
+    filename = paste(folder, file, sep='')
     print (filename)
 
     shapefile(LLcoor, filename, overwrite=TRUE)
@@ -193,8 +196,8 @@ server = function(input, output, session) {
   get_download_folder = function(){
     if (Sys.info()['sysname'] == 'Darwin'){
       folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
-    # }else if (Sys.info()['sysname'] == 'Windows'){
-    #   folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
+    }else if (Sys.info()['sysname'] == 'Windows'){
+      folder = paste('C:/Downloads/', sep = '')
     }else{
       folder = ''
     }
@@ -240,9 +243,9 @@ server = function(input, output, session) {
     print('Running BUTTON Zoom to Selected Site')
     site = isolate(input$site)
     site_data = zoom_to_site(site, site_names, zoom=TRUE)
+    
+    
   })
-  
-  
   # BUTTON
   # Zoom to contiguous US
   observeEvent(input$usZoom, {
@@ -261,7 +264,7 @@ server = function(input, output, session) {
     # leafletProxy("map", data = variables$sites_df) %>%
     #   addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
     #                     style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
-    #                    radius = 10, fillOpacity = .20, weight=3)
+    #                    radius = 10, fillOpacity = .20, weight=4)
     count()
   })
   
@@ -308,15 +311,16 @@ server = function(input, output, session) {
   
   # Show Popup box for site when clicked
   observeEvent(input$map_marker_click, {
-    event = input$map_marker_click
-    
+    event = isolate(input$map_marker_click)
     print (event$id)
+    
     if (is.not.null(event$id)){
-      zoom_to_site(event$id, site_names, zoom=TRUE)
-      updateSelectInput(session, 'site', selected = event$id )
+      if (isolate(input$map_zoom) < 9){
+        zoom_to_site(event$id, site_names, zoom=TRUE)
+        updateSelectInput(session, 'site', selected = event$id )
+      }
     }
 
-    print('Running show a popup box for Site')
     if(is.null(event))
       return()
 
@@ -344,6 +348,12 @@ server = function(input, output, session) {
     })
   })
   
+  # When the site is changed in the dropdown, the image popup will change to correct site
+  observeEvent(input$site, {
+    url = paste('https://phenocam.sr.unh.edu/data/latest/', input$site, '.jpg', sep = '')
+    output$phenoImage = renderUI({
+                                  img(src = url , height = '100%' , width = '100%')})
+  })
   
   #---------------------------------------------------------------------------------------
   #  FUNCTIONS
@@ -356,9 +366,8 @@ server = function(input, output, session) {
       clearMarkers() %>%
       addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
                        style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
-                       radius = 10, fillOpacity = .20, weight=3)
+                       radius = 10, fillOpacity = .20, weight=4)
   }
-  
   
   # Radians to degrees
   rad2deg = function(rad) {(rad * 180) / (pi)}
@@ -440,7 +449,7 @@ server = function(input, output, session) {
         # Can add differen't markers when we zoom in at some point, but for now we will use these circle markers from above
         addCircleMarkers(lng=lon,lat=lat,label=camera, layerId=camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
                          style = get_marker_style()), opacity = .80, fillColor = getColor(cams=site_data), color = getColor(cams=site_data),
-                         radius = 10, fillOpacity = .20, weight=3) %>%
+                         radius = 10, fillOpacity = .20, weight=4) %>%
         setView(lng = lon, lat = lat, zoom = 14)
     }
     if (drawROI){
@@ -465,6 +474,7 @@ server = function(input, output, session) {
                              active_, date_end_, date_start_) {
     website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera_)
     print('Running show a popup box for Site')
+    myurl = paste("https://phenocam.sr.unh.edu/data/latest/", isolate(input$site), '.jpg', sep = '')
   
     pop = paste0('<div class="leaflet-popup-content">',
                  '<h4>','Site name: ', camera_,'</br></h4>',
@@ -483,7 +493,8 @@ server = function(input, output, session) {
                  class="action-button shiny-bound-input"
                  onclick="{Shiny.onInputChange(\'info\', (Math.random() * 1000) + 1);}">',
                  
-                 '<a type="submit" href=', website ,' class="button">Go to Phenocam website</a>')
+                 '<a type="submit" href=', website ,' class="button">Go to Phenocam website</a>'
+                 )
     
     
     leafletProxy("map",data = variables$sites_df) %>% addPopups(lng_, lat_, popup = pop, layerId = camera_)
