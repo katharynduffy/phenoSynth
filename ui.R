@@ -2,27 +2,29 @@
 
 # Initiate the UI
 ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
-
-           tabPanel("Home",
-
-
-                    div(class="outer",
-
-                        tags$head(
-                          # Include our custom CSS
-                          includeCSS("styles.css"),
-                          includeScript("gomap.js")
-                        ),
+                          
+                          tabPanel("Home",
+                                   
+                                   
+                                   div(class="outer",
+                                       
+                                       tags$head(
+                                         # Include our custom CSS
+                                         includeCSS("styles.css"),
+                                         includeScript("gomap.js")
+                                       ),
 
                         # If not using custom CSS, set height of leafletOutput to a number instead of percent
                         leafletOutput("map", width="100%", height="100%"),
 
                         textOutput("See Field of View (FOV)"),
 
+                        
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                       draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
                                       width = 330, height = "auto",
+                                      uiOutput('test'),
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
@@ -33,11 +35,15 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5),
                                       verbatimTextOutput("mouse")
-                                      
-                                      
+                        ),
+                        absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
+                                      draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 20,
+                                      width = 550, height = 350,
+                                      uiOutput('phenoImage')
 
                         ),
-
+                        
+                        
                         tags$div(id="cite",
                                  ' ', tags$em(''), ' '#eventually we can put some APIS text here so I'm saving it for now
                         )
@@ -68,8 +74,7 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
            
            tabPanel('pAOI Management',
                     
-                    tags$div(id='pAOItab',
-                             'Adding shapefile data below as it is created in the Home tab'),
+                    tags$div(id='pAOItab'),
                     selectInput('shapefiles', "Select Shapefile", c('None')),
                     actionButton('saveshp', 'Save Shapefile'),
                     br(),
