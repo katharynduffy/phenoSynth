@@ -2,9 +2,9 @@
 
 server = function(input, output, session) {
   
-  #---------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------------------------------------
   #  REACTIVE VALUES
-  #---------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------------------------------------
   
   variables = reactiveValues(
     filter = 'All',
@@ -28,9 +28,9 @@ server = function(input, output, session) {
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
   
   
-  #---------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------------------------------------
   #  OUTPUTS
-  #---------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------------------------------------
 
   
   ## Create the Phenocam Datatable with basic info (Tab named phenocam Table)
@@ -65,8 +65,8 @@ server = function(input, output, session) {
           showArea = TRUE,
           repeatMode = F,
           shapeOptions = drawShapeOptions(clickable=TRUE,
-                                          color='red',
-                                          fillColor='red')))  %>%
+                                          color='black',
+                                          fillColor='black')))  %>%
       # Rendering the mouseoutput (aka lat / lon)
       onRender("function(el,x){
                this.on('mousemove', function(e) {
@@ -93,9 +93,9 @@ server = function(input, output, session) {
   
 
   
-  #---------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
-  #---------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------------------------------------
   
   
   # Event occurs when drawing a new feature starts
@@ -264,7 +264,7 @@ server = function(input, output, session) {
     # leafletProxy("map", data = variables$sites_df) %>%
     #   addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
     #                     style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
-    #                    radius = 10, fillOpacity = .20, weight=4)
+    #                    radius = 10, fillOpacity = .20, weight=3.5)
     count()
   })
   
@@ -315,10 +315,10 @@ server = function(input, output, session) {
     print (event$id)
     
     if (is.not.null(event$id)){
-      if (isolate(input$map_zoom) < 9){
+      if (isolate(input$map_zoom) < 5){
         zoom_to_site(event$id, site_names, zoom=TRUE)
-        updateSelectInput(session, 'site', selected = event$id )
       }
+      updateSelectInput(session, 'site', selected = event$id )
     }
 
     if(is.null(event))
@@ -350,15 +350,66 @@ server = function(input, output, session) {
   
   # When the site is changed in the dropdown, the image popup will change to correct site
   observeEvent(input$site, {
-    url = paste('https://phenocam.sr.unh.edu/data/latest/', input$site, '.jpg', sep = '')
-    output$phenoImage = renderUI({
-                                  img(src = url , height = '100%' , width = '100%')})
+    removeUI(
+      selector = 'image'
+    )
+    img_url = get_img_url(isolate(input$site))
+    insertUI(
+      selector = '#image',
+      ui = tags$div(
+        tags$img(src=img_url, class= 'img',
+                 style='position: absolute; z-index: 1; top:0px; left:0px;')
+      )
+    )
+    tryCatch({
+      roi_url = get_roi_url(isolate(input$site))
+      insertUI(
+        selector = '#image',
+        ui = tags$div(
+          tags$img(src=img_url, class= 'img',
+                   style='position: absolute; z-index: 1; top:0px; left:0px;'),
+          tags$img(src=roi_url,
+                   class= 'roi', style='position: absolute; z-index: 2; top:0; left:0px;')
+        )
+      )
+    }, error=function(cond) {message('failed to get roi')})
+    
   })
   
-  #---------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
-  #---------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------------------------------------
   
+  # Grabs url for the primary ROI
+  get_roi_url = function(name){
+    sitename = 'harvardgarden'
+    baseurl = 'https://phenocam.sr.unh.edu'
+    siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
+    page = read_html(siteurl)
+    html = page %>% html_nodes("a") %>% html_attr('href')
+    html = grep('data/archive', html, value=TRUE)[[1]]
+    html = paste(baseurl, html, sep='')
+    
+    page2 = read_html(html)
+    html2 = page2 %>% html_nodes("a") %>% html_attr('href')
+    html2 = grep('data/archive', html2, value=TRUE)
+    html2 = grep('.tif', html2, value=TRUE)
+    
+    roi = strsplit(html2, '/')[[1]]
+    roi = grep('.tif', roi, value=TRUE)
+    roi = strsplit(roi, name)[[1]]
+    roi = grep('.tif', roi, value=TRUE)
+    roi = strsplit(roi, '.tif')[[1]]
+    roi_url = paste('https://phenocam.sr.unh.edu/data/archive/', 
+                    name, '/ROI/', name, roi, '_overlay.png', sep = '')
+    return (roi_url)
+  }
+  
+  # Grabs img url from sitename
+  get_img_url = function(name){
+    url = paste("https://phenocam.sr.unh.edu/data/latest/", name, ".jpg",sep = '')
+    return (url)
+  }
   
   # add all of these sites back to the leaflet map
   show_all_sites = function(){
@@ -366,7 +417,7 @@ server = function(input, output, session) {
       clearMarkers() %>%
       addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
                        style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
-                       radius = 10, fillOpacity = .20, weight=4)
+                       radius = 10, fillOpacity = .20, weight=3.5)
   }
   
   # Radians to degrees
@@ -449,7 +500,7 @@ server = function(input, output, session) {
         # Can add differen't markers when we zoom in at some point, but for now we will use these circle markers from above
         addCircleMarkers(lng=lon,lat=lat,label=camera, layerId=camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
                          style = get_marker_style()), opacity = .80, fillColor = getColor(cams=site_data), color = getColor(cams=site_data),
-                         radius = 10, fillOpacity = .20, weight=4) %>%
+                         radius = 10, fillOpacity = .20, weight=3.5) %>%
         setView(lng = lon, lat = lat, zoom = 14)
     }
     if (drawROI){

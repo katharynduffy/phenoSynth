@@ -22,26 +22,37 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                         
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                                      draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
-                                      width = 330, height = "auto",
+                                      draggable = FALSE, top = 40, left = "auto", right = 20, bottom = "auto",
+                                      width = 280, height = "auto",
                                       uiOutput('test'),
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
-                                      selectInput("site", "Phenocam Site Name", site_names, selected = 'luckyhills'),
+                                      selectInput("site", "Phenocam Site Name", site_names, selected = 'acadia'),
                                       actionButton("siteZoom", "Zoom to Selected Site"),
                                       selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
                                       selectInput("filterSites", 'Filter Sites by', site_filters, selected = 'All', multiple = FALSE),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5),
+                                      # selectInput('imageSize', 'Image Size', c('None', 'Small', 'Medium', 'Large'), selected = 'Small'),
                                       verbatimTextOutput("mouse")
                         ),
-                        absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
-                                      draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 20,
-                                      width = 550, height = 350,
-                                      uiOutput('phenoImage')
-
-                        ),
+                        # absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
+                        #               draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 20,
+                        #               width = image_sizes_w$Medium, height = image_sizes_h$Medium,
+                        #               uiOutput('phenoImage')
+                        # ),
+                        
+                        absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
+                                      draggable = TRUE,  top = 'auto', left = 'auto', right = 20 , bottom = 20,
+                                      width = image_sizes_w$Medium, height = image_sizes_h$Medium,
+                                      tags$div(id = 'image')
+                                      # uiOutput('paneltest'),
+                                      # uiOutput('paneltest2')
+                                      # uiOutput('phenoImage')
+                                      # uiOutput('phenoROI')
+                                      ),
+                        # uiOutput(paneltest),
                         
                         
                         tags$div(id="cite",

@@ -15,6 +15,8 @@ library(leaflet.extras)
 library(sp)
 library(rvest)
 library(raster)
+library(magick)
+library(rvest)
 
 library(rgdal)
 
@@ -38,6 +40,8 @@ cams_$camera_orientation[cams_$camera_orientation == ''] = 'N'
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
+image_sizes_h = list('Small' = 150, 'Medium' = 300, 'Large' = 600)
+image_sizes_w = list('Small' = 250, 'Medium' = 500, 'Large' = 1000)
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 

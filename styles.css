@@ -7,6 +7,21 @@ input[type="number"] {
   width:280px;
 }
 
+/* #currentImage img {
+  border: 2px solid black;
+  height: 250px;
+  margin: -248px 0px 5px 470px;
+}*/
+
+#currentImage img {
+  border: 2px solid black;
+  right:20px;
+  bottom:20px;
+  width:500px;
+  height:300px;
+
+}
+
 div.outer {
   position: fixed;
   top: 41px;
