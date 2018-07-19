@@ -2,25 +2,39 @@ input[type="number"] {
   max-width: 80%;
 }
 
-/* notes here: Kyle's first edit */
 .leaflet-popup-content {
   width:280px;
 }
 
-/* #currentImage img {
-  border: 2px solid black;
-  height: 250px;
-  margin: -248px 0px 5px 470px;
-}*/
+#currentImage {
+  background-color: rgba(0, 0, 0, 0.0);
+  border-color:rgba(0, 0, 0, 0.0);
+}
 
-#currentImage img {
+.img {
+  border: 2px solid after-edge;
+  right:20px;
+  bottom:20px;
+  width:375px;
+  height:225px;
+  opacity:1;
+}
+.roi {
+  right:20px;
+  bottom:20px;
+  width:375px;
+  height:225px;
+}
+
+
+/* #currentImage img {
   border: 2px solid black;
   right:20px;
   bottom:20px;
-  width:500px;
-  height:300px;
+  width:375px;
+  height:225px;
+}*/
 
-}
 
 div.outer {
   position: fixed;

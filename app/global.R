@@ -16,14 +16,10 @@ library(sp)
 library(rvest)
 library(raster)
 library(magick)
-library(rvest)
-
 library(rgdal)
-
 library (DT)
-library(geojsonio)
-
 library(htmlwidgets)
+
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))

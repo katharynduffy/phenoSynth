@@ -193,16 +193,6 @@ server = function(input, output, session) {
 
   })
   
-  get_download_folder = function(){
-    if (Sys.info()['sysname'] == 'Darwin'){
-      folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
-    }else if (Sys.info()['sysname'] == 'Windows'){
-      folder = paste('C:/Downloads/', sep = '')
-    }else{
-      folder = ''
-    }
-    return (folder)
-  }
 
   # SELECT INPUT
   # Filter based on Filter Sites dropdown
@@ -348,40 +338,57 @@ server = function(input, output, session) {
     })
   })
   
-  # When the site is changed in the dropdown, the image popup will change to correct site
-  observeEvent(input$site, {
-    removeUI(
-      selector = 'image'
-    )
-    img_url = get_img_url(isolate(input$site))
-    insertUI(
-      selector = '#image',
-      ui = tags$div(
-        tags$img(src=img_url, class= 'img',
-                 style='position: absolute; z-index: 1; top:0px; left:0px;')
-      )
-    )
-    tryCatch({
-      roi_url = get_roi_url(isolate(input$site))
-      insertUI(
-        selector = '#image',
-        ui = tags$div(
-          tags$img(src=img_url, class= 'img',
-                   style='position: absolute; z-index: 1; top:0px; left:0px;'),
-          tags$img(src=roi_url,
-                   class= 'roi', style='position: absolute; z-index: 2; top:0; left:0px;')
-        )
-      )
-    }, error=function(cond) {message('failed to get roi')})
+  
+  # CheckBox to Show image for site from dropdown
+  observe({
+    print ('Doing something to Image')
+    draw_bool = input$drawImage
+    site = input$site
+    roi_bool = input$drawImageROI
     
+    removeUI(selector = '#phenocamSiteImage')
+    img_url = get_img_url(site)
+    
+    if (draw_bool == TRUE){
+      insertUI(selector = '#image',
+        ui = tags$div(id='phenocamSiteImage',
+                      tags$img(src=img_url, class= 'img',
+                               style='position: absolute; z-index: 1; top:0px; left:0px;')))}
+      if (roi_bool == TRUE){
+          roi_url = get_roi_url(site)
+          print (roi_url)
+          if (roi_url != 'Not Found'){
+          insertUI(selector = '#phenocamSiteImage',
+            ui =  tags$img(src=roi_url,
+                       class= 'roi', style='position: absolute; z-index: 2; top:0; left:0px;'))}
+      
+    }else if (draw_bool == FALSE){
+      removeUI(selector = '#phenocamSiteImage')
+    }
   })
+
   
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
   #--------------------------------------------------------------------------------------------------------------------------------------
   
+  
+  # Returns Downloads folder for windows/macos
+  get_download_folder = function(){
+    if (Sys.info()['sysname'] == 'Darwin'){
+      folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
+    }else if (Sys.info()['sysname'] == 'Windows'){
+      folder = paste('C:/Downloads/', sep = '')
+    }else{
+      folder = ''
+    }
+    return (folder)
+  }
+  
+  
   # Grabs url for the primary ROI
   get_roi_url = function(name){
+    roi_url = tryCatch({
     sitename = 'harvardgarden'
     baseurl = 'https://phenocam.sr.unh.edu'
     siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
@@ -401,7 +408,10 @@ server = function(input, output, session) {
     roi = grep('.tif', roi, value=TRUE)
     roi = strsplit(roi, '.tif')[[1]]
     roi_url = paste('https://phenocam.sr.unh.edu/data/archive/', 
-                    name, '/ROI/', name, roi, '_overlay.png', sep = '')
+                    name, '/ROI/', name, roi, '_overlay.png', sep = '') 
+    return (roi_url)
+    },error=function(cond) {message(paste('failed to get roi for sitename:'),isolate(input$site))
+                            return('Not Found')})
     return (roi_url)
   }
   
