@@ -1,6 +1,6 @@
-FROM openanalytics/r-base
+#--------------------------------------------------------------------------------------------------------------------------------------
 
-MAINTAINER Kyle Enns "kenns@usgs.gov"
+FROM openanalytics/r-base
 
 # system libraries of general use
 RUN apt-get update && apt-get install -y \
@@ -12,42 +12,50 @@ RUN apt-get update && apt-get install -y \
     libxt-dev \
     libssl-dev \
     libssh2-1-dev \
-    libssl1.0.0
+    libssl-dev
+
+# RUN add-apt-repository -y ppa:opencpu/jq
+
+# system library dependency for the phenocam app
+RUN apt-get update && apt-get install -y \
+    libmpfr-dev \
+    libgit2-dev \
+    libprotobuf-dev \
+    libxml2-dev \
+    libmagick++-dev \
+    libv8-3.14-dev \
+    gdebi-core 
+
+# Shiny server
+RUN wget --no-verbose https://s3.amazonaws.com/rstudio-shiny-server-os-build/ubuntu-14.04/x86_64/VERSION -O "version.txt" && \
+    VERSION=$(cat version.txt)  && \
+    wget --no-verbose "https://s3.amazonaws.com/rstudio-shiny-server-os-build/ubuntu-14.04/x86_64/shiny-server-$VERSION-amd64.deb" -O ss-latest.deb && \
+    gdebi -n ss-latest.deb && \
+    rm -f version.txt ss-latest.deb
 
 # basic shiny functionality
 RUN R -e "install.packages(c('shiny', 'rmarkdown'), repos='https://cloud.r-project.org/')"
 
-# install dependencies of the superzip app
-RUN R -e "install.packages(c('leaflet','dplyr','readr','RColorBrewer','scales','lattice','geojsonio','shinyjs','leaflet.extras','sp','rvest','raster','magick','rgdal','DT','htmlwidgets')), repos='https://cloud.r-project.org/')"
+# install dependencies of the phenocam app
+RUN R -e "install.packages(c('leaflet','dplyr','magick','readr','RColorBrewer','scales','lattice','shinyjs','leaflet.extras','sp','rvest','raster','DT','htmlwidgets'), repos='https://cloud.r-project.org/')"
 
-# copy the app to the image
-RUN mkdir /root/app
-COPY app /root/app
-
-# COPY Rprofile.site /usr/lib/R/etc/  # I don't think I need this for phenoremote app
+# shiny examples     
+RUN cp -R /usr/local/lib/R/site-library/shiny/examples/* /srv/shiny-server/ && \
+    rm -rf /var/lib/apt/lists/*
 
 EXPOSE 3838
 
-CMD ["R", "-e shiny::runApp('/root/app')"]
+COPY shiny-server.sh /usr/bin/shiny-server.sh
+
+## Uncomment the line below to include a custom configuration file. You can download the default file at
+## https://raw.githubusercontent.com/rstudio/shiny-server/master/config/default.config
+## (The line below assumes that you have downloaded the file above to ./shiny-customized.config)
+## Documentation on configuration options is available at
+## http://docs.rstudio.com/shiny-server/
+
+# COPY shiny-customized.config /etc/shiny-server/shiny-server.conf
+
+CMD ["/usr/bin/shiny-server.sh"]
 
 
-#----------------------------------------------------------
-
-# # Starting image to build from
-# FROM rocker/shiny:latest
-# MAINTAINER Kyle Enns (kenns@usgs.gov)
-
-# # Installing dependencies
-# RUN apt-get update && apt-get install -y \
-#     gnupg2 libssl-dev \
-#     && apt-get clean \ 
-#     && rm -rf /var/lib/apt/lists/ \ 
-#     && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
-
-# # # Install packages from CRAN (and clean up)
-# # RUN Rscript -e "install.packages(c('leaflet','shiny','dplyr','readr','RColorBrewer','scales','lattice','geojsonio','shinyjs','leaflet.extras','sp','rvest','raster','magick','rgdal','DT','htmlwidgets'), repos='https://cran.rstudio.com/')" \
-# #     && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
-
-# COPY . /srv/shiny-server/phenoremote/
-
-# EXPOSE 3838
+#--------------------------------------------------------------------------------------------------------------------------------------

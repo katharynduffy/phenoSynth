@@ -66,7 +66,7 @@ server = function(input, output, session) {
           repeatMode = F,
           shapeOptions = drawShapeOptions(clickable=TRUE,
                                           color='black',
-                                          fillColor='black')))  %>%
+                                          fillColor='yellow')))  %>%
       # Rendering the mouseoutput (aka lat / lon)
       onRender("function(el,x){
                this.on('mousemove', function(e) {
