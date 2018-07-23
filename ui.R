@@ -1,7 +1,7 @@
 # UI file for Shiny App phenoRemote
 
 # Initiate the UI
-ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
+ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                           
                           tabPanel("Home",
                                    
