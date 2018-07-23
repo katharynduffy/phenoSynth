@@ -1,3 +1,4 @@
+
 # UI file for Shiny App phenoRemote
 
 # Initiate the UI
@@ -39,7 +40,6 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       # selectInput('imageSize', 'Image Size', c('None', 'Small', 'Medium', 'Large'), selected = 'Small'),
                                       verbatimTextOutput("mouse")
                         ),
-<<<<<<< HEAD
                         # absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
                         #               draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 20,
                         #               width = image_sizes_w$Medium, height = image_sizes_h$Medium,
@@ -55,14 +55,13 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2", id="navbar",
                                       # uiOutput('phenoROI')
                                       ),
                         # uiOutput(paneltest),
-=======
+
                         absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
                                       draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 15,
                                       width = 250, height = 150,
                                       uiOutput('phenoImage')
 
                         ),
->>>>>>> upstream/master
                         
                         
                         tags$div(id="cite",
