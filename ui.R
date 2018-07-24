@@ -1,10 +1,8 @@
-
 # UI file for Shiny App phenoRemote
-
 # Initiate the UI
 ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                           
-                          tabPanel("Home",
+                          tabPanel("Site explorer",
                                    
                                    
                                    div(class="outer",
@@ -25,7 +23,6 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                       draggable = FALSE, top = 40, left = "auto", right = 20, bottom = "auto",
                                       width = 280, height = "auto",
-                                      uiOutput('test'),
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
@@ -44,20 +41,15 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                                       verbatimTextOutput("mouse")
                         ),
 
-                        # absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
-                        #               draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 20,
-                        #               width = image_sizes_w$Medium, height = image_sizes_h$Medium,
-                        #               uiOutput('phenoImage')
-                        # ),
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 200, 
-                                      width = 175, height = 25,
+                                      width = 375, height = 225,
                                       tags$div(id = 'image')
                                       ),
                         # uiOutput(paneltest),
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 200, 
-                                      width = 175, height = 25,
+                                      width = 375, height = 225,
                                       plotOutput("currentPlot", height = 200)
                         ),
 
@@ -66,27 +58,6 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                         )
                     )
            ),
-
-           # tabPanel('Site information',
-           #          
-           #          tags$div(id='info1',
-           #                   'This is the info about our phenocamsite'),
-           # 
-           #          absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-           #                        draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
-           #                        width = 330, height = "auto",
-           # 
-           #                        h2("Site explorer"),
-           #                        actionButton("showimage", "Show Phenocam Image"),
-           #                        actionButton('showroi', 'Toggle Phenocam FOV'),
-           # 
-           #                        selectInput("site1", "Phenocam Site Name", site_names)
-           #                        # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),
-           #                        # selectInput("layer2", "Add Transparent Layer", layers_, 'Esri.NatGeoWorldMap')
-           # 
-           # 
-           #          )
-           #        ),
 
            
            tabPanel('pAOI Management',

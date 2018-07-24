@@ -421,7 +421,6 @@ server = function(input, output, session) {
       geom_point() +
       theme(axis.text.x = element_text(angle = 90, hjust =1))
     #plot p here, where that goes in the UI we don't know yet
-    
     modis$data = df
     
     output$currentPlot <- renderPlot({
