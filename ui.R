@@ -31,13 +31,10 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                                       actionButton('showSites', 'Show all Sites'),
                                       selectInput("site", "Phenocam Site Name", site_names, selected = 'acadia'),
                                       actionButton("siteZoom", "Zoom to Selected Site"),
-<<<<<<< HEAD
-                                      selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
+
+                                      # selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
                                       actionButton('showModisSubset', 'Show MODIS subset'),
-=======
-                                      #selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
-                                      
->>>>>>> upstream/master
+
                                       selectInput("filterSites", 'Filter Sites by', site_filters, selected = 'All', multiple = FALSE),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       checkboxInput('drawImage', "Show site phenocamImage", value = TRUE),

@@ -21,7 +21,7 @@ library (DT)
 library(htmlwidgets)
 
 if(!require(devtools)){install.packages("devtools")}
-devtools::install_github("khufkens/MODISTools", build_vignettes = TRUE)
+devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
 library(MODISTools)
 
 # Variables

@@ -51,6 +51,7 @@ server = function(input, output, session) {
   ## Create the map
   output$map = renderLeaflet({
     leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE)) %>%
+      addTiles() %>%
       addTiles(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.jpg",
         attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
@@ -59,13 +60,15 @@ server = function(input, output, session) {
       addWMSTiles(
         "http://webmap.ornl.gov/ogcbroker/wms?",
         layers = "10004_31",
-        options = WMSTileOptions(format = "image/png", transparent = TRUE),
+        options = WMSTileOptions(format = "image/png", transparent = TRUE, opacity=.4),
         attribution = "MODIS Land Cover (MCD12Q1) &copy NASA",
         group = "MODIS Land Cover"
       ) %>%
+      
       addProviderTiles(
         "OpenTopoMap",
-        group = "Open Topo Map"
+        group = "Open Topo Map",
+        options = providerTileOptions(transparent=FALSE)
       ) %>%
       addLayersControl(
         baseGroups = c("World Imagery","MODIS Land Cover","Open Topo Map"),
