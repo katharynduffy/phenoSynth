@@ -284,7 +284,7 @@ server = function(input, output, session) {
   })
   
   
-  # Draws roi polyline for a site location
+  # Draws fov polyline for a site location
   observeEvent(input$drawROI, {
     roi_bool = input$drawROI
     if (roi_bool == TRUE){
@@ -366,6 +366,19 @@ server = function(input, output, session) {
       removeUI(selector = '#phenocamSiteImage')
     }
   })
+  
+  
+  observeEvent(input$showModisSubset,{
+    # Run modis tool here on site currently selected
+    site = input$site
+    get_site_info(site_name = site)
+    
+    lat = site_data$lat
+    lon = site_data$lon
+    date_end = site_data$date_end
+    date_start = site_data$date_start
+    
+  })
 
   
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -389,7 +402,6 @@ server = function(input, output, session) {
   # Grabs url for the primary ROI
   get_roi_url = function(name){
     roi_url = tryCatch({
-    sitename = 'harvardgarden'
     baseurl = 'https://phenocam.sr.unh.edu'
     siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
     page = read_html(siteurl)

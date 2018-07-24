@@ -20,6 +20,9 @@ library(raster)
 library (DT)
 library(htmlwidgets)
 
+library(devtools)
+devtools::
+
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))
