@@ -20,8 +20,8 @@ library(raster)
 library (DT)
 library(htmlwidgets)
 
-if(!require(devtools)){install.package("devtools")}
-devtools::install_github("khufkens/MODISTools", build_vignettes = TRUE)
+if(!require(devtools)){install.packages("devtools")}
+devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
 library("MODISTools")
 
 # Variables
