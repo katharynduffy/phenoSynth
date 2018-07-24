@@ -19,6 +19,7 @@ library(raster)
 # library(rgdal)
 library (DT)
 library(htmlwidgets)
+library(ggplot2)
 
 if(!require(devtools)){install.packages("devtools")}
 devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)

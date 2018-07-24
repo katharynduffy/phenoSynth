@@ -13,6 +13,8 @@ server = function(input, output, session) {
   
   counter = reactiveValues(countervalue = 0)
   
+  modis = reactiveValues(data = data.frame())
+  
   data = reactiveValues(
     run = 0,
     lons = c(),
@@ -413,8 +415,22 @@ server = function(input, output, session) {
                         internal = TRUE)
     print (str(subset))
     
+    df = subset$data
+    df$data = df$data*.0001
+    p = ggplot(data = df, aes(x= calendar_date, y= data)) +
+      geom_point() +
+      theme(axis.text.x = element_text(angle = 90, hjust =1))
+    #plot p here, where that goes in the UI we don't know yet
+    
+    modis$data = df
+    
+    output$currentPlot <- renderPlot({
+      p
+    })
+    
   })
-
+  
+  
   
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS

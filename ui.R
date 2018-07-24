@@ -53,21 +53,14 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 200, 
                                       width = 175, height = 25,
                                       tags$div(id = 'image')
-                                      # uiOutput('paneltest'),
-                                      # uiOutput('paneltest2')
-                                      # uiOutput('phenoImage')
-                                      # uiOutput('phenoROI')
                                       ),
                         # uiOutput(paneltest),
-
-                        absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
-                                      draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 15,
-                                      width = 250, height = 150,
-                                      uiOutput('phenoImage')
-
+                        absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
+                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 200, 
+                                      width = 175, height = 25,
+                                      plotOutput("currentPlot", height = 200)
                         ),
-                        
-                
+
                         tags$div(id="cite",
                                  ' ', tags$em(''), ' '#eventually we can put some APIS text here so I'm saving it for now
                         )
