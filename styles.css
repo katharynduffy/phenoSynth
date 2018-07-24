@@ -7,6 +7,13 @@ input[type="number"] {
 }
 
 #currentImage {
+  display: inline;
+  background-color: rgba(0, 0, 0, 0.0);
+  border-color:rgba(0, 0, 0, 0.0);
+}
+
+#plotpanel {
+  display: inline;
   background-color: rgba(0, 0, 0, 0.0);
   border-color:rgba(0, 0, 0, 0.0);
 }

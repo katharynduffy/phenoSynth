@@ -45,11 +45,11 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                                       width = 375, height = 225,
                                       tags$div(id = 'image')
                                       ),
-                        # uiOutput(paneltest),
+                        
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
-                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 200, 
+                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 450, 
                                       width = 375, height = 225,
-                                      plotOutput("currentPlot", height = 200)
+                                      plotOutput("currentPlot", height = 225)
                         ),
 
                         tags$div(id="cite",

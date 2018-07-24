@@ -417,12 +417,14 @@ server = function(input, output, session) {
     
     df = subset$data
     df$data = df$data*.0001
+    df$calendar_date = as.Date(df$calendar_date)
     p = ggplot(data = df, aes(x= calendar_date, y= data)) +
       geom_point() +
-      theme(axis.text.x = element_text(angle = 90, hjust =1))
+      scale_x_date(date_breaks = "3 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
+      theme(axis.text.x = element_text(angle = 45, hjust =1))
     #plot p here, where that goes in the UI we don't know yet
     modis$data = df
-    
+
     output$currentPlot <- renderPlot({
       p
     })
@@ -693,6 +695,18 @@ server = function(input, output, session) {
       replaceData(proxy, x, resetPaging = FALSE)  # important
     })
   }
+  # is not null function
+  is.not.null <- function(x) ! is.null(x)
   
-  
+  # custom markers created for Active/nonActive
+  getColor <- function(cams) {
+    sapply(cams$active, function(active) {
+      if(active == 'True') {
+        "blue"
+      } else if(active == 'False') {
+        "red"
+      } else {
+        "orange"
+      } })
+  }
 }
