@@ -438,7 +438,7 @@ server = function(input, output, session) {
   #   This function uses angle for field of view and los as the
   #   far distance of the FOV.
   run_add_polyline = function(site_data_, azm_){
-    los = .02
+    los = .01
     lat =  site_data_$lat
     lon =  site_data_$lon
     dst = sqrt(los**2 + los**2)
