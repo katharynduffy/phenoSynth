@@ -20,6 +20,10 @@ library(raster)
 library (DT)
 library(htmlwidgets)
 
+if(!require(devtools)){install.package("devtools")}
+devtools::install_github("khufkens/MODISTools", build_vignettes = TRUE)
+library("MODISTools")
+
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))
