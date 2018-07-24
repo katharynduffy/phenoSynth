@@ -67,6 +67,11 @@ server = function(input, output, session) {
         "OpenTopoMap",
         group = "Open Topo Map"
       ) %>%
+      addLayersControl(
+        baseGroups = c("World Imagery","MODIS Land Cover","Open Topo Map"),
+        position = c("topleft"),
+        options = layersControlOptions(collapsed = TRUE)
+        )%>%
       addDrawToolbar(
         targetGroup = 'drawnPoly',
         polylineOptions=FALSE,

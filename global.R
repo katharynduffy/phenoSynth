@@ -28,7 +28,7 @@ library("MODISTools")
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))
 colnames(df)
-layers_ = providers[0:-1]
+#layers_ = providers[0:-1]
 # Data for all the sites
 cams_ = df
 # All site names from table

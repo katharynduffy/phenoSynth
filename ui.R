@@ -31,7 +31,8 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                                       actionButton('showSites', 'Show all Sites'),
                                       selectInput("site", "Phenocam Site Name", site_names, selected = 'acadia'),
                                       actionButton("siteZoom", "Zoom to Selected Site"),
-                                      selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
+                                      #selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
+                                      
                                       selectInput("filterSites", 'Filter Sites by', site_filters, selected = 'All', multiple = FALSE),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       checkboxInput('drawImage', "Show site phenocamImage", value = TRUE),
@@ -47,8 +48,8 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                         #               uiOutput('phenoImage')
                         # ),
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
-                                      draggable = TRUE,  top = 'auto', left = 'auto', right = 20 , bottom = 20, 
-                                      width = 375, height = 225,
+                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 200, 
+                                      width = 175, height = 25,
                                       tags$div(id = 'image')
                                       # uiOutput('paneltest'),
                                       # uiOutput('paneltest2')
