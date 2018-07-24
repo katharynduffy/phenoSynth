@@ -21,8 +21,8 @@ library (DT)
 library(htmlwidgets)
 
 if(!require(devtools)){install.packages("devtools")}
-devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
-library("MODISTools")
+devtools::install_github("khufkens/MODISTools", build_vignettes = TRUE)
+library(MODISTools)
 
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'

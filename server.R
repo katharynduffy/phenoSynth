@@ -371,12 +371,25 @@ server = function(input, output, session) {
   observeEvent(input$showModisSubset,{
     # Run modis tool here on site currently selected
     site = input$site
-    get_site_info(site_name = site)
+    print ('Running show MODIS subset tool')
+    site_data = get_site_info(site)
+    site_ = site_data$site[1]
+    lat_ = site_data$lat[1]
+    lon_ = site_data$lon[1]
+    date_end = as.Date(site_data$date_end[1])
+    date_start = as.Date(site_data$date_start[1])
     
-    lat = site_data$lat
-    lon = site_data$lon
-    date_end = site_data$date_end
-    date_start = site_data$date_start
+    subset <- mt_subset(product = "MOD13Q1",
+                        lat = lat_,
+                        lon = lon_,
+                        band = "250m_16_days_NDVI",
+                        start = date_start,
+                        end = date_end,
+                        km_lr = 1,
+                        km_ab = 1,
+                        site_name = site_,
+                        internal = TRUE)
+    print (str(subset))
     
   })
 
