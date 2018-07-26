@@ -1,12 +1,9 @@
-
 # UI file for Shiny App phenoRemote
-
 # Initiate the UI
-ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
+ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                           
-                          tabPanel("Home",
-                                   
-                                   
+                          tabPanel("Site explorer",
+    
                                    div(class="outer",
                                        
                                        tags$head(
@@ -23,41 +20,49 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                         
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                                      draggable = FALSE, top = 40, left = "auto", right = 20, bottom = "auto",
+                                      draggable = TRUE, top = 50, left = "auto", right = 20, bottom = "auto",
                                       width = 280, height = "auto",
-                                      uiOutput('test'),
                                       h2("Site explorer"),
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
+                                      actionButton('analyzerMode', 'Enter Analyze Mode'),
                                       selectInput("filterSites", 'Filter Sites by', site_filters, selected = 'All', multiple = FALSE),
                                       selectInput("site", "Phenocam Site Name", site_names, selected = 'acadia'),
                                       actionButton("siteZoom", "Zoom to Selected Site"),
 
                                       # selectInput("layer", "Layer", layers_, selected = 'Esri.WorldTopoMap' ),
-                                      actionButton('showModisSubset', 'Show MODIS subset'),
-                                      checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
+                                      # actionButton('showModisSubset', 'Show MODIS subset'),
+                                      # checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       checkboxInput('drawImage', "Show site phenocamImage", value = TRUE),
                                       checkboxInput("drawImageROI", "Show roi on phenocamImage", value = FALSE),
                                       #sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5),
                                       # selectInput('imageSize', 'Image Size', c('None', 'Small', 'Medium', 'Large'), selected = 'Small'),
                                       verbatimTextOutput("mouse")
                         ),
+                        
+                        absolutePanel(id = "analyzerControls", class = "panel panel-default", fixed = TRUE,
+                                      draggable = TRUE, top = 50, left = "auto", right = 20, bottom = "auto",
+                                      width = 280, height = "auto", hidden = TRUE,
+                                      h2(uiOutput("analyzerTitle")),
+                                      actionButton('siteExplorerMode', 'Back to Site Explorer'),
+                                      actionButton('showModisSubset', 'Show MODIS subset'),
+                                      checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
+                                      checkboxInput('drawImage2', "Show site phenocamImage", value = TRUE),
+                                      checkboxInput("drawImageROI2", "Show roi on phenocamImage", value = FALSE),
+                                      sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5),
+                                      verbatimTextOutput("mouse2")
+                        ),
 
-                        # absolutePanel(id = "currentImage", class = "panel panel-default", fixed = TRUE,
-                        #               draggable = TRUE, top = 'auto', left = 'auto', right = 20 , bottom = 20,
-                        #               width = image_sizes_w$Medium, height = image_sizes_h$Medium,
-                        #               uiOutput('phenoImage')
-                        # ),
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
-                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 200, 
-                                      width = 175, height = 25,
+                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 20, 
+                                      width = 375, height = 225,
                                       tags$div(id = 'image')
                                       ),
-                        # uiOutput(paneltest),
+                        
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
-                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 200, 
-                                      width = 175, height = 25,
-                                      plotOutput("currentPlot", height = 200)
+                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270, 
+                                      width = 375, height = 225,
+                                      plotOutput("currentPlot", height = 225)
                         ),
 
                         tags$div(id="cite",
@@ -65,27 +70,6 @@ ui = fluidPage(navbarPage("APIS Phenocam C.2-development phase", id="navbar",
                         )
                     )
            ),
-
-           # tabPanel('Site information',
-           #          
-           #          tags$div(id='info1',
-           #                   'This is the info about our phenocamsite'),
-           # 
-           #          absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-           #                        draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
-           #                        width = 330, height = "auto",
-           # 
-           #                        h2("Site explorer"),
-           #                        actionButton("showimage", "Show Phenocam Image"),
-           #                        actionButton('showroi', 'Toggle Phenocam FOV'),
-           # 
-           #                        selectInput("site1", "Phenocam Site Name", site_names)
-           #                        # sliderInput("opacity", "Opacity:", min = 0, max = 1, value = 0.0, step = 0.1),
-           #                        # selectInput("layer2", "Add Transparent Layer", layers_, 'Esri.NatGeoWorldMap')
-           # 
-           # 
-           #          )
-           #        ),
 
            
            tabPanel('pAOI Management',

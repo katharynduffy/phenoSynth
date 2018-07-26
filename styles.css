@@ -7,12 +7,22 @@ input[type="number"] {
 }
 
 #currentImage {
+  width:375px;
+  height:225px;
   background-color: rgba(0, 0, 0, 0.0);
   border-color:rgba(0, 0, 0, 0.0);
 }
 
+#plotpanel {
+  background-color: rgba(0, 0, 0, 0.0);
+  border-color:rgba(0, 0, 0, 0.0);
+}
+
+.navbar {
+  height:40;
+}
+
 .img {
-  border: 2px solid after-edge;
   right:20px;
   bottom:20px;
   width:375px;
@@ -25,16 +35,6 @@ input[type="number"] {
   width:375px;
   height:225px;
 }
-
-
-/* #currentImage img {
-  border: 2px solid black;
-  right:20px;
-  bottom:20px;
-  width:375px;
-  height:225px;
-}*/
-
 
 div.outer {
   position: fixed;
@@ -53,7 +53,7 @@ body, label, input, button, select {
 }
 h1, h2, h3, h4 { font-weight: 400; }
 
-#controls {
+#controls, #analyzerControls {
   /* Appearance */
   background-color: white;
   padding: 0 20px 20px 20px;
@@ -63,7 +63,7 @@ h1, h2, h3, h4 { font-weight: 400; }
   zoom: 0.9;
   transition: opacity 500ms 1s;
 }
-#controls:hover {
+#controls:hover, #analyzerControls:hover {
   /* Fade in while hovering */
   opacity: 0.95;
   transition-delay: 0;

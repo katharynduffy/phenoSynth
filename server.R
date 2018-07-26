@@ -28,7 +28,10 @@ server = function(input, output, session) {
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()), 
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
-  
+  #initiating with observer
+  observe({
+    shinyjs::hide(id = 'plotpanel')
+  })
   
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OUTPUTS
@@ -66,17 +69,18 @@ server = function(input, output, session) {
         attribution = "MODIS Land Cover (MCD12Q1) &copy NASA",
         group = "MODIS Land Cover"
       ) %>%
-      
       addProviderTiles(
         "OpenTopoMap",
         group = "Open Topo Map",
         options = providerTileOptions(transparent=FALSE)
       ) %>%
+      # Adds the layers options to top left of Map
       addLayersControl(
         baseGroups = c("World Imagery","MODIS Land Cover","Open Topo Map"),
         position = c("topleft"),
         options = layersControlOptions(collapsed = TRUE)
-        )%>%
+      )%>%
+      
       addDrawToolbar(
         targetGroup = 'drawnPoly',
         polylineOptions=FALSE,
@@ -107,6 +111,14 @@ server = function(input, output, session) {
   
   # Adds the mouse lat / lon to an output (we can change this to anything)
   output$mouse <- renderText({
+    if(is.null(input$hover_coordinates)) {
+      "Mouse outside of map"
+    } else {
+      paste0("Lat: ", input$hover_coordinates[1], 
+             "\nLng: ", input$hover_coordinates[2])
+    }
+  })
+  output$mouse2 <- renderText({
     if(is.null(input$hover_coordinates)) {
       "Mouse outside of map"
     } else {
@@ -256,16 +268,22 @@ server = function(input, output, session) {
   observeEvent(input$siteZoom, {
     print('Running BUTTON Zoom to Selected Site')
     site = isolate(input$site)
-    site_data = zoom_to_site(site, site_names, zoom=TRUE)
+    site_data = zoom_to_site(site, zoom=TRUE)
     
     
   })
   # BUTTON
   # Zoom to contiguous US
-  observeEvent(input$usZoom, {
+  observe ({
+      input$usZoom
+      input$siteExplorerMode
       print('Running Zoom to contiguous US')
       leafletProxy("map", data = variables$sites_df) %>%
         setView(lng = -93.85, lat = 37.45, zoom = 4)
+      showAll = isolate(input$showSites)
+      print('Running add All sites back to map')
+      show_all_sites()
+      count()
   })
   
   
@@ -330,7 +348,7 @@ server = function(input, output, session) {
     
     if (is.not.null(event$id)){
       if (isolate(input$map_zoom) < 5){
-        zoom_to_site(event$id, site_names, zoom=TRUE)
+        zoom_to_site(event$id, zoom=TRUE)
       }
       updateSelectInput(session, 'site', selected = event$id )
     }
@@ -362,7 +380,7 @@ server = function(input, output, session) {
     })
   })
   
-  
+  # Site Explorer Mode Images
   # CheckBox to Show image for site from dropdown
   observe({
     print ('Doing something to Image')
@@ -374,22 +392,58 @@ server = function(input, output, session) {
     img_url = get_img_url(site)
     
     if (draw_bool == TRUE){
+      shinyjs::show(id = 'currentImage')
       insertUI(selector = '#image',
         ui = tags$div(id='phenocamSiteImage',
                       tags$img(src=img_url, class= 'img',
-                               style='position: absolute; z-index: 1; top:0px; left:0px;')))}
+                               style="position: absolute; z-index: 1; top:0px; left:0px;")))}
       if (roi_bool == TRUE){
           roi_url = get_roi_url(site)
           print (roi_url)
           if (roi_url != 'Not Found'){
           insertUI(selector = '#phenocamSiteImage',
             ui =  tags$img(src=roi_url,
-                       class= 'roi', style='position: absolute; z-index: 2; top:0; left:0px;'))}
+                       class= 'roi', style='position: absolute; z-index: 2; top:0px; left:0px;'))}
       
     }else if (draw_bool == FALSE){
       removeUI(selector = '#phenocamSiteImage')
+      shinyjs::hide(id = 'currentImage')
     }
   })
+  
+  # Analyzer Mode Images
+  # CheckBox to Show image for site from dropdown
+  observe({
+    print ('Doing something to Image')
+    draw_bool = input$drawImage2
+    site = isolate(input$site)
+    roi_bool = input$drawImageROI2
+    input$analyzerMode
+    
+    removeUI(selector = '#phenocamSiteImage')
+    img_url = get_img_url(site)
+    
+    if (draw_bool == TRUE){
+      shinyjs::show(id = 'currentImage')
+      insertUI(selector = '#image',
+               ui = tags$div(id='phenocamSiteImage',
+                             tags$img(src=img_url, class= 'img',
+                                      style="position: absolute; z-index: 1; top:0px; left:0px;")))}
+    if (roi_bool == TRUE){
+      roi_url = get_roi_url(site)
+      print (roi_url)
+      if (roi_url != 'Not Found'){
+        insertUI(selector = '#phenocamSiteImage',
+                 ui =  tags$img(src=roi_url,
+                                class= 'roi', style='position: absolute; z-index: 2; top:0px; left:0px;'))}
+      
+    }else if (draw_bool == FALSE){
+      removeUI(selector = '#phenocamSiteImage')
+      shinyjs::hide(id = 'currentImage')
+    }
+  })
+  
+  
   
   
   observeEvent(input$showModisSubset,{
@@ -402,35 +456,39 @@ server = function(input, output, session) {
     lon_ = site_data$lon[1]
     date_end = as.Date(site_data$date_end[1])
     date_start = as.Date(site_data$date_start[1])
-    
-    subset <- mt_subset(product = "MOD13Q1",
-                        lat = lat_,
-                        lon = lon_,
-                        band = "250m_16_days_NDVI",
-                        start = date_start,
-                        end = date_end,
-                        km_lr = 1,
-                        km_ab = 1,
-                        site_name = site_,
-                        internal = TRUE)
+    subset <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
+                        start = date_start,end = date_end,km_lr = 1,km_ab = 1,site_name = site_,internal = TRUE)
     print (str(subset))
-    
     df = subset$data
     df$data = df$data*.0001
+    df$calendar_date = as.Date(df$calendar_date)
     p = ggplot(data = df, aes(x= calendar_date, y= data)) +
       geom_point() +
-      theme(axis.text.x = element_text(angle = 90, hjust =1))
+      scale_x_date(date_breaks = "3 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
+      theme(axis.text.x = element_text(angle = 45, hjust =1))
     #plot p here, where that goes in the UI we don't know yet
-    
     modis$data = df
-    
-    output$currentPlot <- renderPlot({
-      p
-    })
-    
+    shinyjs::show(id = 'plotpanel')
+    output$currentPlot <- renderPlot({ p })
   })
   
   
+  # Button switches to Analyzer Mode
+  observeEvent(input$analyzerMode,{
+    print ('Switching to Analyze Mode')
+    zoom_to_site(input$site, TRUE)
+    output$analyzerTitle = renderText({input$site})
+    shinyjs::hide(id = 'controls')
+    shinyjs::show(id = 'analyzerControls')
+  })
+  
+  
+  #Button switches to Site explorer mode
+  observeEvent(input$siteExplorerMode,{
+    print ('Switching to Explorer Mode')
+    shinyjs::hide(id = 'analyzerControls')
+    shinyjs::show(id = 'controls')
+  })
   
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
@@ -551,7 +609,7 @@ server = function(input, output, session) {
   
   
   # Zoom to site
-  zoom_to_site = function(site_, site_names_, zoom){
+  zoom_to_site = function(site_, zoom){
     site_data = get_site_info(site_)
     description = site_data$site_description
     camera_orientation = site_data$camera_orientation
@@ -694,6 +752,18 @@ server = function(input, output, session) {
       replaceData(proxy, x, resetPaging = FALSE)  # important
     })
   }
+  # is not null function
+  is.not.null <- function(x) ! is.null(x)
   
-  
+  # custom markers created for Active/nonActive
+  getColor <- function(cams) {
+    sapply(cams$active, function(active) {
+      if(active == 'True') {
+        "blue"
+      } else if(active == 'False') {
+        "red"
+      } else {
+        "orange"
+      } })
+  }
 }

@@ -9,7 +9,6 @@ library(readr)
 library(RColorBrewer)
 library(scales)
 library(lattice)
-# library(geojsonio)
 library(shinyjs)
 library(leaflet.extras)
 library(sp)
@@ -59,31 +58,3 @@ site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 #   active = bool (Active or Not)
 #   date_end = last date images collected on
 #   date_start = first date images collected on
-
-# is not null function
-is.not.null <- function(x) ! is.null(x)
-
-# custom markers created for Active/nonActive
-getColor <- function(cams) {
-  sapply(cams$active, function(active) {
-    if(active == 'True') {
-      "blue"
-    } else if(active == 'False') {
-      "red"
-    } else {
-      "orange"
-    } })
-}
-
-##### Gives us the option to add our own images from our computer or a website.
-#####   Leaving here for now.
-# # Choose Icon:
-# leafIcons <- icons(
-#   iconUrl = ifelse(cams_$active == 'True',
-#                    "/users/kenns/downloads/grass.png",
-#                    "http://leafletjs.com/docs/images/leaf-red.png"
-#   ),
-#   iconWidth = 38, iconHeight = 95,
-#   iconAnchorX = 22, iconAnchorY = 94)
-# html_legend <- "<img src='http://leafletjs.com/docs/images/leaf-green.png'>green<br/>
-# <img src='http://leafletjs.com/docs/images/leaf-red.png'>red"
