@@ -30,8 +30,10 @@ server = function(input, output, session) {
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
   #initiating with observer
   observe({
+    switch_to_explorer_panel()
     shinyjs::hide(id = 'plotpanel')
   })
+
   
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OUTPUTS
@@ -411,37 +413,37 @@ server = function(input, output, session) {
     }
   })
   
-  # Analyzer Mode Images
-  # CheckBox to Show image for site from dropdown
-  observe({
-    print ('Doing something to Image')
-    draw_bool = input$drawImage2
-    site = isolate(input$site)
-    roi_bool = input$drawImageROI2
-    input$analyzerMode
-    
-    removeUI(selector = '#phenocamSiteImage')
-    img_url = get_img_url(site)
-    
-    if (draw_bool == TRUE){
-      shinyjs::show(id = 'currentImage')
-      insertUI(selector = '#image',
-               ui = tags$div(id='phenocamSiteImage',
-                             tags$img(src=img_url, class= 'img',
-                                      style="position: absolute; z-index: 1; top:0px; left:0px;")))}
-    if (roi_bool == TRUE){
-      roi_url = get_roi_url(site)
-      print (roi_url)
-      if (roi_url != 'Not Found'){
-        insertUI(selector = '#phenocamSiteImage',
-                 ui =  tags$img(src=roi_url,
-                                class= 'roi', style='position: absolute; z-index: 2; top:0px; left:0px;'))}
-      
-    }else if (draw_bool == FALSE){
-      removeUI(selector = '#phenocamSiteImage')
-      shinyjs::hide(id = 'currentImage')
-    }
-  })
+  # # Analyzer Mode Images
+  # # CheckBox to Show image for site from dropdown
+  # observe({
+  #   print ('Doing something to Image')
+  #   draw_bool = input$drawImage2
+  #   site = isolate(input$site)
+  #   roi_bool = input$drawImageROI2
+  #   input$analyzerMode
+  #   
+  #   removeUI(selector = '#phenocamSiteImage')
+  #   img_url = get_img_url(site)
+  #   
+  #   if (draw_bool == TRUE){
+  #     shinyjs::show(id = 'currentImage')
+  #     insertUI(selector = '#image',
+  #              ui = tags$div(id='phenocamSiteImage',
+  #                            tags$img(src=img_url, class= 'img',
+  #                                     style="position: absolute; z-index: 1; top:0px; left:0px;")))}
+  #   if (roi_bool == TRUE){
+  #     roi_url = get_roi_url(site)
+  #     print (roi_url)
+  #     if (roi_url != 'Not Found'){
+  #       insertUI(selector = '#phenocamSiteImage',
+  #                ui =  tags$img(src=roi_url,
+  #                               class= 'roi', style='position: absolute; z-index: 2; top:0px; left:0px;'))}
+  #     
+  #   }else if (draw_bool == FALSE){
+  #     removeUI(selector = '#phenocamSiteImage')
+  #     shinyjs::hide(id = 'currentImage')
+  #   }
+  # })
   
   
   
@@ -478,16 +480,18 @@ server = function(input, output, session) {
     print ('Switching to Analyze Mode')
     zoom_to_site(input$site, TRUE)
     output$analyzerTitle = renderText({input$site})
-    shinyjs::hide(id = 'controls')
-    shinyjs::show(id = 'analyzerControls')
+    switch_to_analyzer_panel()
+    # shinyjs::hide(id = 'controls')
+    # shinyjs::show(id = 'analyzerControls')
   })
   
   
   #Button switches to Site explorer mode
   observeEvent(input$siteExplorerMode,{
     print ('Switching to Explorer Mode')
-    shinyjs::hide(id = 'analyzerControls')
-    shinyjs::show(id = 'controls')
+    switch_to_explorer_panel()
+    # shinyjs::hide(id = 'analyzerControls')
+    # shinyjs::show(id = 'controls')
   })
   
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -765,5 +769,45 @@ server = function(input, output, session) {
       } else {
         "orange"
       } })
+  }
+  
+  
+  switch_to_explorer_panel = function(){
+    # Ids to show:
+    shinyjs::show(id = 'explorerPanel')
+    shinyjs::show(id = 'usZoom')
+    shinyjs::show(id = 'showSites')
+    shinyjs::show(id = 'filterSites')
+    shinyjs::show(id = 'site')
+    shinyjs::show(id = 'siteZoom')
+    shinyjs::show(id = 'drawImage')
+    shinyjs::show(id = 'drawImageROI')
+    shinyjs::show(id = 'analyzerMode')
+    shinyjs::show(id = 'mouse')
+    # Ids to hide:
+    shinyjs::hide(id = 'analyzerTitle')
+    shinyjs::hide(id = 'siteExplorerMode')
+    shinyjs::hide(id = 'showModisSubset')
+    shinyjs::hide(id = 'drawROI')
+    shinyjs::hide(id = 'azm')
+  }
+  switch_to_analyzer_panel = function(){
+    # Ids to show:
+    shinyjs::show(id = 'analyzerTitle')
+    shinyjs::show(id = 'siteExplorerMode')
+    shinyjs::show(id = 'showModisSubset')
+    shinyjs::show(id = 'drawROI')
+    shinyjs::show(id = 'azm')
+    shinyjs::show(id = 'drawImage')
+    shinyjs::show(id = 'drawImageROI')
+    shinyjs::show(id = 'mouse')
+    # Ids to hide:
+    shinyjs::hide(id = 'explorerPanel')
+    shinyjs::hide(id = 'usZoom')
+    shinyjs::hide(id = 'showSites')
+    shinyjs::hide(id = 'analyzerMode')
+    shinyjs::hide(id = 'filterSites')
+    shinyjs::hide(id = 'site')
+    shinyjs::hide(id = 'siteZoom')
   }
 }
