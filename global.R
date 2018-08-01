@@ -42,7 +42,7 @@ orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW'
 image_sizes_h = list('Small' = 150, 'Medium' = 300, 'Large' = 600)
 image_sizes_w = list('Small' = 250, 'Medium' = 500, 'Large' = 1000)
 
-pft_key=list(0='Water', 1='EN', 2='EB', 3='DN', 4='DB', 5='MF', 6='SH', 7='SH', 8='SV', 9='SV', 10='GR', 11='WL', 12='AG', 13='UB', 14='MX', 15='TN', 16='UN', 254='NAN', 255='NAN')
+#pft_key=list(0='Water', 1='EN', 2='EB', 3='DN', 4='DB', 5='MF', 6='SH', 7='SH', 8='SV', 9='SV', 10='GR', 11='WL', 12='AG', 13='UB', 14='MX', 15='TN', 16='UN', 254='NAN', 255='NAN')
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
