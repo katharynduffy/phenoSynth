@@ -1,21 +1,23 @@
-input[type="number"] {
+/*input[type="number"] {
   max-width: 80%;
-}
+}*/
 
-.leaflet-popup-content {
+/*.leaflet-popup-content {
   width:280px;
-}
+}*/
 
 #currentImage {
   width:375px;
   height:225px;
   background-color: rgba(0, 0, 0, 0.0);
   border-color:rgba(0, 0, 0, 0.0);
+  border-color: rgba(0, 0, 0, 0.0);
 }
 
 #plotpanel {
   background-color: rgba(0, 0, 0, 0.0);
   border-color:rgba(0, 0, 0, 0.0);
+  border-color: rgba(0, 0, 0, 0.0);
 }
 
 .navbar {
@@ -23,15 +25,10 @@ input[type="number"] {
 }
 
 .img {
-  right:20px;
-  bottom:20px;
   width:375px;
   height:225px;
-  opacity:1;
 }
 .roi {
-  right:20px;
-  bottom:20px;
   width:375px;
   height:225px;
 }
@@ -51,21 +48,41 @@ body, label, input, button, select {
   font-family: 'Helvetica Neue', Helvetica;
   font-weight: 200;
 }
-h1, h2, h3, h4 { font-weight: 400; }
+h1, h2, h3, h4 { font-weight: 400;}
 
-#controls, #analyzerControls {
+
+#siteTitle {
   /* Appearance */
-  background-color: white;
+  padding: 0px 10px 0px 10px;
+  z-index: 5;
+  border-width: 3px;
+  border-color: rgba(155, 155, 155, 1);
+}
+
+#mouseBox, #mouse {
+  background-color: rgba(0, 0, 0, 0.0);
+  border-color: rgba(0, 0, 0, 0.0);
+  box-shadow: none;
+  z-index: 4;
+}
+
+#controls {
+  /* Appearance */
+  background-color: 'white';
   padding: 0 20px 20px 20px;
   cursor: move;
   /* Fade out while not hovering */
-  opacity: 0.95;
+  opacity: 0.90;
   zoom: 0.9;
   transition: opacity 500ms 1s;
+  z-index: 5;
+  border-width: 3px;
+  border-color: rgba(155, 155, 155, 1);
 }
-#controls:hover, #analyzerControls:hover {
+
+#controls:hover {
   /* Fade in while hovering */
-  opacity: 0.95;
+  opacity: 0.90;
   transition-delay: 0;
 }
 

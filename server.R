@@ -17,14 +17,9 @@ server = function(input, output, session) {
   
   data = reactiveValues(
     run = 0,
-    lons = c(),
-    lats = c(),
     names = c(),
-    df = data.frame(),
-    headers = c('Name', 'Site', 'Run', 'Notes'))
+    df = data.frame())
   
-  # Temporary holding space for lat/longs
-  latlongs = reactiveValues(df2 = data.frame(Longitude = numeric(0), Latitude = numeric(0)))
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()), 
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
@@ -78,7 +73,7 @@ server = function(input, output, session) {
       ) %>%
       # Adds the layers options to top left of Map
       addLayersControl(
-        baseGroups = c("World Imagery","MODIS Land Cover","Open Topo Map"),
+        baseGroups = c("Open Topo Map","MODIS Land Cover","World Imagery"),
         position = c("topleft"),
         options = layersControlOptions(collapsed = TRUE)
       )%>%
@@ -120,100 +115,99 @@ server = function(input, output, session) {
              "\nLng: ", input$hover_coordinates[2])
     }
   })
-  output$mouse2 <- renderText({
-    if(is.null(input$hover_coordinates)) {
-      "Mouse outside of map"
-    } else {
-      paste0("Lat: ", input$hover_coordinates[1], 
-             "\nLng: ", input$hover_coordinates[2])
-    }
-  })
-  
 
   
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
   
-  
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
-      polygon_coordinates = input$map_draw_new_feature$geometry$coordinates[[1]]
-      drawn_polygon = Polygon(do.call(rbind,lapply(polygon_coordinates,function(x){c(x[[1]][1],x[[2]][1])})))
-      # coords = drawn_polygon@coords
-      # print ('observerEvent map_draw_new_feature')
-      # print (coords)
+    
+      # Leaflet ID to add to the shapefile dataframe
+      id = input$map_draw_new_feature$properties$`_leaflet_id`
       
-      data$run = data$run + 1                                        # PolygonCounter for unique name creation
-      name_ = paste(c(isolate(input$site),data$run), collapse='_')   # Creationg Unique Identifier data for polygon using run+site
+      # Site name combined with run # for new polygon feature
+      data$run = data$run + 1                                        
+      name_ = paste(c(isolate(input$site),data$run), collapse='_')   
+      data$names = c(data$names, name_)
       
+      # Grabbing lat/lon values for new leaflet polygon
       coor = unlist(input$map_draw_new_feature$geometry$coordinates)
-      
       Longitude = coor[seq(1, length(coor), 2)] 
       Latitude = coor[seq(2, length(coor), 2)]
       
-      isolate(latlongs$df2<-rbind(latlongs$df2, cbind(Longitude, Latitude)))
+      # Building Dataframe with points from newly created leaflet feature
+      c = 0
+      for (x in Longitude){
+        c = c + 1
+        data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
       
-      poly = Polygon(cbind(latlongs$df2$Longitude, latlongs$df2$Latitude))
+      # Creating a SpatialPolygon that can be added to our spatial polygons dataframe (value$drawnPoly)
+      poly = Polygon(cbind(Longitude, Latitude))
       polys = Polygons(list(poly), ID = name_)
       spPolys = SpatialPolygons(list(polys))
       
+      # Adding new polygon to a spatial polygons dataframe
       value$drawnPoly = rbind(value$drawnPoly,
                              SpatialPolygonsDataFrame(spPolys, data = data.frame(notes = NA,
                                                                row.names = row.names(spPolys))))
-      c = 0
-      sites = c()
-      reset_polygon_values()
-      for (x in value$drawnPoly@polygons){
-        c = c + 1
-        lon = value$drawnPoly@polygons[[c]]@Polygons[[1]]@coords[,1]
-        lat = value$drawnPoly@polygons[[c]]@Polygons[[1]]@coords[,2]
-        site = tail(value$drawnPoly@polygons[[c]]@ID, n=1)
-        data$lats = c(data$lats, lat)
-        data$lons = c(data$lons, lon)
-
-        for (x in lon){
-          sites = c(sites, site)
-        }
-      }
-      data$names = c(data$names, sites)
-      updateSelectInput(session, 'shapefiles', choices = unique(data$names))
-      add_polygon_table()
-
-      observeEvent(input$map_draw_stop, {
-        print ('stop_draw')
-        ###  USE THIS CODE BELOW TO ADD OPTION TO SHOW WHAT EACH SHAPEFILE IS NAMED.
-        ###     SHOW/HIDE the SHAPEFILE (BECAUSE THIS CREATES A DUPLICATE)
-        
-        # leafletProxy('map') %>%  
-        #   removeDrawToolbar(clearFeatures=TRUE) %>%
-        #   removeShape('temp') %>%
-        #   clearGroup('drawnPoly') %>%
-        #   addPolygons(data=value$drawnPoly, popup=row.names(value$drawnPoly),   group='drawnPoly', color="red", layerId= row.names(value$drawnPoly)) %>%
-        #   addDrawToolbar(targetGroup = "drawnPoly",
-        #                  rectangleOptions = F,
-        #                  polylineOptions = F,
-        #                  markerOptions = F,
-        #                  editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
-        #                  circleOptions=F,
-        #                  polygonOptions=drawPolygonOptions(showArea=TRUE, repeatMode=F  , shapeOptions=drawShapeOptions( fillColor="red",clickable = TRUE)))
-        
-      })
-      latlongs$df2 <- data.frame(Longitude = numeric(0), Latitude = numeric(0))   #clear df
+      
+      # Updating the select input for the download availability of created leaflet features
+      updateSelectInput(session, 'shapefiles', choices = unique(data$df$Name))
+      
+      # Building the polygon table from the data$df dataframe containing all of the leaflet polygon data
+      build_polygon_table()
+      
+      print (data$df)
   })
   
   
   # When edited feature gets saved
   observeEvent(input$map_draw_edited_features, {
-    print ('map_draw_edited_features')
+    
+    # Leaflet ID to edit
+    id = input$map_draw_edited_features$features[[1]]$properties$`_leaflet_id`
+    
+    # Grabbing lat/lon values for new leaflet polygon
+    coor = unlist(input$map_draw_edited_features$features[[1]]$geometry$coordinates[[1]])
+    Longitude = coor[seq(1, length(coor), 2)] 
+    Latitude = coor[seq(2, length(coor), 2)]
+    name_ = unique(subset(data$df, LeafletId == id)$Name)
+    
+    # Deletes all rows with id being edited
+    data$df = subset(data$df, LeafletId != id)
+
+    # Adds back the edited polygon to the dataframe (data$df)
+    c = 0
+    for (x in Longitude){
+      c = c + 1
+      data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
+    
+    # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
+    build_polygon_table()
+    
+    print (data$df)
   })
   
   
-  # When deleted feature gets deleted
+  # When feature is deleted
   observeEvent(input$map_draw_deleted_features, {
-    print ('map_draw_deleted_features')
-
     
+    # Leaflet ID to delete
+    id = input$map_draw_deleted_features$features[[1]]$properties$`_leaflet_id`
+    
+    # Deletes all rows with id being edited
+    data$df = subset(data$df, LeafletId != id)
+    
+    # Updating the select input for the download availability of created leaflet features
+    updateSelectInput(session, 'shapefiles', choices = unique(data$df$Name))
+    
+    # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
+    build_polygon_table()
+    
+    
+    print (data$df)
   })
   
   # Save shapefile button
@@ -228,7 +222,6 @@ server = function(input, output, session) {
     print (filename)
 
     shapefile(LLcoor, filename, overwrite=TRUE)
-
   })
   
 
@@ -413,41 +406,6 @@ server = function(input, output, session) {
     }
   })
   
-  # # Analyzer Mode Images
-  # # CheckBox to Show image for site from dropdown
-  # observe({
-  #   print ('Doing something to Image')
-  #   draw_bool = input$drawImage2
-  #   site = isolate(input$site)
-  #   roi_bool = input$drawImageROI2
-  #   input$analyzerMode
-  #   
-  #   removeUI(selector = '#phenocamSiteImage')
-  #   img_url = get_img_url(site)
-  #   
-  #   if (draw_bool == TRUE){
-  #     shinyjs::show(id = 'currentImage')
-  #     insertUI(selector = '#image',
-  #              ui = tags$div(id='phenocamSiteImage',
-  #                            tags$img(src=img_url, class= 'img',
-  #                                     style="position: absolute; z-index: 1; top:0px; left:0px;")))}
-  #   if (roi_bool == TRUE){
-  #     roi_url = get_roi_url(site)
-  #     print (roi_url)
-  #     if (roi_url != 'Not Found'){
-  #       insertUI(selector = '#phenocamSiteImage',
-  #                ui =  tags$img(src=roi_url,
-  #                               class= 'roi', style='position: absolute; z-index: 2; top:0px; left:0px;'))}
-  #     
-  #   }else if (draw_bool == FALSE){
-  #     removeUI(selector = '#phenocamSiteImage')
-  #     shinyjs::hide(id = 'currentImage')
-  #   }
-  # })
-  
-  
-  
-  
   observeEvent(input$showModisSubset,{
     # Run modis tool here on site currently selected
     site = input$site
@@ -481,8 +439,6 @@ server = function(input, output, session) {
     zoom_to_site(input$site, TRUE)
     output$analyzerTitle = renderText({input$site})
     switch_to_analyzer_panel()
-    # shinyjs::hide(id = 'controls')
-    # shinyjs::show(id = 'analyzerControls')
   })
   
   
@@ -490,8 +446,6 @@ server = function(input, output, session) {
   observeEvent(input$siteExplorerMode,{
     print ('Switching to Explorer Mode')
     switch_to_explorer_panel()
-    # shinyjs::hide(id = 'analyzerControls')
-    # shinyjs::show(id = 'controls')
   })
   
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -631,7 +585,7 @@ server = function(input, output, session) {
       leafletProxy('map', data = variables$sites_df) %>%
         clearPopups() %>%
         clearMarkers() %>%
-        clearShapes() %>%
+        # clearShapes() %>%
         # Can add differen't markers when we zoom in at some point, but for now we will use these circle markers from above
         addCircleMarkers(lng=lon,lat=lat,label=camera, layerId=camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
                          style = get_marker_style()), opacity = .80, fillColor = getColor(cams=site_data), color = getColor(cams=site_data),
@@ -721,31 +675,13 @@ server = function(input, output, session) {
     })
   }
   
-  
-  reset_polygon_values = function(){
-    data$lats = c()
-    data$lons = c()
-    data$names = c()
-  }
-  
-  
-  add_polygon_table = function(){
-    # Building dataframe from above reactive variables
-    print ('trying to build df')
-    data$df = data.frame(Name = data$names,Longitude = data$lons, Latitude = data$lats)
-    # Slicing df to just display specific Columns
-    print ('trying to aggregate df')
+  build_polygon_table = function(){
+    # Creating Dataframe with 1 record per shapefile 
     df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
-    ## Create the pAOI datatable
-    ##   --This can potentially be editable
-    print ('about to set up the chart with df')
     x = df
     # x$Date = Sys.time() + seq_len(nrow(x))
     output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
-    
-    # Name of output table
     proxy = dataTableProxy('pAOIchart')
-    
     observeEvent(input$pAOIchart_cell_edit, {
       info = input$pAOIchart_cell_edit
       str(info)
@@ -758,6 +694,9 @@ server = function(input, output, session) {
   }
   # is not null function
   is.not.null <- function(x) ! is.null(x)
+  
+  # not in 
+  '%!in%' <- function(x,y)!('%in%'(x,y))
   
   # custom markers created for Active/nonActive
   getColor <- function(cams) {
@@ -774,7 +713,7 @@ server = function(input, output, session) {
   
   switch_to_explorer_panel = function(){
     # Ids to show:
-    shinyjs::show(id = 'explorerPanel')
+    shinyjs::show(id = 'explorerTitle')
     shinyjs::show(id = 'usZoom')
     shinyjs::show(id = 'showSites')
     shinyjs::show(id = 'filterSites')
@@ -790,6 +729,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'showModisSubset')
     shinyjs::hide(id = 'drawROI')
     shinyjs::hide(id = 'azm')
+    shinyjs::hide(id = 'siteTitle')
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:
@@ -801,8 +741,9 @@ server = function(input, output, session) {
     shinyjs::show(id = 'drawImage')
     shinyjs::show(id = 'drawImageROI')
     shinyjs::show(id = 'mouse')
+    shinyjs::show(id = 'siteTitle')
     # Ids to hide:
-    shinyjs::hide(id = 'explorerPanel')
+    shinyjs::hide(id = 'explorerTitle')
     shinyjs::hide(id = 'usZoom')
     shinyjs::hide(id = 'showSites')
     shinyjs::hide(id = 'analyzerMode')

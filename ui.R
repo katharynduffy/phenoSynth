@@ -17,40 +17,25 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
 
                         textOutput("See Field of View (FOV)"),
 
-                        
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                                      draggable = TRUE, top = 50, left = "auto", right = 20, bottom = "auto",
+                                      draggable = TRUE, top = 70, left = "auto", right = 20, bottom = "auto",
                                       width = 280, height = "auto",
-                                      h2(id = 'explorerPanel', "Site explorer"),
-                                      h2(uiOutput("analyzerTitle")),
+                                      h2(id = 'explorerTitle', "Site explorer"),
+                                      h2(id = 'analyzerTitle', "Site Analyzer"),
                                       actionButton('siteExplorerMode', 'Back to Site Explorer'),
                                       actionButton("usZoom", "Show Contiguous US"),
                                       actionButton('showSites', 'Show all Sites'),
-                                      actionButton('analyzerMode', 'Enter Analyze Mode'),
+                                      actionButton("siteZoom", "Zoom to Selected Site"),
                                       selectInput("filterSites", 'Filter Sites by', site_filters, selected = 'All', multiple = FALSE),
                                       selectInput("site", "Phenocam Site Name", site_names, selected = 'acadia'),
-                                      actionButton("siteZoom", "Zoom to Selected Site"),
-                                      actionButton('showModisSubset', 'Show MODIS subset'),
+                                      actionButton('analyzerMode', 'Enter Analyze Mode'),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       checkboxInput('drawImage', "Show site phenocamImage", value = TRUE),
                                       checkboxInput("drawImageROI", "Show roi on phenocamImage", value = FALSE),
                                       sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5),
-                                      verbatimTextOutput("mouse")
+                                      actionButton('showModisSubset', 'Show MODIS subset')
                         ),
-                        
-                        # absolutePanel(id = "analyzerControls", class = "panel panel-default", fixed = TRUE,
-                        #               draggable = TRUE, top = 50, left = "auto", right = 20, bottom = "auto",
-                        #               width = 280, height = "auto", hidden = TRUE,
-                        #               h2(id = 'analyzerPanel',uiOutput("analyzerTitle")),
-                        #               actionButton('siteExplorerMode', 'Back to Site Explorer'),
-                        #               actionButton('showModisSubset', 'Show MODIS subset'),
-                        #               checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
-                        #               checkboxInput('drawImage2', "Show site phenocamImage", value = TRUE),
-                        #               checkboxInput("drawImageROI2", "Show roi on phenocamImage", value = FALSE),
-                        #               sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5),
-                        #               verbatimTextOutput("mouse2")
-                        # ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 20, 
@@ -62,6 +47,17 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270, 
                                       width = 375, height = 225,
                                       plotOutput("currentPlot", height = 225)
+                        ),
+                        
+                        absolutePanel(id = 'mouseBox', class = 'panel panel-default', fixed = TRUE,
+                                      draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 20, 
+                                      width = 240, height = 40,
+                                      verbatimTextOutput("mouse")
+                        ),
+                        
+                        absolutePanel(id = 'siteTitle', class = 'panel panel-default', fixed = FALSE,
+                                      draggable = FALSE,  top = 25, left = 'auto', right = 320 , bottom = 'auto',
+                                      div(id = 'analyzerHeader',uiOutput("analyzerTitle"), style = 'font-size: 40px; font-weight: 400;')
                         ),
 
                         tags$div(id="cite",
