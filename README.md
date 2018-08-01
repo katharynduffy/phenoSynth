@@ -1,2 +1,2 @@
 # phenoRemote
-integrate Phenocam &amp; remotely sensed data products
+integrate Phenocam & remotely sensed data products
