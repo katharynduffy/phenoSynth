@@ -53,7 +53,7 @@ server = function(input, output, session) {
   ## Create the map
   output$map = renderLeaflet({
     leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE)) %>%
-      addTiles() %>%
+      # addTiles() %>%
       addTiles(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.jpg",
         attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
@@ -73,7 +73,7 @@ server = function(input, output, session) {
       ) %>%
       # Adds the layers options to top left of Map
       addLayersControl(
-        baseGroups = c("Open Topo Map","MODIS Land Cover","World Imagery"),
+        baseGroups = c("World Imagery", "Open Topo Map","MODIS Land Cover"),
         position = c("topleft"),
         options = layersControlOptions(collapsed = TRUE)
       )%>%
@@ -330,8 +330,11 @@ server = function(input, output, session) {
       cam_orientation = as.character(site_data$camera_orientation)
       degrees = as.numeric(orientation_key[cam_orientation])
       run_add_polyline(site_data, degrees)
+      shinyjs::show(id = 'azm')
+      updateSliderInput(session, 'azm', value = degrees )
     }
     else if (roi_bool == FALSE){
+      shinyjs::hide(id = 'azm')
       remove_polyline()}
   })
   
@@ -448,10 +451,34 @@ server = function(input, output, session) {
     switch_to_explorer_panel()
   })
   
+  # Button that plots GCC
+  observeEvent(input$plotPhenocamGCC, {
+    print ('Plotting GCC')
+    get_site_roi_3day_csvs(input$site)
+  })
+  
+  
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
   #--------------------------------------------------------------------------------------------------------------------------------------
   
+  
+  # Grabs the list of 3_day csv data from phenocam website
+  get_site_roi_3day_csvs = function(name){
+    url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', sep = '')
+    page = read_html(url)
+    
+    site_hrefs = page %>% html_nodes("a") %>% html_attr("href")
+    # csvs_ = site_hrefs[grep('3day.csv|1day.csv', site_hrefs)]  #How to grab both 1 and 3 day csvs
+    csvs_ = site_hrefs[grep('3day.csv|gcc90', site_hrefs)]
+    csvs_ = csvs_[grep('XX|.png', csvs_, invert=TRUE)]  #invert will take all strings without this 
+    csv = csvs_[grep('gcc90_3day', csvs_)]
+    csv = csv[1]
+    
+    csv_url = paste('https://phenocam.sr.unh.edu/data/archive/', site, '/ROI/', csv, sep = '')
+    print (csv_url)
+  }
+
   
   # Returns Downloads folder for windows/macos
   get_download_folder = function(){
@@ -469,26 +496,26 @@ server = function(input, output, session) {
   # Grabs url for the primary ROI
   get_roi_url = function(name){
     roi_url = tryCatch({
-    baseurl = 'https://phenocam.sr.unh.edu'
-    siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
-    page = read_html(siteurl)
-    html = page %>% html_nodes("a") %>% html_attr('href')
-    html = grep('data/archive', html, value=TRUE)[[1]]
-    html = paste(baseurl, html, sep='')
-    
-    page2 = read_html(html)
-    html2 = page2 %>% html_nodes("a") %>% html_attr('href')
-    html2 = grep('data/archive', html2, value=TRUE)
-    html2 = grep('.tif', html2, value=TRUE)
-    
-    roi = strsplit(html2, '/')[[1]]
-    roi = grep('.tif', roi, value=TRUE)
-    roi = strsplit(roi, name)[[1]]
-    roi = grep('.tif', roi, value=TRUE)
-    roi = strsplit(roi, '.tif')[[1]]
-    roi_url = paste('https://phenocam.sr.unh.edu/data/archive/', 
-                    name, '/ROI/', name, roi, '_overlay.png', sep = '') 
-    return (roi_url)
+      baseurl = 'https://phenocam.sr.unh.edu'
+      siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
+      page = read_html(siteurl)
+      html = page %>% html_nodes("a") %>% html_attr('href')
+      html = grep('data/archive', html, value=TRUE)[[1]]
+      html = paste(baseurl, html, sep='')
+      
+      page2 = read_html(html)
+      html2 = page2 %>% html_nodes("a") %>% html_attr('href')
+      html2 = grep('data/archive', html2, value=TRUE)
+      html2 = grep('.tif', html2, value=TRUE)
+      
+      roi = strsplit(html2, '/')[[1]]
+      roi = grep('.tif', roi, value=TRUE)
+      roi = strsplit(roi, name)[[1]]
+      roi = grep('.tif', roi, value=TRUE)
+      roi = strsplit(roi, '.tif')[[1]]
+      roi_url = paste('https://phenocam.sr.unh.edu/data/archive/', 
+                      name, '/ROI/', name, roi, '_overlay.png', sep = '') 
+      return (roi_url)
     },error=function(cond) {message(paste('failed to get roi for sitename:'),isolate(input$site))
                             return('Not Found')})
     return (roi_url)
@@ -710,7 +737,6 @@ server = function(input, output, session) {
       } })
   }
   
-  
   switch_to_explorer_panel = function(){
     # Ids to show:
     shinyjs::show(id = 'explorerTitle')
@@ -730,6 +756,8 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'drawROI')
     shinyjs::hide(id = 'azm')
     shinyjs::hide(id = 'siteTitle')
+    shinyjs::hide(id = 'plotPhenocamGCC')
+    shinyjs::hide(id = 'pftSelection')
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:
@@ -737,11 +765,12 @@ server = function(input, output, session) {
     shinyjs::show(id = 'siteExplorerMode')
     shinyjs::show(id = 'showModisSubset')
     shinyjs::show(id = 'drawROI')
-    shinyjs::show(id = 'azm')
     shinyjs::show(id = 'drawImage')
     shinyjs::show(id = 'drawImageROI')
     shinyjs::show(id = 'mouse')
     shinyjs::show(id = 'siteTitle')
+    shinyjs::show(id = 'plotPhenocamGCC')
+    shinyjs::show(id = 'pftSelection')
     # Ids to hide:
     shinyjs::hide(id = 'explorerTitle')
     shinyjs::hide(id = 'usZoom')

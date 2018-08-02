@@ -19,7 +19,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
 
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                                      draggable = TRUE, top = 70, left = "auto", right = 20, bottom = "auto",
+                                      draggable = FALSE, top = 70, left = "auto", right = 20, bottom = "auto",
                                       width = 280, height = "auto",
                                       h2(id = 'explorerTitle', "Site explorer"),
                                       h2(id = 'analyzerTitle', "Site Analyzer"),
@@ -31,10 +31,12 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
                                       selectInput("site", "Phenocam Site Name", site_names, selected = 'acadia'),
                                       actionButton('analyzerMode', 'Enter Analyze Mode'),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
+                                      sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0 , step = 5),
                                       checkboxInput('drawImage', "Show site phenocamImage", value = TRUE),
                                       checkboxInput("drawImageROI", "Show roi on phenocamImage", value = FALSE),
-                                      sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0, step = 5),
-                                      actionButton('showModisSubset', 'Show MODIS subset')
+                                      selectInput('pftSelection', 'Roi pft selection', c('DB', 'EN', 'MX')),
+                                      actionButton('showModisSubset', 'Plot MODIS subset'),
+                                      actionButton('plotPhenocamGCC', 'Plot GCC')
                         ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
