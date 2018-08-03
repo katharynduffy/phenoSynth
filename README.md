@@ -5,7 +5,7 @@ With over a decade of National Phenology Network and PhenoCam near-surface image
 
 PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.
 
-### Easiest way is to use runGitHub
+### Easiest way to directly interact with R code is via runGitHub
 The following command will check for all the required R packages, install them if needed and run the drawROI app directly from GitHub. However, latest version of R should be already installed. The app requires pre-installed GDAL and basic image rendering libraries (png, jpeg, tif, etc.) on the operating system.
 
 ```{r, echo=TRUE}
