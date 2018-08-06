@@ -6,11 +6,10 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
     
                                    div(class="outer",
                                        
-                                       tags$head(
-                                         # Include our custom CSS
-                                         includeCSS("styles.css"),
-                                         includeScript("gomap.js")
-                                       ),
+                                       tags$head(# Include custom CSS
+                                                 includeCSS("styles.css"),
+                                                 includeScript("gomap.js")
+                                                 ),
 
                         # If not using custom CSS, set height of leafletOutput to a number instead of percent
                         leafletOutput("map", width="100%", height="100%"),
@@ -37,7 +36,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
                                       selectInput('pftSelection', 'Roi pft selection', c('DB', 'EN', 'MX')),
                                       actionButton('showModisSubset', 'Plot MODIS subset'),
                                       actionButton('plotPhenocamGCC', 'Plot GCC')
-                        ),
+                                      ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 20, 
@@ -49,24 +48,28 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270, 
                                       width = 375, height = 225,
                                       plotOutput("currentPlot", height = 225)
-                        ),
+                                      ),
                         
                         absolutePanel(id = 'mouseBox', class = 'panel panel-default', fixed = TRUE,
                                       draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 20, 
                                       width = 240, height = 40,
                                       verbatimTextOutput("mouse")
-                        ),
+                                      ),
+                        absolutePanel(id = 'showHidePlot', class = 'panel panel-default', fixed = TRUE,
+                                      draggable = FALSE, top = 150, left = 'auto', right = 320, bottom = 'auto',
+                                      actionButton('hidePlot', 'Hide Plot')
+                                      ),
                         
                         absolutePanel(id = 'siteTitle', class = 'panel panel-default', fixed = FALSE,
                                       draggable = FALSE,  top = 25, left = 'auto', right = 320 , bottom = 'auto',
                                       div(id = 'analyzerHeader',uiOutput("analyzerTitle"), style = 'font-size: 40px; font-weight: 400;')
-                        ),
+                                      ),
 
                         tags$div(id="cite",
                                  ' ', tags$em(''), ' '#eventually we can put some APIS text here so I'm saving it for now
-                        )
-                    )
-           ),
+                                )
+                            ) # close div outer
+                        ), # close tab panel
 
            
            tabPanel('pAOI Management',
@@ -82,12 +85,12 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
                     #   some point......
                     DTOutput("pAOIchart")
 
-           ),
+                   ),
            
            
            tabPanel('Phenocam Table',
                     DTOutput('x1')
-           ),
+                   ),
            
            
            conditionalPanel("false", icon("crosshair"))
