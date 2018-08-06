@@ -25,8 +25,8 @@ server = function(input, output, session) {
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
   #initiating with observer
   observe({
+    
     switch_to_explorer_panel()
-    shinyjs::hide(id = 'plotpanel')
   })
 
   
@@ -288,10 +288,6 @@ server = function(input, output, session) {
     # variables$sites_df = cams_
     print('Running add All sites back to map')
     show_all_sites()
-    # leafletProxy("map", data = variables$sites_df) %>%
-    #   addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
-    #                     style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
-    #                    radius = 10, fillOpacity = .20, weight=3.5)
     count()
   })
   
@@ -432,6 +428,7 @@ server = function(input, output, session) {
     #plot p here, where that goes in the UI we don't know yet
     modis$data = df
     shinyjs::show(id = 'plotpanel')
+    shinyjs::show(id = 'showHidePlot')
     output$currentPlot <- renderPlot({ p })
   })
   
@@ -455,6 +452,13 @@ server = function(input, output, session) {
   observeEvent(input$plotPhenocamGCC, {
     print ('Plotting GCC')
     get_site_roi_3day_csvs(input$site)
+  })
+  
+  # Button that plots GCC
+  observeEvent(input$hidePlot, {
+    print ('Hiding Plot')
+    shinyjs::hide(id = 'plotpanel')
+    shinyjs::hide(id = 'showHidePlot')
   })
   
   
@@ -758,6 +762,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'siteTitle')
     shinyjs::hide(id = 'plotPhenocamGCC')
     shinyjs::hide(id = 'pftSelection')
+    shinyjs::hide(id = 'showHidePlot')
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:
@@ -779,5 +784,6 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'filterSites')
     shinyjs::hide(id = 'site')
     shinyjs::hide(id = 'siteZoom')
+    shinyjs::hide(id = 'showHidePlot')
   }
 }
