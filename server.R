@@ -62,7 +62,7 @@ server = function(input, output, session) {
       addWMSTiles(
         "http://webmap.ornl.gov/ogcbroker/wms?",
         layers = "10004_31",
-        options = WMSTileOptions(format = "image/png", transparent = TRUE, opacity=.4),
+        options = WMSTileOptions(format = "image/png", transparent = TRUE, opacity=.6),
         attribution = "MODIS Land Cover (MCD12Q1) &copy NASA",
         group = "MODIS Land Cover"
       ) %>%
