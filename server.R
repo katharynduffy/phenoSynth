@@ -442,18 +442,20 @@ server = function(input, output, session) {
     zoom_to_site(site, TRUE)
     output$analyzerTitle = renderText({site})
     switch_to_analyzer_panel()
-    veg.idx=is.element(site_data$primary_veg_type[1], pft_df)
-    prim_veg = pft_df$pft_expanded[veg_idx]
-    veg.idx=is.element(site_data$secondary_veg_type[1], pft_df)
-    secon_veg = pft_df$pft_expanded[veg_idx]
+    veg.idx=is.element(pft_df$pft_abbreviated,site_data$primary_veg_type[1] )
+    prim_veg = pft_df$pft_expanded[veg.idx]
+    prim_veg=prim_veg[1]
+    veg.idx=is.element(pft_df$pft_abbreviated, site_data$secondary_veg_type[1])
+    secon_veg = pft_df$pft_expanded[veg.idx]
+    secon_veg=secon_veg[1]
     veg_types = c()
-    if (prim_veg == ''){print ('no primary vegetation type found')
+    if (site_data$primary_veg_type[1] == ''){print ('no primary vegetation type found')
     }else{
         print (prim_veg)
         prim_veg = paste0('Primary: ', prim_veg)
         veg_types = append(veg_types, as.character(prim_veg))
       }
-    if (secon_veg == ''){print ('no seondary vegetation type found')
+    if (site_data$secondary_veg_type[1] == ''){print ('no seondary vegetation type found')
     }else{
         print (secon_veg)
         secon_veg = paste0('Secondary: ', secon_veg)
