@@ -31,15 +31,9 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       actionButton('analyzerMode', 'Enter Analyze Mode'),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0 , step = 5),
-<<<<<<< HEAD
-                                      checkboxInput('drawImage', "Show site PhenoCam Image", value = TRUE),
-                                      checkboxInput("drawImageROI", "Show ROI on PhenoCam Image", value = FALSE),
-                                      selectInput('pftSelection', 'ROI PFT selection', c('DB', 'EN', 'MX')),
-=======
                                       checkboxInput('drawImage', "Show site phenocamImage", value = TRUE),
                                       checkboxInput("drawImageROI", "Show roi on phenocamImage", value = FALSE),
                                       selectInput('pftSelection', 'Roi pft selection', ''),
->>>>>>> 3ee04106723275512340443ff75859de88e7be46
                                       actionButton('showModisSubset', 'Plot MODIS subset'),
                                       actionButton('plotPhenocamGCC', 'Plot GCC')
                                       ),
