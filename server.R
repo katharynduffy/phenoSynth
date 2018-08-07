@@ -73,7 +73,8 @@ server = function(input, output, session) {
       ) %>%
       # Adds the layers options to top left of Map
       addLayersControl(
-        baseGroups = c("World Imagery", "Open Topo Map","MODIS Land Cover"),
+        baseGroups = c("World Imagery", "Open Topo Map"),
+        overlayGroups = c('MODIS Land Cover'),
         position = c("topleft"),
         options = layersControlOptions(collapsed = TRUE)
       )%>%
@@ -435,10 +436,31 @@ server = function(input, output, session) {
   
   # Button switches to Analyzer Mode
   observeEvent(input$analyzerMode,{
+    site = input$site
+    site_data = get_site_info(site)
     print ('Switching to Analyze Mode')
-    zoom_to_site(input$site, TRUE)
-    output$analyzerTitle = renderText({input$site})
+    zoom_to_site(site, TRUE)
+    output$analyzerTitle = renderText({site})
     switch_to_analyzer_panel()
+    prim_veg = site_data$primary_veg_type[1]
+    secon_veg = site_data$secondary_veg_type[1]
+    veg_types = c()
+    if (prim_veg == ''){print ('no primary vegetation type found')
+    }else{
+        print (prim_veg)
+        prim_veg = paste0('Primary: ', prim_veg)
+        veg_types = append(veg_types, as.character(prim_veg))
+      }
+    if (secon_veg == ''){print ('no seondary vegetation type found')
+    }else{
+        print (secon_veg)
+        secon_veg = paste0('Secondary: ', secon_veg)
+        veg_types = append(veg_types, as.character(secon_veg))
+      }
+    
+    # veg_types = c(paste0('Primary Veg: ', as.character(prim_veg)), paste0('Secondary Veg: ', as.character(secon_veg)))
+    updateSelectInput(session, 'pftSelection', choices = veg_types)
+    
   })
   
   
@@ -479,7 +501,7 @@ server = function(input, output, session) {
     csv = csvs_[grep('gcc90_3day', csvs_)]
     csv = csv[1]
     
-    csv_url = paste('https://phenocam.sr.unh.edu/data/archive/', site, '/ROI/', csv, sep = '')
+    csv_url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', csv, sep = '')
     print (csv_url)
   }
 
