@@ -33,7 +33,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
                                       sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0 , step = 5),
                                       checkboxInput('drawImage', "Show site phenocamImage", value = TRUE),
                                       checkboxInput("drawImageROI", "Show roi on phenocamImage", value = FALSE),
-                                      selectInput('pftSelection', 'Roi pft selection', c('DB', 'EN', 'MX')),
+                                      selectInput('pftSelection', 'Roi pft selection', ''),
                                       actionButton('showModisSubset', 'Plot MODIS subset'),
                                       actionButton('plotPhenocamGCC', 'Plot GCC')
                                       ),
