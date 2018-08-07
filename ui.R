@@ -1,6 +1,6 @@
 # UI file for Shiny App phenoRemote
 # Initiate the UI
-ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development phase", id="navbar",
+ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase", id="navbar",
                           
                           tabPanel("Site explorer",
     
@@ -31,9 +31,9 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("APIS Phenocam C.2-development 
                                       actionButton('analyzerMode', 'Enter Analyze Mode'),
                                       checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
                                       sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0 , step = 5),
-                                      checkboxInput('drawImage', "Show site phenocamImage", value = TRUE),
-                                      checkboxInput("drawImageROI", "Show roi on phenocamImage", value = FALSE),
-                                      selectInput('pftSelection', 'Roi pft selection', c('DB', 'EN', 'MX')),
+                                      checkboxInput('drawImage', "Show site PhenoCam Image", value = TRUE),
+                                      checkboxInput("drawImageROI", "Show ROI on PhenoCam Image", value = FALSE),
+                                      selectInput('pftSelection', 'ROI PFT selection', c('DB', 'EN', 'MX')),
                                       actionButton('showModisSubset', 'Plot MODIS subset'),
                                       actionButton('plotPhenocamGCC', 'Plot GCC')
                                       ),
