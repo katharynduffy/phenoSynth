@@ -18,6 +18,8 @@ library(raster)
 library (DT)
 library(htmlwidgets)
 library(ggplot2)
+library(rjson)
+library(RCurl)
 
 if(!require(devtools)){install.packages("devtools")}
 devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
