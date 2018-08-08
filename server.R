@@ -467,10 +467,10 @@ server = function(input, output, session) {
     updateSelectInput(session, 'pftSelection', choices = veg_types)
 
     shinyjs::show(id = 'modisLegend')
-    insertUI(selector = '#modisLegend_',
+    insertUI(selector = '#image2',
              ui = tags$div(id='modisLegend_',
-                           tags$img(src='/modisLegend.tif', class= 'img',
-                                    style="position: absolute; z-index: 1; top:0px; left:0px;")))
+                           tags$img(src='/Users/kenns/projects/r/apis/phenoRemote/modisLegend.png', class= 'img',
+                                    style="position: absolute; z-index: 3; top:0px; left:0px;")))
   })
 
 
@@ -810,6 +810,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'pftSelection')
     shinyjs::hide(id = 'showHidePlot')
     shinyjs::hide(id = 'modisLegend')
+    shinyjs::hide(id = 'plotpanel')
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:

@@ -47,7 +47,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                         absolutePanel(id = 'modisLegend', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270,
                                       width = 375, height = 225,
-                                      tags$div(id = 'modisLegend_')
+                                      tags$div(id = 'image2')
                         ),
 
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
@@ -93,7 +93,9 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                     DTOutput("pAOIchart")
 
                    ),
-           tabPanel('User Guide'),
+           tabPanel('User Guide',
+                    includeMarkdown('readme.rmd')
+                    ),
 
 
            tabPanel('Phenocam Table',
