@@ -86,6 +86,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                     DTOutput("pAOIchart")
 
                    ),
+           tabPanel('User Guide'),
 
 
            tabPanel('Phenocam Table',
