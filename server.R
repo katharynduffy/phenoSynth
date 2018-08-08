@@ -124,7 +124,19 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
-
+  
+  observeEvent(input$map_groups,{
+    map_layers = input$map_groups
+    if ('MODIS Land Cover' %in% map_layers){
+      shinyjs::show(id = 'modisLegend')
+      insertUI(selector = '#image2',
+               ui = tags$div(id='modisLegend_',
+                             tags$img(src='MODISlegend.jpg', class= 'img',
+                                      style="position: absolute; z-index: 3; top:0px; left:0px;")))
+    }else{shinyjs::hide(id = 'modisLegend')}
+    
+    
+  })
   
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
@@ -467,14 +479,7 @@ server = function(input, output, session) {
         veg_types = append(veg_types, as.character(secon_veg))
       }
     updateSelectInput(session, 'pftSelection', choices = veg_types)
-    
-    
-
-    shinyjs::show(id = 'modisLegend')
-    insertUI(selector = '#image2',
-             ui = tags$div(id='modisLegend_',
-                           tags$img(src='MODISlegend.jpg', class= 'img',
-                                    style="position: absolute; z-index: 3; top:0px; left:0px;")))
+    leafletProxy('map') %>% showGroup('MODIS Land Cover')
   })
 
 
@@ -491,7 +496,7 @@ server = function(input, output, session) {
     get_site_roi_3day_csvs(input$site)
   })
 
-  # Button that plots GCC
+  # Button that hides GCC Plot
   observeEvent(input$hidePlot, {
     print ('Hiding Plot')
     shinyjs::hide(id = 'plotpanel')
