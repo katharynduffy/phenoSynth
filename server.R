@@ -11,6 +11,8 @@ server = function(input, output, session) {
     sites_df = cams_,
     sites = site_names)
   
+  panel = reactiveValues(mode = '')
+  
   counter = reactiveValues(countervalue = 0)
   
   modis = reactiveValues(data = data.frame())
@@ -25,8 +27,8 @@ server = function(input, output, session) {
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
   #initiating with observer
   observe({
-    
     switch_to_explorer_panel()
+    panel$mode = 'explorer'
   })
 
   
@@ -436,6 +438,7 @@ server = function(input, output, session) {
   
   # Button switches to Analyzer Mode
   observeEvent(input$analyzerMode,{
+    panel$mode = 'analyzer'
     site = input$site
     site_data = get_site_info(site)
     print ('Switching to Analyze Mode')
@@ -457,16 +460,20 @@ server = function(input, output, session) {
         secon_veg = paste0('Secondary: ', secon_veg)
         veg_types = append(veg_types, as.character(secon_veg))
       }
-    
-    # veg_types = c(paste0('Primary Veg: ', as.character(prim_veg)), paste0('Secondary Veg: ', as.character(secon_veg)))
     updateSelectInput(session, 'pftSelection', choices = veg_types)
     
+    shinyjs::show(id = 'modisLegend')
+    insertUI(selector = '#modisLegend_',
+             ui = tags$div(id='modisLegend_',
+                           tags$img(src='/modisLegend.tif', class= 'img',
+                                    style="position: absolute; z-index: 1; top:0px; left:0px;")))
   })
   
   
   #Button switches to Site explorer mode
   observeEvent(input$siteExplorerMode,{
     print ('Switching to Explorer Mode')
+    panel$mode = 'explorer'
     switch_to_explorer_panel()
   })
   
@@ -520,30 +527,43 @@ server = function(input, output, session) {
   
   
   # Grabs url for the primary ROI
-  get_roi_url = function(name){
+  get_roi_url = function(name, veg_type='None', roi_veg_level='None'){
     roi_url = tryCatch({
-      baseurl = 'https://phenocam.sr.unh.edu'
-      siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
-      page = read_html(siteurl)
-      html = page %>% html_nodes("a") %>% html_attr('href')
-      html = grep('data/archive', html, value=TRUE)[[1]]
-      html = paste(baseurl, html, sep='')
       
-      page2 = read_html(html)
-      html2 = page2 %>% html_nodes("a") %>% html_attr('href')
-      html2 = grep('data/archive', html2, value=TRUE)
-      html2 = grep('.tif', html2, value=TRUE)
-      
-      roi = strsplit(html2, '/')[[1]]
-      roi = grep('.tif', roi, value=TRUE)
-      roi = strsplit(roi, name)[[1]]
-      roi = grep('.tif', roi, value=TRUE)
-      roi = strsplit(roi, '.tif')[[1]]
-      roi_url = paste('https://phenocam.sr.unh.edu/data/archive/', 
-                      name, '/ROI/', name, roi, '_overlay.png', sep = '') 
+      if (veg_type=='None'){
+        baseurl = 'https://phenocam.sr.unh.edu'
+        siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
+        page = read_html(siteurl)
+        html = page %>% html_nodes("a") %>% html_attr('href')
+        html = grep('data/archive', html, value=TRUE)[[1]]
+        html = paste(baseurl, html, sep='')
+        
+        page2 = read_html(html)
+        html2 = page2 %>% html_nodes("a") %>% html_attr('href')
+        html2 = grep('data/archive', html2, value=TRUE)
+        html2 = grep('.tif', html2, value=TRUE)
+
+        roi = strsplit(html2, '/')[[1]]
+        roi = grep('.tif', roi, value=TRUE)
+        roi = strsplit(roi, name)[[1]]
+        roi = grep('.tif', roi, value=TRUE)
+        roi = strsplit(roi, '.tif')[[1]]
+        roi_url = paste('https://phenocam.sr.unh.edu/data/archive/', 
+                        name, '/ROI/', name, roi, '_overlay.png', sep = '')
+      }else{
+        if (roi_veg_level=='Primary'){
+          roi_url = paste0(name,'_',veg_type,'_','1000_01_overlay.png')
+          roi_url = paste0('https://phenocam.sr.unh.edu/data/archive/', 
+                           name, '/ROI/', roi_url)
+        }else if(roi_veg_level=='Secondary'){
+          roi_url = paste0(name,'_',veg_type,'_','0001_01_overlay.png')
+          roi_url = paste0('https://phenocam.sr.unh.edu/data/archive/', 
+                           name, '/ROI/', roi_url)
+        }
+      }
       return (roi_url)
     },error=function(cond) {message(paste('failed to get roi for sitename:'),isolate(input$site))
-                            return('Not Found')})
+      return('Not Found')})
     return (roi_url)
   }
   
@@ -785,6 +805,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'plotPhenocamGCC')
     shinyjs::hide(id = 'pftSelection')
     shinyjs::hide(id = 'showHidePlot')
+    shinyjs::hide(id = 'modisLegend')
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:

@@ -43,6 +43,12 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       width = 375, height = 225,
                                       tags$div(id = 'image')
                                       ),
+                        
+                        absolutePanel(id = 'modisLegend', class = 'panel panel-default', #fixed = TRUE,
+                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270,
+                                      width = 375, height = 225,
+                                      tags$div(id = 'modisLegend_')
+                        ),
 
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270,
@@ -55,6 +61,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       width = 240, height = 40,
                                       verbatimTextOutput("mouse")
                                       ),
+                        
                         absolutePanel(id = 'showHidePlot', class = 'panel panel-default', fixed = TRUE,
                                       draggable = FALSE, top = 150, left = 'auto', right = 320, bottom = 'auto',
                                       actionButton('hidePlot', 'Hide Plot')
