@@ -1,29 +1,29 @@
 # Server file for Shiny App phenoRemote
 
 server = function(input, output, session) {
-  
+
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  REACTIVE VALUES
   #--------------------------------------------------------------------------------------------------------------------------------------
-  
+
   variables = reactiveValues(
     filter = 'All',
     sites_df = cams_,
     sites = site_names)
-  
+
   panel = reactiveValues(mode = '')
-  
+
   counter = reactiveValues(countervalue = 0)
-  
+
   modis = reactiveValues(data = data.frame())
-  
+
   data = reactiveValues(
     run = 0,
     names = c(),
     df = data.frame())
-  
+
   # Empty reactive spdf
-  value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()), 
+  value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
                                                               data=data.frame(notes=character(0), stringsAsFactors = F)))
   #initiating with observer
   observe({
@@ -31,12 +31,12 @@ server = function(input, output, session) {
     panel$mode = 'explorer'
   })
 
-  
+
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OUTPUTS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
-  
+
   ## Create the Phenocam Datatable with basic info (Tab named phenocam Table)
   x = cams_
   x$Date = Sys.time() + seq_len(nrow(x))
@@ -51,7 +51,7 @@ server = function(input, output, session) {
     x[i, j] <<- DT::coerceValue(v, x[i, j])
     replaceData(proxy, x, resetPaging = FALSE)  # important
   })
-  
+
   ## Create the map
   output$map = renderLeaflet({
     leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE)) %>%
@@ -80,7 +80,7 @@ server = function(input, output, session) {
         position = c("topleft"),
         options = layersControlOptions(collapsed = TRUE)
       )%>%
-      
+
       addDrawToolbar(
         targetGroup = 'drawnPoly',
         polylineOptions=FALSE,
@@ -108,76 +108,76 @@ server = function(input, output, session) {
       setView(lng = -93.85, lat = 37.45, zoom = 4) %>%
       addStyleEditor()
     })
-  
+
   # Adds the mouse lat / lon to an output (we can change this to anything)
   output$mouse <- renderText({
     if(is.null(input$hover_coordinates)) {
       "Mouse outside of map"
     } else {
-      paste0("Lat: ", input$hover_coordinates[1], 
+      paste0("Lat: ", input$hover_coordinates[1],
              "\nLng: ", input$hover_coordinates[2])
     }
   })
 
-  
+
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
-  
+
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
-    
+
       # Leaflet ID to add to the shapefile dataframe
       id = input$map_draw_new_feature$properties$`_leaflet_id`
-      
+
       # Site name combined with run # for new polygon feature
-      data$run = data$run + 1                                        
-      name_ = paste(c(isolate(input$site),data$run), collapse='_')   
+      data$run = data$run + 1
+      name_ = paste(c(isolate(input$site),data$run), collapse='_')
       data$names = c(data$names, name_)
-      
+
       # Grabbing lat/lon values for new leaflet polygon
       coor = unlist(input$map_draw_new_feature$geometry$coordinates)
-      Longitude = coor[seq(1, length(coor), 2)] 
+      Longitude = coor[seq(1, length(coor), 2)]
       Latitude = coor[seq(2, length(coor), 2)]
-      
+
       # Building Dataframe with points from newly created leaflet feature
       c = 0
       for (x in Longitude){
         c = c + 1
         data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
-      
+
       # Creating a SpatialPolygon that can be added to our spatial polygons dataframe (value$drawnPoly)
       poly = Polygon(cbind(Longitude, Latitude))
       polys = Polygons(list(poly), ID = name_)
       spPolys = SpatialPolygons(list(polys))
-      
+
       # Adding new polygon to a spatial polygons dataframe
       value$drawnPoly = rbind(value$drawnPoly,
                              SpatialPolygonsDataFrame(spPolys, data = data.frame(notes = NA,
                                                                row.names = row.names(spPolys))))
-      
+
       # Updating the select input for the download availability of created leaflet features
       updateSelectInput(session, 'shapefiles', choices = unique(data$df$Name))
-      
+
       # Building the polygon table from the data$df dataframe containing all of the leaflet polygon data
       build_polygon_table()
-      
+
       print (data$df)
   })
-  
-  
+
+
   # When edited feature gets saved
   observeEvent(input$map_draw_edited_features, {
-    
+
     # Leaflet ID to edit
     id = input$map_draw_edited_features$features[[1]]$properties$`_leaflet_id`
-    
+
     # Grabbing lat/lon values for new leaflet polygon
     coor = unlist(input$map_draw_edited_features$features[[1]]$geometry$coordinates[[1]])
-    Longitude = coor[seq(1, length(coor), 2)] 
+    Longitude = coor[seq(1, length(coor), 2)]
     Latitude = coor[seq(2, length(coor), 2)]
     name_ = unique(subset(data$df, LeafletId == id)$Name)
-    
+
     # Deletes all rows with id being edited
     data$df = subset(data$df, LeafletId != id)
 
@@ -186,33 +186,33 @@ server = function(input, output, session) {
     for (x in Longitude){
       c = c + 1
       data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
-    
+
     # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
     build_polygon_table()
-    
+
     print (data$df)
   })
-  
-  
+
+
   # When feature is deleted
   observeEvent(input$map_draw_deleted_features, {
-    
+
     # Leaflet ID to delete
     id = input$map_draw_deleted_features$features[[1]]$properties$`_leaflet_id`
-    
+
     # Deletes all rows with id being edited
     data$df = subset(data$df, LeafletId != id)
-    
+
     # Updating the select input for the download availability of created leaflet features
     updateSelectInput(session, 'shapefiles', choices = unique(data$df$Name))
-    
+
     # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
     build_polygon_table()
-    
-    
+
+
     print (data$df)
   })
-  
+
   # Save shapefile button
   observeEvent(input$saveshp,{
     WGScoor = data$df
@@ -226,7 +226,7 @@ server = function(input, output, session) {
 
     shapefile(LLcoor, filename, overwrite=TRUE)
   })
-  
+
 
   # SELECT INPUT
   # Filter based on Filter Sites dropdown
@@ -259,16 +259,16 @@ server = function(input, output, session) {
     updateSelectInput(session, 'site', choices = variables$sites)
     show_all_sites()
   })
-  
-  
+
+
   # BUTTON
   # Zooms to the selected site in the Sites dropdown option with BUTTON
   observeEvent(input$siteZoom, {
     print('Running BUTTON Zoom to Selected Site')
     site = isolate(input$site)
     site_data = zoom_to_site(site, zoom=TRUE)
-    
-    
+
+
   })
   # BUTTON
   # Zoom to contiguous US
@@ -283,8 +283,8 @@ server = function(input, output, session) {
       show_all_sites()
       count()
   })
-  
-  
+
+
   # Add All sites back to map
   observeEvent(input$showSites, {
     showAll = input$showSites
@@ -293,8 +293,8 @@ server = function(input, output, session) {
     show_all_sites()
     count()
   })
-  
-  
+
+
   # Change Map Layer 1
   observeEvent(input$layer, {
     layers = input$layer
@@ -303,8 +303,8 @@ server = function(input, output, session) {
       clearTiles() %>%
       addProviderTiles(layers)
   })
-  
-  
+
+
   # Observer for the azm changes from 0-360 on the slider
   observeEvent(input$azm, {
     azm = input$azm
@@ -318,8 +318,8 @@ server = function(input, output, session) {
       }
     })
   })
-  
-  
+
+
   # Draws fov polyline for a site location
   observeEvent(input$drawROI, {
     roi_bool = input$drawROI
@@ -336,13 +336,13 @@ server = function(input, output, session) {
       shinyjs::hide(id = 'azm')
       remove_polyline()}
   })
-  
-  
+
+
   # Show Popup box for site when clicked
   observeEvent(input$map_marker_click, {
     event = isolate(input$map_marker_click)
     print (event$id)
-    
+
     if (is.not.null(event$id)){
       if (isolate(input$map_zoom) < 5){
         zoom_to_site(event$id, zoom=TRUE)
@@ -376,7 +376,7 @@ server = function(input, output, session) {
                      active, date_end, date_start)
     })
   })
-  
+
   # Site Explorer Mode Images
   # CheckBox to Show image for site from dropdown
   observe({
@@ -384,10 +384,10 @@ server = function(input, output, session) {
     draw_bool = input$drawImage
     site = input$site
     roi_bool = input$drawImageROI
-    
+
     removeUI(selector = '#phenocamSiteImage')
     img_url = get_img_url(site)
-    
+
     if (draw_bool == TRUE){
       shinyjs::show(id = 'currentImage')
       insertUI(selector = '#image',
@@ -401,13 +401,13 @@ server = function(input, output, session) {
           insertUI(selector = '#phenocamSiteImage',
             ui =  tags$img(src=roi_url,
                        class= 'roi', style='position: absolute; z-index: 2; top:0px; left:0px;'))}
-      
+
     }else if (draw_bool == FALSE){
       removeUI(selector = '#phenocamSiteImage')
       shinyjs::hide(id = 'currentImage')
     }
   })
-  
+
   observeEvent(input$showModisSubset,{
     # Run modis tool here on site currently selected
     site = input$site
@@ -434,8 +434,8 @@ server = function(input, output, session) {
     shinyjs::show(id = 'showHidePlot')
     output$currentPlot <- renderPlot({ p })
   })
-  
-  
+
+
   # Button switches to Analyzer Mode
   observeEvent(input$analyzerMode,{
     panel$mode = 'analyzer'
@@ -458,65 +458,65 @@ server = function(input, output, session) {
         prim_veg = paste0('Primary: ', prim_veg)
         veg_types = append(veg_types, as.character(prim_veg))
       }
-    if (site_data$secondary_veg_type[1] == ''){print ('no seondary vegetation type found')
+    if (site_data$secondary_veg_type[1] == ''){print ('no secondary vegetation type found')
     }else{
         print (secon_veg)
         secon_veg = paste0('Secondary: ', secon_veg)
         veg_types = append(veg_types, as.character(secon_veg))
       }
     updateSelectInput(session, 'pftSelection', choices = veg_types)
-    
+
     shinyjs::show(id = 'modisLegend')
     insertUI(selector = '#modisLegend_',
              ui = tags$div(id='modisLegend_',
                            tags$img(src='/modisLegend.tif', class= 'img',
                                     style="position: absolute; z-index: 1; top:0px; left:0px;")))
   })
-  
-  
+
+
   #Button switches to Site explorer mode
   observeEvent(input$siteExplorerMode,{
     print ('Switching to Explorer Mode')
     panel$mode = 'explorer'
     switch_to_explorer_panel()
   })
-  
+
   # Button that plots GCC
   observeEvent(input$plotPhenocamGCC, {
     print ('Plotting GCC')
     get_site_roi_3day_csvs(input$site)
   })
-  
+
   # Button that plots GCC
   observeEvent(input$hidePlot, {
     print ('Hiding Plot')
     shinyjs::hide(id = 'plotpanel')
     shinyjs::hide(id = 'showHidePlot')
   })
-  
-  
+
+
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
   #--------------------------------------------------------------------------------------------------------------------------------------
-  
-  
+
+
   # Grabs the list of 3_day csv data from phenocam website
   get_site_roi_3day_csvs = function(name){
     url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', sep = '')
     page = read_html(url)
-    
+
     site_hrefs = page %>% html_nodes("a") %>% html_attr("href")
     # csvs_ = site_hrefs[grep('3day.csv|1day.csv', site_hrefs)]  #How to grab both 1 and 3 day csvs
     csvs_ = site_hrefs[grep('3day.csv|gcc90', site_hrefs)]
-    csvs_ = csvs_[grep('XX|.png', csvs_, invert=TRUE)]  #invert will take all strings without this 
+    csvs_ = csvs_[grep('XX|.png', csvs_, invert=TRUE)]  #invert will take all strings without this
     csv = csvs_[grep('gcc90_3day', csvs_)]
     csv = csv[1]
-    
+
     csv_url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', csv, sep = '')
     print (csv_url)
   }
 
-  
+
   # Returns Downloads folder for windows/macos
   get_download_folder = function(){
     if (Sys.info()['sysname'] == 'Darwin'){
@@ -528,12 +528,12 @@ server = function(input, output, session) {
     }
     return (folder)
   }
-  
-  
+
+
   # Grabs url for the primary ROI
   get_roi_url = function(name, veg_type='None', roi_veg_level='None'){
     roi_url = tryCatch({
-      
+
       if (veg_type=='None'){
         baseurl = 'https://phenocam.sr.unh.edu'
         siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
@@ -541,7 +541,7 @@ server = function(input, output, session) {
         html = page %>% html_nodes("a") %>% html_attr('href')
         html = grep('data/archive', html, value=TRUE)[[1]]
         html = paste(baseurl, html, sep='')
-        
+
         page2 = read_html(html)
         html2 = page2 %>% html_nodes("a") %>% html_attr('href')
         html2 = grep('data/archive', html2, value=TRUE)
@@ -552,16 +552,16 @@ server = function(input, output, session) {
         roi = strsplit(roi, name)[[1]]
         roi = grep('.tif', roi, value=TRUE)
         roi = strsplit(roi, '.tif')[[1]]
-        roi_url = paste('https://phenocam.sr.unh.edu/data/archive/', 
+        roi_url = paste('https://phenocam.sr.unh.edu/data/archive/',
                         name, '/ROI/', name, roi, '_overlay.png', sep = '')
       }else{
         if (roi_veg_level=='Primary'){
           roi_url = paste0(name,'_',veg_type,'_','1000_01_overlay.png')
-          roi_url = paste0('https://phenocam.sr.unh.edu/data/archive/', 
+          roi_url = paste0('https://phenocam.sr.unh.edu/data/archive/',
                            name, '/ROI/', roi_url)
         }else if(roi_veg_level=='Secondary'){
           roi_url = paste0(name,'_',veg_type,'_','0001_01_overlay.png')
-          roi_url = paste0('https://phenocam.sr.unh.edu/data/archive/', 
+          roi_url = paste0('https://phenocam.sr.unh.edu/data/archive/',
                            name, '/ROI/', roi_url)
         }
       }
@@ -570,13 +570,13 @@ server = function(input, output, session) {
       return('Not Found')})
     return (roi_url)
   }
-  
+
   # Grabs img url from sitename
   get_img_url = function(name){
     url = paste("https://phenocam.sr.unh.edu/data/latest/", name, ".jpg",sep = '')
     return (url)
   }
-  
+
   # add all of these sites back to the leaflet map
   show_all_sites = function(){
     leafletProxy("map", data = variables$sites_df) %>%
@@ -585,11 +585,11 @@ server = function(input, output, session) {
                        style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
                        radius = 10, fillOpacity = .20, weight=3.5)
   }
-  
+
   # Radians to degrees
   rad2deg = function(rad) {(rad * 180) / (pi)}
-  
-  
+
+
   # Given row from sites, create points for polyline from site.
   #   This function uses angle for field of view and los as the
   #   far distance of the FOV.
@@ -604,7 +604,7 @@ server = function(input, output, session) {
     cy = c[[2]]
     bx = b[[1]]
     by = b[[2]]
-    
+
     datalon = c(lon,cx,bx,lon)
     datalat = c(lat,cy,by,lat)
     camera = site_data_$site
@@ -612,7 +612,7 @@ server = function(input, output, session) {
     add_polyline(datalon, datalat, id_, .45, 'red')
   }
 
-  
+
   # Add a polyline layer to the map
   add_polyline = function(datalon_, datalat_, id_, opacity_, color_='red'){
     leafletProxy("map", data = variables$sites_df) %>%
@@ -623,8 +623,8 @@ server = function(input, output, session) {
                     opacity=opacity_,
                     color = color_)
   }
-  
-  
+
+
   add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red'){
     leafletProxy("map", data = variables$sites_df) %>%
       # clearShapes()%>%
@@ -634,15 +634,15 @@ server = function(input, output, session) {
                     opacity=opacity_,
                     color = color_)
   }
-  
-  
+
+
   # remove all polylines
   remove_polyline = function(id_){
     leafletProxy("map", data = variables$sites_df) %>%
       clearShapes()
   }
-  
-  
+
+
   # Zoom to site
   zoom_to_site = function(site_, zoom){
     site_data = get_site_info(site_)
@@ -651,12 +651,12 @@ server = function(input, output, session) {
     lat = site_data$lat
     lon = site_data$lon
     cam_orientation = as.character(site_data$camera_orientation)
-    
+
     degrees = as.numeric(orientation_key[cam_orientation])
     elevation = site_data$elev
     camera = site_data$site
     drawROI = FALSE
-    
+
     if (zoom == TRUE){
       drawROI = isolate(input$drawROI)
       leafletProxy('map', data = variables$sites_df) %>%
@@ -674,8 +674,8 @@ server = function(input, output, session) {
     }
     return (site_data)
   }
-  
-  
+
+
   # Rotate a point based on AZM
   rotate_pt = function(lon, lat, azm, r){
     rad = azm * (pi / 180)
@@ -683,48 +683,48 @@ server = function(input, output, session) {
     lat_ = lat + (r * cos(rad))
     return (list(lon_, lat_))
   }
-  
-  
+
+
   #displays the site info when a site is clicked
-  get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_, 
+  get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_,
                              camera_orientation_, degrees_, nimage_,
                              active_, date_end_, date_start_) {
     website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera_)
     print('Running show a popup box for Site')
     myurl = paste("https://phenocam.sr.unh.edu/data/latest/", isolate(input$site), '.jpg', sep = '')
-  
+
     pop = paste0('<div class="leaflet-popup-content">',
                  '<h4>','Site name: ', camera_,'</br></h4>',
                  '<strong>','lat, long: ','</strong>',lat_,', ', lng_,'</br>',
                  '<strong>','Site Description: ','</strong>', description_ ,'</br>',
                  '<strong>','Elevation: ','</strong>', elevation_ ,'</br>',
-                 
+
                  '<strong>','Site type: ','</strong>', site_type_ ,'</br>',
                  '<strong>','Orientation (direction): ','</strong>', camera_orientation_ ,'</br>',
                  '<strong>','Number of Images: ','</strong>', nimage_ ,'</br>',
                  '<strong>','Active: ','</strong>', active_ ,'</br>',
                  '<strong>','Start date: ','</strong>', date_start_ ,'</br>',
                  '<strong>','End date: ','</strong>', date_end_ ,'</br>',
-                 
+
                  '<a id="info" href=', website ,' style="text-indent: 0px;"
                  class="action-button shiny-bound-input"
                  onclick="{Shiny.onInputChange(\'info\', (Math.random() * 1000) + 1);}">',
-                 
+
                  '<a type="submit" href=', website ,' class="button">Go to Phenocam website</a>'
                  )
-    
-    
+
+
     leafletProxy("map",data = variables$sites_df) %>% addPopups(lng_, lat_, popup = pop, layerId = camera_)
   }
-  
-  
+
+
   # Get specific site data and returns lon/lat/camera/description/elevation
   get_site_info = function(site_name){
     site_data = subset(cams_, site == site_name)
     return (site_data)
   }
-  
-  
+
+
   # Style marker to add to the map when redrawing
   get_marker_style = function(){
     style = list(
@@ -737,23 +737,23 @@ server = function(input, output, session) {
     )
     return(style)
   }
-  
-  
+
+
   # Creating a label from the phenocamsite name
   new_label = function(name_){
     label = sprintf('This is the test label/n%s',name_)
   }
-  
-  
+
+
   count = function(){
     isolate({
       counter$countervalue = counter$countervalue + 1
       print (counter$countervalue)
     })
   }
-  
+
   build_polygon_table = function(){
-    # Creating Dataframe with 1 record per shapefile 
+    # Creating Dataframe with 1 record per shapefile
     df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
     x = df
     # x$Date = Sys.time() + seq_len(nrow(x))
@@ -771,10 +771,10 @@ server = function(input, output, session) {
   }
   # is not null function
   is.not.null <- function(x) ! is.null(x)
-  
-  # not in 
+
+  # not in
   '%!in%' <- function(x,y)!('%in%'(x,y))
-  
+
   # custom markers created for Active/nonActive
   getColor <- function(cams) {
     sapply(cams$active, function(active) {
@@ -786,7 +786,7 @@ server = function(input, output, session) {
         "orange"
       } })
   }
-  
+
   switch_to_explorer_panel = function(){
     # Ids to show:
     shinyjs::show(id = 'explorerTitle')
