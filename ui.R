@@ -57,7 +57,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       ),
 
                         absolutePanel(id = 'mouseBox', class = 'panel panel-default', fixed = TRUE,
-                                      draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 20,
+                                      draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 75,
                                       width = 240, height = 40,
                                       verbatimTextOutput("mouse")
                                       ),
@@ -69,7 +69,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
 
                         absolutePanel(id = 'siteTitle', class = 'panel panel-default', fixed = FALSE,
                                       draggable = FALSE,  top = 25, left = 'auto', right = 320 , bottom = 'auto',
-                                      div(id = 'analyzerHeader',uiOutput("analyzerTitle"), style = 'font-size: 40px; font-weight: 400;')
+                                      div(id = 'analyzerHeader', uiOutput("analyzerTitle"))
                                       ),
 
                         tags$div(id="cite",

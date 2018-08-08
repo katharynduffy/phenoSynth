@@ -81,7 +81,9 @@ server = function(input, output, session) {
         position = c("topleft"),
         options = layersControlOptions(collapsed = TRUE)
       )%>%
-
+      addLegend(values = c(1,2), group = "site_markers", position = "bottomright", 
+                labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
+      
       addDrawToolbar(
         targetGroup = 'drawnPoly',
         polylineOptions=FALSE,

@@ -64,6 +64,7 @@ h1, h2, h3, h4 { font-weight: 400;}
   border-color: rgba(0, 0, 0, 0.0);
   box-shadow: none;
   z-index: 4;
+  color:white;
 }
 
 #controls {
