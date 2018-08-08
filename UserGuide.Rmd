@@ -1,6 +1,8 @@
 ##User Guide for PhenoSynth
 
 ROI represents a region of interest determined during PhenoCam processing
-but does not necessarily represent the dominant vegetation at in the region.
+but does not necessarily represent the dominant vegetation at in the region.  
+For additional reference see xROI, a Shiny R package developed by Bijan
+Seyednasrollah : https://github.com/bnasr/xROI.git
 
 (will add more today/tomorrow)
