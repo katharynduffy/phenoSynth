@@ -73,6 +73,7 @@ server = function(input, output, session) {
         group = "Open Topo Map",
         options = providerTileOptions(transparent=FALSE)
       ) %>%
+      hideGroup("MODIS Land Cover") %>%
       # Adds the layers options to top left of Map
       addLayersControl(
         baseGroups = c("World Imagery", "Open Topo Map"),
@@ -124,6 +125,7 @@ server = function(input, output, session) {
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
+  
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
 
@@ -465,11 +467,13 @@ server = function(input, output, session) {
         veg_types = append(veg_types, as.character(secon_veg))
       }
     updateSelectInput(session, 'pftSelection', choices = veg_types)
+    
+    
 
     shinyjs::show(id = 'modisLegend')
     insertUI(selector = '#image2',
              ui = tags$div(id='modisLegend_',
-                           tags$img(src='/Users/kenns/projects/r/apis/phenoRemote/modisLegend.png', class= 'img',
+                           tags$img(src='MODISlegend.jpg', class= 'img',
                                     style="position: absolute; z-index: 3; top:0px; left:0px;")))
   })
 
