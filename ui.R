@@ -94,7 +94,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
 
                    ),
            tabPanel('User Guide',
-                    includeMarkdown('readme.rmd')
+                    includeMarkdown('UserGuide.md')
                     ),
 
 
