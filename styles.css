@@ -6,7 +6,7 @@
   width:280px;
 }*/
 
-#currentImage {
+#currentImage, #modisLegend {
   width:375px;
   height:225px;
   background-color: rgba(0, 0, 0, 0.0);
