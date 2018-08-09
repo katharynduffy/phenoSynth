@@ -466,9 +466,9 @@ server = function(input, output, session) {
 
     p = ggplot(data = cleanNDVI, aes(x= Date, y= NDVI)) +
       geom_point() +
-      scale_x_date(date_breaks = "3 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
+      scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
       theme(axis.text.x = element_text(angle = 45, hjust =1))
-    p  + theme_few()
+    p  + ggthemes::theme_few()  
 
     #plot p here, where that goes in the UI we don't know yet
     modis$data = cleanNDVI
