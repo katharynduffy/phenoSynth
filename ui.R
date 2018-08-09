@@ -41,7 +41,8 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 20,
                                       width = 375, height = 225,
-                                      actionButton('showROI', '-', value=FALSE, class='showROIimage'),
+                                      actionButton('showImage', '-', value=FALSE),
+                                      actionButton('showROIimage', 'Overlay selected ROI'),
                                       tags$div(id = 'image')
                                       ),
                         

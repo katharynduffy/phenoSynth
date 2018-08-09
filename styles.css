@@ -21,7 +21,7 @@
   z-index: 11;
 }
 
-#showROI{
+#showImage{
   z-index: 10;
   position:absolute;
   height:15px;
@@ -30,6 +30,14 @@
   padding: 0px 0px;
 }
 
+#showROIimage{
+  z-index:10;
+  position:absolute;
+  height:15px;
+  font-size:8px;
+  left: 20px;
+  padding:0px 10px;
+}
 .leaflet-right .leaflet-control {
   margin-right: 130px;
 }

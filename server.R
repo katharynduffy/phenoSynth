@@ -505,11 +505,19 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'showHidePlot')
   })
   
-  # Minimize button for ROI
-  observeEvent(input$showROI, {
+  # Minimize button in image panel
+  observeEvent(input$showImage, {
     shinyjs::hide(id = 'currentImage')
     updateCheckboxInput(session, inputId = 'drawImage', value=FALSE)
     updateCheckboxInput(session, inputId = 'drawImageROI', value=FALSE)
+  })
+  
+  # Overlay button for ROI in image panel
+  observeEvent(input$showROIimage, {
+    updateCheckboxInput(session, inputId = 'drawImage', value=TRUE)
+    if (input$drawImageROI == FALSE){
+      updateCheckboxInput(session, inputId = 'drawImageROI', value=TRUE)
+      }else{updateCheckboxInput(session, inputId = 'drawImageROI', value=FALSE)}
   })
 
 
