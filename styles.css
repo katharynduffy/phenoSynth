@@ -18,6 +18,16 @@
   background-color: rgba(0, 0, 0, 0.0);
   border-color:rgba(0, 0, 0, 0.0);
   border-color: rgba(0, 0, 0, 0.0);
+  z-index: 11;
+}
+
+#showROI{
+  z-index: 10;
+  position:absolute;
+  height:15px;
+  width:15px;
+  font-size: 8px;
+  padding: 0px 0px;
 }
 
 .navbar {
@@ -28,6 +38,7 @@
   width:375px;
   height:225px;
 }
+
 .roi {
   width:375px;
   height:225px;

@@ -504,6 +504,13 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'plotpanel')
     shinyjs::hide(id = 'showHidePlot')
   })
+  
+  # Minimize button for ROI
+  observeEvent(input$showROI, {
+    shinyjs::hide(id = 'currentImage')
+    updateCheckboxInput(session, inputId = 'drawImage', value=FALSE)
+    updateCheckboxInput(session, inputId = 'drawImageROI', value=FALSE)
+  })
 
 
   #--------------------------------------------------------------------------------------------------------------------------------------

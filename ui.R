@@ -41,6 +41,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 20,
                                       width = 375, height = 225,
+                                      actionButton('showROI', '-', value=FALSE, class='showROIimage'),
                                       tags$div(id = 'image')
                                       ),
                         
@@ -48,7 +49,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270,
                                       width = 375, height = 225,
                                       tags$div(id = 'image2')
-                        ),
+                                      ),
 
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270,
