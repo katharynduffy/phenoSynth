@@ -133,7 +133,7 @@ server = function(input, output, session) {
       shinyjs::show(id = 'modisLegend')
       insertUI(selector = '#image2',
                ui = tags$div(id='modisLegend_',
-                             tags$img(src='MODISlegend.jpg', class= 'img',
+                             tags$img(src='igbp-legend.png', class= 'img',
                                       style="position: absolute; z-index: 3; top:0px; left:0px;")))
     }else{shinyjs::hide(id = 'modisLegend')}
     
