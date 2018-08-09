@@ -20,6 +20,7 @@ library(htmlwidgets)
 library(ggplot2)
 library(rjson)
 library(RCurl)
+library(ggthemes)
 
 if(!require(devtools)){install.packages("devtools")}
 devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
