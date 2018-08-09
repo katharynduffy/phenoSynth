@@ -30,6 +30,10 @@
   padding: 0px 0px;
 }
 
+.leaflet-right .leaflet-control {
+  margin-right: 130px;
+}
+
 .navbar {
   height:40;
 }
