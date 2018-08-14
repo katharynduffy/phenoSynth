@@ -11,11 +11,13 @@ server = function(input, output, session) {
     sites_df = cams_,
     sites = site_names)
 
+  # 'analyzer' or 'explorer'
   panel = reactiveValues(mode = '')
 
   counter = reactiveValues(countervalue = 0)
 
-  modis = reactiveValues(data = data.frame())
+  modis = reactiveValues(data = data.frame(),
+                         cached_ndvi = list())
 
   data = reactiveValues(
     run = 0,
@@ -123,6 +125,7 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
+
   
   # Adds Legend for MODIS Land Cover
   observeEvent(input$map_groups,{
@@ -420,57 +423,74 @@ server = function(input, output, session) {
     }
   })
 
+  # Plots the modis subset
   observeEvent(input$showModisSubset,{
+    
+    
     # Run modis tool here on site currently selected
     site = input$site
     print ('Running show MODIS subset tool')
     site_data = get_site_info(site)
     site_ = site_data$site[1]
-    lat_ = site_data$lat[1]
-    lon_ = site_data$lon[1]
-    date_end = as.Date(site_data$date_end[1])
-    date_start = as.Date(site_data$date_start[1])
-    subset <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
-                        start = date_start,end = date_end,km_lr = 1,km_ab = 1,site_name = site_,internal = TRUE)
-    print (str(subset))
-    NDVIsubset <- mt_subset(product = "MOD13Q1",
-                            lat = df$lat[274],
-                            lon = df$lon[274],
-                            band = "250m_16_days_NDVI",
-                            start = df$date_start[274],
-                            end = df$date_end[274],
+    
+    print (modis$cached_ndvi)
+    
+    if (site_ %in% modis$cached_ndvi){
+      output$currentPlot <- renderPlot({ modis$cached_ndvi[site_] })
+    } else{
+    
+      lat_ = site_data$lat[1]
+      lon_ = site_data$lon[1]
+      date_end = as.Date(site_data$date_end[1])
+      date_start = as.Date(site_data$date_start[1])
+      subset <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
+                          start = date_start,end = date_end,km_lr = 1,km_ab = 1,site_name = site_,internal = TRUE)
+      print (str(subset))
+
+      NDVIsubset <- mt_subset(product = "MOD13Q1",
+                              lat = lat_,
+                              lon = lon_,
+                              band = "250m_16_days_NDVI",
+                              start = date_start,
+                              end = date_end,
+                              km_lr = 1,
+                              km_ab = 1,
+                              site_name = site_,
+                              internal = TRUE)
+      QCsubset <- mt_subset(product = "MOD13Q1",
+                            lat = lat_,
+                            lon = lon_,
+                            band = "250m_16_days_pixel_reliability",
+                            start = date_start,
+                            end = date_end,
                             km_lr = 1,
                             km_ab = 1,
-                            site_name = df$site[274],
+                            site_name = site_,
                             internal = TRUE)
-    QCsubset <- mt_subset(product = "MOD13Q1",
-                          lat = df$lat[274],
-                          lon = df$lon[274],
-                          band = "250m_16_days_pixel_reliability",
-                          start = df$date_start[274],
-                          end = df$date_end[274],
-                          km_lr = 1,
-                          km_ab = 1,
-                          site_name = df$site[274],
-                          internal = TRUE)
+      
+      
+  
+      cleanNDVI=data.frame(NDVI=NDVIsubset$data$data, QC=QCsubset$data$data, Date=as.Date.factor(QCsubset$data$calendar_date))
+      cleanNDVI=cleanNDVI%>%filter(QC<1)
+      cleanNDVI$NDVI=cleanNDVI$NDVI*.0001
+  
+  
+      p = ggplot(data = cleanNDVI, aes(x= Date, y= NDVI)) +
+        geom_point() +
+        scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
+        theme(axis.text.x = element_text(angle = 45, hjust =1))
+      p  + ggthemes::theme_few()  
+  
+      #plot p here, where that goes in the UI we don't know yet
+      modis$data = cleanNDVI
+      shinyjs::show(id = 'plotpanel')
+      shinyjs::show(id = 'showHidePlot')
+      output$currentPlot <- renderPlot({ p })
+      modis$cached_ndvi[[site_]] = p
+      print (modis$cached_ndvi[site_])
+      print (p)
+    }
     
-
-    cleanNDVI=data.frame(NDVI=NDVIsubset$data$data, QC=QCsubset$data$data, Date=as.Date.factor(QCsubset$data$calendar_date))
-    cleanNDVI=cleanNDVI%>%filter(QC<1)
-    cleanNDVI$NDVI=cleanNDVI$NDVI*.0001
-
-
-    p = ggplot(data = cleanNDVI, aes(x= Date, y= NDVI)) +
-      geom_point() +
-      scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
-      theme(axis.text.x = element_text(angle = 45, hjust =1))
-    p  + ggthemes::theme_few()  
-
-    #plot p here, where that goes in the UI we don't know yet
-    modis$data = cleanNDVI
-    shinyjs::show(id = 'plotpanel')
-    shinyjs::show(id = 'showHidePlot')
-    output$currentPlot <- renderPlot({ p })
   })
 
 
@@ -482,7 +502,7 @@ server = function(input, output, session) {
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
     
-    output$analyzerTitle = renderText({site})
+    output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
     
     veg.idx = is.element(pft_df$pft_abbreviated,site_data$primary_veg_type[1] )
@@ -533,11 +553,9 @@ server = function(input, output, session) {
     print (site_data$secondary_veg_type[1])
     if (is.null(veg_types)){
       updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
-      print ('no ROI veg types')
     }else{
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       }
-      
   })
 
 
@@ -576,11 +594,52 @@ server = function(input, output, session) {
       }else{updateCheckboxInput(session, inputId = 'drawImageROI', value=FALSE)}
   })
 
+  # test click on map to show popup of lat/lon
+  observeEvent(input$map_click,{
+    click = input$map_click
+    if (panel$mode == 'analyzer'){
+      if (!is.null(click)) {
+        r = crop_MODIS_2016_raster(click$lat, click$lng, reclassify=FALSE)
+        showpos(x = click$lng, y = click$lat, r)
+      }
+    }
+  })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
+  #Show popups 
+  showpos <- function(x=NULL, y=NULL, r) {#Show popup on clicks
+    #Translate Lat-Lon to cell number using the unprojected raster
+    #This is because the projected raster is not in degrees, we cannot use it!
+    print (x)
+    print (y)
+    us_pth = './www/uslandcover_modis.tif'
+    us_r = raster(us_pth)
+    cell <- cellFromXY(us_r, c(x, y))
+    print (cell)
+    # if (!is.na(cell)) {#If the click is inside the raster...
+    #   xy <- xyFromCell(lldepth, cell) #Get the center of the cell
+    #   x <- xy[1]
+    #   y <- xy[2]
+    #   #Get row and column, to print later
+    #   rc <- rowColFromCell(lldepth, cell)
+    #   #Get value of the given cell
+    #   val = depth[cell]
+    #   content <- paste0("X=",rc[2],
+    #                     "; Y=",rc[1],
+    #                     "; Lon=", round(x, 5),
+    #                     "; Lat=", round(y, 5),
+    #                     "; Depth=", round(val, 1), " m")
+    #   proxy <- leafletProxy("map")
+    #   #add Popup
+    #   proxy %>% clearPopups() %>% addPopups(x, y, popup = content)
+    #   #add rectangles for testing
+    #   proxy %>% clearShapes() %>% addRectangles(x-resol[1]/2, y-resol[2]/2, x+resol[1]/2, y+resol[2]/2)
+    # }
+  }
+  
   # Creates boundary box for clipping rasters using lat/lon from phenocam site
   crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL, secondary=NULL){
     us_pth = './www/uslandcover_modis.tif'

@@ -55,6 +55,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 400, right = 'auto' , bottom = 20,
                                       width = 375, height = 225,
+                                      actionButton('hidePlot', '-', value=FALSE),
                                       plotOutput("currentPlot", height = 225)
                                       ),
 
@@ -64,10 +65,10 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       verbatimTextOutput("mouse")
                                       ),
                         
-                        absolutePanel(id = 'showHidePlot', class = 'panel panel-default', fixed = TRUE,
-                                      draggable = FALSE, top = 150, left = 'auto', right = 320, bottom = 'auto',
-                                      actionButton('hidePlot', 'Hide Plot')
-                                      ),
+                        # absolutePanel(id = 'showHidePlot', class = 'panel panel-default', fixed = TRUE,
+                        #               draggable = FALSE, top = 150, left = 'auto', right = 320, bottom = 'auto',
+                        #               actionButton('hidePlot', 'Hide Plot')
+                        #               ),
 
                         absolutePanel(id = 'siteTitle', class = 'panel panel-default', fixed = FALSE,
                                       draggable = FALSE,  top = 25, left = 'auto', right = 320 , bottom = 'auto',

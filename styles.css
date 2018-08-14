@@ -21,7 +21,7 @@
   z-index: 11;
 }
 
-#showImage{
+#showImage, #hidePlot {
   z-index: 10;
   position:absolute;
   height:15px;

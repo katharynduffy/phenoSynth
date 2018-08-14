@@ -69,6 +69,3 @@ site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 #   date_start = first date images collected on
 
 
-capecod_pth = '/Users/Kenns/Downloads/capecodsin.tif'
-capecod_r = raster(capecod_pth)
-
