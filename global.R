@@ -50,8 +50,6 @@ pft_key = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,254,255)
 pft_abbreviated = c('Water','EN','EB','DN','DB','MF','SH','SH','SV','SV','GR','WL','AG','UB','MX','TN','UN','NAN','NAN')
 pft_expanded = c('Water', 'Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
                  'Shrubland', 'Shrubland', 'Savanna', 'Savanna','Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'No Vegetation', 'Unclassified', 'Unclassified' )
-# roi_abbreviated = c()
-# roi_expanded = c()
 pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded)
 
 
@@ -69,3 +67,8 @@ site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 #   active = bool (Active or Not)
 #   date_end = last date images collected on
 #   date_start = first date images collected on
+
+
+capecod_pth = '/Users/Kenns/Downloads/capecodsin.tif'
+capecod_r = raster(capecod_pth)
+

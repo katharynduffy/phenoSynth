@@ -36,7 +36,6 @@ server = function(input, output, session) {
   #  OUTPUTS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
-
   ## Create the Phenocam Datatable with basic info (Tab named phenocam Table)
   x = cams_
   x$Date = Sys.time() + seq_len(nrow(x))
@@ -55,7 +54,6 @@ server = function(input, output, session) {
   ## Create the map
   output$map = renderLeaflet({
     leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE)) %>%
-      # addTiles() %>%
       addTiles(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.jpg",
         attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
@@ -81,9 +79,8 @@ server = function(input, output, session) {
         position = c("topleft"),
         options = layersControlOptions(collapsed = TRUE)
       )%>%
-      addLegend(values = c(1,2), group = "site_markers", position = "bottomright", 
+      addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
                 labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
-      
       addDrawToolbar(
         targetGroup = 'drawnPoly',
         polylineOptions=FALSE,
@@ -127,6 +124,7 @@ server = function(input, output, session) {
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
   
+  # Adds Legend for MODIS Land Cover
   observeEvent(input$map_groups,{
     map_layers = input$map_groups
     if ('MODIS Land Cover' %in% map_layers){
@@ -136,8 +134,6 @@ server = function(input, output, session) {
                              tags$img(src='igbp-legend.png', class= 'img',
                                       style="position: absolute; z-index: 3; top:0px; left:0px;")))
     }else{shinyjs::hide(id = 'modisLegend')}
-    
-    
   })
   
   # Event occurs when drawing a new feature starts
@@ -485,29 +481,63 @@ server = function(input, output, session) {
     site_data = get_site_info(site)
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
+    
     output$analyzerTitle = renderText({site})
     switch_to_analyzer_panel()
-    veg.idx=is.element(pft_df$pft_abbreviated,site_data$primary_veg_type[1] )
+    
+    veg.idx = is.element(pft_df$pft_abbreviated,site_data$primary_veg_type[1] )
     prim_veg = pft_df$pft_expanded[veg.idx]
-    prim_veg=prim_veg[1]
-    veg.idx=is.element(pft_df$pft_abbreviated, site_data$secondary_veg_type[1])
+    prim_veg = prim_veg[1]
+    veg.idx = is.element(pft_df$pft_abbreviated, site_data$secondary_veg_type[1])
     secon_veg = pft_df$pft_expanded[veg.idx]
-    secon_veg=secon_veg[1]
+    secon_veg = secon_veg[1]
     veg_types = c()
+    
+    primary_key = subset(pft_df, pft_abbreviated == as.character(site_data$primary_veg_type[1]))$pft_key[1]
+    secondary_key = subset(pft_df, pft_abbreviated == as.character(site_data$secondary_veg_type[1]))$pft_key[1]
+    
+    c = c('green', 'yellow')
+    r = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
+    
+    prim_b = FALSE
+    secon_b = FALSE
     if (site_data$primary_veg_type[1] == ''){print ('no primary vegetation type found')
     }else{
-        print (prim_veg)
-        prim_veg = paste0('Primary: ', prim_veg)
-        veg_types = append(veg_types, as.character(prim_veg))
-      }
+      # print (prim_veg)
+      prim_b = TRUE
+      prim_veg = paste0('Primary: ', prim_veg)
+      veg_types = append(veg_types, as.character(prim_veg))
+      rc = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
+                                  prim = primary_key)
+    }
     if (site_data$secondary_veg_type[1] == ''){print ('no secondary vegetation type found')
     }else{
-        print (secon_veg)
-        secon_veg = paste0('Secondary: ', secon_veg)
-        veg_types = append(veg_types, as.character(secon_veg))
+      # print (secon_veg)
+      secon_b = TRUE
+      secon_veg = paste0('Secondary: ', secon_veg)
+      veg_types = append(veg_types, as.character(secon_veg))
+      rc = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, 
+                                  prim = primary_key, sec = secondary_key)
+    }
+    if (prim_b|secon_b == TRUE){
+      leafletProxy('map') %>% 
+        hideGroup("MODIS Land Cover 2016") %>%
+        addRasterImage(r, opacity = .5, project=TRUE, group='MODIS Land Cover 2016') %>%
+        addRasterImage(rc, opacity = .5, project=TRUE, group= 'MODIS Reclassified 2016', colors=c) %>%
+        addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+                         overlayGroups = c('MODIS Land Cover', 'MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
+                         position = c("topleft"),
+                         options = layersControlOptions(collapsed = TRUE))
+    }
+    print (site_data$primary_veg_type[1])
+    print (site_data$secondary_veg_type[1])
+    if (is.null(veg_types)){
+      updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
+      print ('no ROI veg types')
+    }else{
+      updateSelectInput(session, 'pftSelection', choices = veg_types)
       }
-    updateSelectInput(session, 'pftSelection', choices = veg_types)
-    leafletProxy('map') %>% showGroup('MODIS Land Cover')
+      
   })
 
 
@@ -551,6 +581,57 @@ server = function(input, output, session) {
   #  FUNCTIONS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
+  # Creates boundary box for clipping rasters using lat/lon from phenocam site
+  crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL, secondary=NULL){
+    us_pth = './www/uslandcover_modis.tif'
+    us_r = raster(us_pth)
+    e = as(extent(lon_-.35, lon_+.35, lat_-.25, lat_+.25), 'SpatialPolygons')
+    crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
+    r = crop(us_r, e)
+    
+    if (reclassify == FALSE){
+      return (r)
+      
+    }else if (reclassify == TRUE){
+      
+      water = 17*2
+      
+      m = c(1,NA,
+            2,NA,
+            3,NA,
+            4,NA,
+            5,NA,
+            6,NA,
+            7,NA,
+            8,NA,
+            9,NA,
+            10,NA,
+            11,NA,
+            12,NA,
+            13,NA,
+            14,NA,
+            15,NA,
+            16,NA,
+            17,NA)
+      
+      if(!is.null(primary)){
+        prim = primary*2
+        m[prim] = 1
+        }
+      if(!is.null(secondary)){
+        sec = secondary*2
+        m[sec] = 2
+        }
+
+      # m[water] = 3
+      
+      rclmat = matrix(m, ncol=2, byrow=TRUE)
+      rc = reclassify(r, rclmat)
+      
+      return (rc)
+    }
+  }
+  
 
   # Grabs the list of 3_day csv data from phenocam website
   get_site_roi_3day_csvs = function(name){
