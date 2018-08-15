@@ -650,19 +650,24 @@ server = function(input, output, session) {
        datalat = c(yclose, yclose, yfar, yfar, yclose)
        
        id_ = paste0(name, '_', row, '_', col, '_', vegindex)
-      
-       # Draw the pixel polygon on the leaflet map
-       add_polyline(datalon, datalat, id_, .95, 'red')
-
-       ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,
-                   ' --Row: ', row, ' --Column: ', col, ' --Pft Number: ', vegindex,
-                   ' --Middle of Cell lon: ', midcell[1], ' lat: ', midcell[2])
-       print (ps)
        
-       # Build Dataframe   reactive value = data$pixel_df
-       data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Lat = midcelly, Lon = midcellx, pft = vegindex))
+       # Check to see if already drawn, and if so remove it from df and leaflet map
+       if (id_ %in% data$pixel_df$Id){
+         remove_polyline(id = id_, all = FALSE)
+         data$pixel_df = subset(data$pixel_df, Id!=id_)
+       }else{
+         # Draw the pixel polygon on the leaflet map
+         add_polyline(datalon, datalat, id_, .95, 'red')
+  
+         ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,
+                     ' --Row: ', row, ' --Column: ', col, ' --Pft Number: ', vegindex,
+                     ' --Middle of Cell lon: ', midcell[1], ' lat: ', midcell[2])
+         print (ps)
+         
+         # Build Dataframe   reactive value = data$pixel_df
+         data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Lat = midcelly, Lon = midcellx, pft = vegindex))
+       }
        print (data$pixel_df)
-       
     }
   }
   
@@ -855,9 +860,13 @@ server = function(input, output, session) {
 
 
   # remove all polylines
-  remove_polyline = function(id_){
-    leafletProxy("map", data = variables$sites_df) %>%
-      clearShapes()
+  remove_polyline = function(id_=NULL, all=TRUE){
+    if (all == TRUE){
+      leafletProxy("map") %>%
+        clearShapes()
+    }else if(all == FALSE){
+        leafletProxy('map') %>% removeShape(layerId = id_)
+      }
   }
 
 
