@@ -33,6 +33,7 @@ server = function(input, output, session) {
     switch_to_explorer_panel()
     panel$mode = 'explorer'
     data$pixel_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
   })
 
 
@@ -76,13 +77,6 @@ server = function(input, output, session) {
         options = providerTileOptions(transparent=FALSE)
       ) %>%
       hideGroup("MODIS Land Cover") %>%
-      # Adds the layers options to top left of Map
-      addLayersControl(
-        baseGroups    = c("World Imagery", "Open Topo Map"),
-        overlayGroups = c('MODIS Land Cover'),
-        position      = c("topleft"),
-        options       = layersControlOptions(collapsed = TRUE)
-      )%>%
       addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
                 labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
       addDrawToolbar(
@@ -111,7 +105,18 @@ server = function(input, output, session) {
                Shiny.onInputChange('hover_coordinates', null)})
   }")  %>%
       setView(lng = -93.85, lat = 37.45, zoom = 4) %>%
-      addStyleEditor()
+      addStyleEditor() %>%
+      addMeasure(position          = "topleft",
+                 primaryLengthUnit = "meters",
+                 primaryAreaUnit   = "sqmeters",
+                 activeColor       = "#3D535D",
+                 completedColor    = "#7D4479") %>%
+      # Adds the layers options to top left of Map
+      addLayersControl(
+        baseGroups    = c("World Imagery", "Open Topo Map"),
+        overlayGroups = c('MODIS Land Cover'),
+        position      = c("topleft"),
+        options       = layersControlOptions(collapsed = TRUE))
     })
 
   # Adds the mouse lat / lon to an output (we can change this to anything)
@@ -214,11 +219,11 @@ server = function(input, output, session) {
 
   # When feature is deleted
   observeEvent(input$map_draw_deleted_features, {
-
     # Leaflet ID to delete
     id      = input$map_draw_deleted_features$features[[1]]$properties$`_leaflet_id`
 
     # Deletes all rows with id being edited
+    print (data$df)
     data$df = subset(data$df, LeafletId != id)
 
     # Updating the select input for the download availability of created leaflet features
@@ -228,7 +233,7 @@ server = function(input, output, session) {
     build_polygon_table()
 
 
-    print (data$df)
+    # print (data$df)
   })
 
   # Save shapefile button
@@ -965,13 +970,6 @@ server = function(input, output, session) {
     return(style)
   }
 
-
-  # Creating a label from the phenocamsite name
-  new_label = function(name_){
-    label = sprintf('This is the test label/n%s',name_)
-  }
-
-
   count = function(){
     isolate({
       counter$countervalue = counter$countervalue + 1
@@ -981,8 +979,13 @@ server = function(input, output, session) {
 
   build_polygon_table = function(){
     # Creating Dataframe with 1 record per shapefile
-    df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
+    if (nrow(data$df) == 0){
+      df = setNames(data.frame(matrix(ncol = 3, nrow = 0)), c('Name', 'Longitude', 'Latitude'))
+    }else {
+      df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
+    }
     x  = df
+    print (x)
     # x$Date = Sys.time() + seq_len(nrow(x))
     output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
     proxy            = dataTableProxy('pAOIchart')
