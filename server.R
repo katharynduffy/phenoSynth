@@ -77,8 +77,6 @@ server = function(input, output, session) {
         options = providerTileOptions(transparent=FALSE)
       ) %>%
       hideGroup("MODIS Land Cover") %>%
-      addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
-                labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
       addDrawToolbar(
         targetGroup         = 'drawnPoly',
         polylineOptions     = FALSE,
@@ -521,7 +519,7 @@ server = function(input, output, session) {
     primary_key   = subset(pft_df, pft_abbreviated == as.character(site_data$primary_veg_type[1]))$pft_key[1]
     secondary_key = subset(pft_df, pft_abbreviated == as.character(site_data$secondary_veg_type[1]))$pft_key[1]
     
-    c      = c('green', 'yellow')
+    c      = c('#79c400', '#ffee00')
     r      = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
     data$r = r
     
@@ -1041,6 +1039,9 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'showHidePlot')
     shinyjs::hide(id = 'modisLegend')
     shinyjs::hide(id = 'plotpanel')
+    leafletProxy('map') %>% 
+      addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
+                labels = c("Active sites", "Inactive sites"), colors= c("blue","red"))
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:
@@ -1063,5 +1064,8 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'site')
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
+    leafletProxy('map') %>% clearControls() %>%
+      addLegend(values = c(1,2), group = "landcover_prim_sec", position = "bottomright",
+                labels = c("Primary ROI", "Secondary ROI"), colors= c("#79c400","#ffee00"))
   }
 }
