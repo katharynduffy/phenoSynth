@@ -7,22 +7,23 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
 
   variables = reactiveValues(
-    filter = 'All',
-    sites_df = cams_,
-    sites = site_names)
+                      filter   = 'All',
+                      sites_df = cams_,
+                      sites    = site_names)
 
   # 'analyzer' or 'explorer'
-  panel = reactiveValues(mode = '')
+  panel   = reactiveValues(mode = '')
 
   counter = reactiveValues(countervalue = 0)
 
-  modis = reactiveValues(data = data.frame(),
+  modis   = reactiveValues(data = data.frame(),
                          cached_ndvi = list())
+  
 
-  data = reactiveValues(
-    run = 0,
-    names = c(),
-    df = data.frame())
+  data    = reactiveValues(
+                      run   = 0,
+                      names = c(),
+                      df    = data.frame())
 
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
@@ -31,6 +32,7 @@ server = function(input, output, session) {
   observe({
     switch_to_explorer_panel()
     panel$mode = 'explorer'
+    data$pixel_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
   })
 
 
@@ -45,10 +47,10 @@ server = function(input, output, session) {
   proxy = dataTableProxy('x1')
   observeEvent(input$x1_cell_edit, {
     info = input$x1_cell_edit
-    str(info)
-    i = info$row
-    j = info$col
-    v = info$value
+    # str(info)
+    i   = info$row
+    j   = info$col
+    v   = info$value
     x[i, j] <<- DT::coerceValue(v, x[i, j])
     replaceData(proxy, x, resetPaging = FALSE)  # important
   })
@@ -63,45 +65,46 @@ server = function(input, output, session) {
       ) %>%
       addWMSTiles(
         "http://webmap.ornl.gov/ogcbroker/wms?",
-        layers = "10004_31",
-        options = WMSTileOptions(format = "image/png", transparent = TRUE, opacity=.6),
+        layers      = "10004_31",
+        options     = WMSTileOptions(format = "image/png", transparent = TRUE, opacity=.6),
         attribution = "MODIS Land Cover (MCD12Q1) &copy NASA",
-        group = "MODIS Land Cover"
+        group       = "MODIS Land Cover"
       ) %>%
       addProviderTiles(
         "OpenTopoMap",
-        group = "Open Topo Map",
+        group   = "Open Topo Map",
         options = providerTileOptions(transparent=FALSE)
       ) %>%
       hideGroup("MODIS Land Cover") %>%
       # Adds the layers options to top left of Map
       addLayersControl(
-        baseGroups = c("World Imagery", "Open Topo Map"),
+        baseGroups    = c("World Imagery", "Open Topo Map"),
         overlayGroups = c('MODIS Land Cover'),
-        position = c("topleft"),
-        options = layersControlOptions(collapsed = TRUE)
+        position      = c("topleft"),
+        options       = layersControlOptions(collapsed = TRUE)
       )%>%
       addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
                 labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
       addDrawToolbar(
-        targetGroup = 'drawnPoly',
-        polylineOptions=FALSE,
-        rectangleOptions = FALSE,
-        markerOptions = FALSE,
+        targetGroup         = 'drawnPoly',
+        polylineOptions     = FALSE,
+        rectangleOptions    = FALSE,
+        markerOptions       = FALSE,
         circleMarkerOptions = FALSE,
-        circleOptions = FALSE,
-        editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
-        polygonOptions = drawPolygonOptions(
-          showArea = TRUE,
-          repeatMode = F,
-          shapeOptions = drawShapeOptions(clickable=TRUE,
-                                          color='black',
-                                          fillColor='yellow')))  %>%
+        circleOptions       = FALSE,
+        editOptions         = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
+        polygonOptions      = drawPolygonOptions(
+                                              showArea     = TRUE,
+                                              repeatMode   = F,
+                                              shapeOptions = drawShapeOptions(
+                                                              clickable = TRUE,
+                                                              color     = 'black',
+                                                              fillColor = 'yellow')))  %>%
       # Rendering the mouseoutput (aka lat / lon)
       onRender("function(el,x){
                this.on('mousemove', function(e) {
-               var lat = e.latlng.lat;
-               var lng = e.latlng.lng;
+               var lat   = e.latlng.lat;
+               var lng   = e.latlng.lng;
                var coord = [lat, lng];
                Shiny.onInputChange('hover_coordinates', coord)});
                this.on('mouseout', function(e) {
@@ -134,8 +137,8 @@ server = function(input, output, session) {
       shinyjs::show(id = 'modisLegend')
       insertUI(selector = '#image2',
                ui = tags$div(id='modisLegend_',
-                             tags$img(src='igbp-legend.png', class= 'img',
-                                      style="position: absolute; z-index: 3; top:0px; left:0px;")))
+                             tags$img(src   = 'igbp-legend.png', class= 'img',
+                                      style = "position: absolute; z-index: 3; top:0px; left:0px;")))
     }else{shinyjs::hide(id = 'modisLegend')}
   })
   
@@ -146,24 +149,24 @@ server = function(input, output, session) {
       id = input$map_draw_new_feature$properties$`_leaflet_id`
 
       # Site name combined with run # for new polygon feature
-      data$run = data$run + 1
-      name_ = paste(c(isolate(input$site),data$run), collapse='_')
+      data$run   = data$run + 1
+      name_      = paste(c(isolate(input$site),data$run), collapse='_')
       data$names = c(data$names, name_)
 
       # Grabbing lat/lon values for new leaflet polygon
-      coor = unlist(input$map_draw_new_feature$geometry$coordinates)
+      coor      = unlist(input$map_draw_new_feature$geometry$coordinates)
       Longitude = coor[seq(1, length(coor), 2)]
-      Latitude = coor[seq(2, length(coor), 2)]
+      Latitude  = coor[seq(2, length(coor), 2)]
 
       # Building Dataframe with points from newly created leaflet feature
       c = 0
       for (x in Longitude){
-        c = c + 1
+        c       = c + 1
         data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
 
       # Creating a SpatialPolygon that can be added to our spatial polygons dataframe (value$drawnPoly)
-      poly = Polygon(cbind(Longitude, Latitude))
-      polys = Polygons(list(poly), ID = name_)
+      poly    = Polygon(cbind(Longitude, Latitude))
+      polys   = Polygons(list(poly), ID = name_)
       spPolys = SpatialPolygons(list(polys))
 
       # Adding new polygon to a spatial polygons dataframe
@@ -188,10 +191,10 @@ server = function(input, output, session) {
     id = input$map_draw_edited_features$features[[1]]$properties$`_leaflet_id`
 
     # Grabbing lat/lon values for new leaflet polygon
-    coor = unlist(input$map_draw_edited_features$features[[1]]$geometry$coordinates[[1]])
+    coor      = unlist(input$map_draw_edited_features$features[[1]]$geometry$coordinates[[1]])
     Longitude = coor[seq(1, length(coor), 2)]
-    Latitude = coor[seq(2, length(coor), 2)]
-    name_ = unique(subset(data$df, LeafletId == id)$Name)
+    Latitude  = coor[seq(2, length(coor), 2)]
+    name_     = unique(subset(data$df, LeafletId == id)$Name)
 
     # Deletes all rows with id being edited
     data$df = subset(data$df, LeafletId != id)
@@ -199,7 +202,7 @@ server = function(input, output, session) {
     # Adds back the edited polygon to the dataframe (data$df)
     c = 0
     for (x in Longitude){
-      c = c + 1
+      c       = c + 1
       data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
 
     # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
@@ -213,7 +216,7 @@ server = function(input, output, session) {
   observeEvent(input$map_draw_deleted_features, {
 
     # Leaflet ID to delete
-    id = input$map_draw_deleted_features$features[[1]]$properties$`_leaflet_id`
+    id      = input$map_draw_deleted_features$features[[1]]$properties$`_leaflet_id`
 
     # Deletes all rows with id being edited
     data$df = subset(data$df, LeafletId != id)
@@ -230,13 +233,13 @@ server = function(input, output, session) {
 
   # Save shapefile button
   observeEvent(input$saveshp,{
-    WGScoor = data$df
+    WGScoor              = data$df
     coordinates(WGScoor) = ~Longitude + Latitude
     proj4string(WGScoor) = CRS("+proj=longlat +datum=WGS84")
-    LLcoor<-spTransform(WGScoor,CRS("+proj=longlat"))
-    file = isolate(input$shapefiles)
-    folder = get_download_folder()
-    filename = paste(folder, file, sep='')
+    LLcoor               <- spTransform(WGScoor,CRS("+proj=longlat"))
+    file                 = isolate(input$shapefiles)
+    folder               = get_download_folder()
+    filename             = paste(folder, file, sep='')
     print (filename)
 
     shapefile(LLcoor, filename, overwrite=TRUE)
@@ -280,7 +283,7 @@ server = function(input, output, session) {
   # Zooms to the selected site in the Sites dropdown option with BUTTON
   observeEvent(input$siteZoom, {
     print('Running BUTTON Zoom to Selected Site')
-    site = isolate(input$site)
+    site      = isolate(input$site)
     site_data = zoom_to_site(site, zoom=TRUE)
 
 
@@ -339,10 +342,10 @@ server = function(input, output, session) {
   observeEvent(input$drawROI, {
     roi_bool = input$drawROI
     if (roi_bool == TRUE){
-      site = isolate(input$site)
-      site_data = get_site_info(site)
+      site            = isolate(input$site)
+      site_data       = get_site_info(site)
       cam_orientation = as.character(site_data$camera_orientation)
-      degrees = as.numeric(orientation_key[cam_orientation])
+      degrees         = as.numeric(orientation_key[cam_orientation])
       run_add_polyline(site_data, degrees)
       shinyjs::show(id = 'azm')
       updateSliderInput(session, 'azm', value = degrees )
@@ -374,18 +377,18 @@ server = function(input, output, session) {
 
       site_data = get_site_info(site)
 
-      lat = site_data$lat
-      lon = site_data$lon
-      description = site_data$site_description
-      elevation =site_data$elev
-      camera = site_data$site
-      site_type = site_data$site_type
-      nimage = site_data$nimage
+      lat             = site_data$lat
+      lon             = site_data$lon
+      description     = site_data$site_description
+      elevation       = site_data$elev
+      camera          = site_data$site
+      site_type       = site_data$site_type
+      nimage          = site_data$nimage
       cam_orientation = as.character(site_data$camera_orientation)
-      degrees = as.numeric(orientation_key[cam_orientation])
-      active = site_data$active
-      date_end = site_data$date_end
-      date_start = site_data$date_start
+      degrees         = as.numeric(orientation_key[cam_orientation])
+      active          = site_data$active
+      date_end        = site_data$date_end
+      date_start      = site_data$date_start
 
       get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees , nimage,
                      active, date_end, date_start)
@@ -397,8 +400,8 @@ server = function(input, output, session) {
   observe({
     print ('Doing something to Image')
     draw_bool = input$drawImage
-    site = input$site
-    roi_bool = input$drawImageROI
+    site      = input$site
+    roi_bool  = input$drawImageROI
 
     removeUI(selector = '#phenocamSiteImage')
     img_url = get_img_url(site)
@@ -425,13 +428,11 @@ server = function(input, output, session) {
 
   # Plots the modis subset
   observeEvent(input$showModisSubset,{
-    
-    
     # Run modis tool here on site currently selected
-    site = input$site
     print ('Running show MODIS subset tool')
+    site      = input$site
     site_data = get_site_info(site)
-    site_ = site_data$site[1]
+    site_     = site_data$site[1]
     
     print (modis$cached_ndvi)
     
@@ -439,40 +440,39 @@ server = function(input, output, session) {
       output$currentPlot <- renderPlot({ modis$cached_ndvi[site_] })
     } else{
     
-      lat_ = site_data$lat[1]
-      lon_ = site_data$lon[1]
-      date_end = as.Date(site_data$date_end[1])
+      lat_       = site_data$lat[1]
+      lon_       = site_data$lon[1]
+      date_end   = as.Date(site_data$date_end[1])
       date_start = as.Date(site_data$date_start[1])
-      subset <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
+      subset     <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
                           start = date_start,end = date_end,km_lr = 1,km_ab = 1,site_name = site_,internal = TRUE)
       print (str(subset))
 
-      NDVIsubset <- mt_subset(product = "MOD13Q1",
-                              lat = lat_,
-                              lon = lon_,
-                              band = "250m_16_days_NDVI",
-                              start = date_start,
-                              end = date_end,
-                              km_lr = 1,
-                              km_ab = 1,
+      NDVIsubset <- mt_subset(product   = "MOD13Q1",
+                              lat       = lat_,
+                              lon       = lon_,
+                              band      = "250m_16_days_NDVI",
+                              start     = date_start,
+                              end       = date_end,
+                              km_lr     = 1,
+                              km_ab     = 1,
                               site_name = site_,
-                              internal = TRUE)
-      QCsubset <- mt_subset(product = "MOD13Q1",
-                            lat = lat_,
-                            lon = lon_,
-                            band = "250m_16_days_pixel_reliability",
-                            start = date_start,
-                            end = date_end,
-                            km_lr = 1,
-                            km_ab = 1,
-                            site_name = site_,
-                            internal = TRUE)
+                              internal  = TRUE)
       
-      
+      QCsubset   <- mt_subset(product   = "MOD13Q1",
+                              lat       = lat_,
+                              lon       =   lon_,
+                              band      = "250m_16_days_pixel_reliability",
+                              start     = date_start,
+                              end       = date_end,
+                              km_lr     = 1,
+                              km_ab     = 1,
+                              site_name = site_,
+                              internal  = TRUE)
   
-      cleanNDVI=data.frame(NDVI=NDVIsubset$data$data, QC=QCsubset$data$data, Date=as.Date.factor(QCsubset$data$calendar_date))
-      cleanNDVI=cleanNDVI%>%filter(QC<1)
-      cleanNDVI$NDVI=cleanNDVI$NDVI*.0001
+      cleanNDVI      = data.frame(NDVI=NDVIsubset$data$data, QC=QCsubset$data$data, Date=as.Date.factor(QCsubset$data$calendar_date))
+      cleanNDVI      = cleanNDVI%>%filter(QC<1)
+      cleanNDVI$NDVI = cleanNDVI$NDVI*.0001
   
   
       p = ggplot(data = cleanNDVI, aes(x= Date, y= NDVI)) +
@@ -497,46 +497,47 @@ server = function(input, output, session) {
   # Button switches to Analyzer Mode
   observeEvent(input$analyzerMode,{
     panel$mode = 'analyzer'
-    site = input$site
-    site_data = get_site_info(site)
+    site       = input$site
+    site_data  = get_site_info(site)
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
     
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
     
-    veg.idx = is.element(pft_df$pft_abbreviated,site_data$primary_veg_type[1] )
-    prim_veg = pft_df$pft_expanded[veg.idx]
-    prim_veg = prim_veg[1]
-    veg.idx = is.element(pft_df$pft_abbreviated, site_data$secondary_veg_type[1])
+    veg.idx   = is.element(pft_df$pft_abbreviated,site_data$primary_veg_type[1] )
+    prim_veg  = pft_df$pft_expanded[veg.idx]
+    prim_veg  = prim_veg[1]
+    veg.idx   = is.element(pft_df$pft_abbreviated, site_data$secondary_veg_type[1])
     secon_veg = pft_df$pft_expanded[veg.idx]
     secon_veg = secon_veg[1]
     veg_types = c()
     
-    primary_key = subset(pft_df, pft_abbreviated == as.character(site_data$primary_veg_type[1]))$pft_key[1]
+    primary_key   = subset(pft_df, pft_abbreviated == as.character(site_data$primary_veg_type[1]))$pft_key[1]
     secondary_key = subset(pft_df, pft_abbreviated == as.character(site_data$secondary_veg_type[1]))$pft_key[1]
     
-    c = c('green', 'yellow')
-    r = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
+    c      = c('green', 'yellow')
+    r      = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
+    data$r = r
     
-    prim_b = FALSE
+    prim_b  = FALSE
     secon_b = FALSE
     if (site_data$primary_veg_type[1] == ''){print ('no primary vegetation type found')
     }else{
       # print (prim_veg)
-      prim_b = TRUE
-      prim_veg = paste0('Primary: ', prim_veg)
+      prim_b    = TRUE
+      prim_veg  = paste0('Primary: ', prim_veg)
       veg_types = append(veg_types, as.character(prim_veg))
-      rc = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
+      rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
                                   prim = primary_key)
     }
     if (site_data$secondary_veg_type[1] == ''){print ('no secondary vegetation type found')
     }else{
       # print (secon_veg)
-      secon_b = TRUE
+      secon_b   = TRUE
       secon_veg = paste0('Secondary: ', secon_veg)
       veg_types = append(veg_types, as.character(secon_veg))
-      rc = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, 
+      rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, 
                                   prim = primary_key, sec = secondary_key)
     }
     if (prim_b|secon_b == TRUE){
@@ -594,13 +595,13 @@ server = function(input, output, session) {
       }else{updateCheckboxInput(session, inputId = 'drawImageROI', value=FALSE)}
   })
 
-  # test click on map to show popup of lat/lon
+  # Click on map to show popup of lat/lon
   observeEvent(input$map_click,{
     click = input$map_click
+    site  = input$site
     if (panel$mode == 'analyzer'){
       if (!is.null(click)) {
-        r = crop_MODIS_2016_raster(click$lat, click$lng, reclassify=FALSE)
-        showpos(x = click$lng, y = click$lat, r)
+        showpos(x = click$lng, y = click$lat, site)
       }
     }
   })
@@ -609,44 +610,69 @@ server = function(input, output, session) {
   #  FUNCTIONS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
-  #Show popups 
-  showpos <- function(x=NULL, y=NULL, r) {#Show popup on clicks
-    #Translate Lat-Lon to cell number using the unprojected raster
-    #This is because the projected raster is not in degrees, we cannot use it!
-    print (x)
-    print (y)
-    us_pth = './www/uslandcover_modis.tif'
-    us_r = raster(us_pth)
-    cell <- cellFromXY(us_r, c(x, y))
-    print (cell)
-    # if (!is.na(cell)) {#If the click is inside the raster...
-    #   xy <- xyFromCell(lldepth, cell) #Get the center of the cell
-    #   x <- xy[1]
-    #   y <- xy[2]
-    #   #Get row and column, to print later
-    #   rc <- rowColFromCell(lldepth, cell)
-    #   #Get value of the given cell
-    #   val = depth[cell]
-    #   content <- paste0("X=",rc[2],
-    #                     "; Y=",rc[1],
-    #                     "; Lon=", round(x, 5),
-    #                     "; Lat=", round(y, 5),
-    #                     "; Depth=", round(val, 1), " m")
-    #   proxy <- leafletProxy("map")
-    #   #add Popup
-    #   proxy %>% clearPopups() %>% addPopups(x, y, popup = content)
-    #   #add rectangles for testing
-    #   proxy %>% clearShapes() %>% addRectangles(x-resol[1]/2, y-resol[2]/2, x+resol[1]/2, y+resol[2]/2)
-    # }
+  showpos = function(x=NULL, y=NULL, name) {
+    # If clicked within the Raster on the leaflet map
+    r_ = data$r
+    cell = cellFromXY(r_, c(x, y))
+     if (!is.na(cell)) {
+       # Variables we will use:  
+       #   row, column
+       #   resolution (aka cell size / pixel size)
+       #   x (longitude) , y (latitude)
+       #   ulraster (Upper Left Corner of the raster in lat/lon)
+    
+       xmin       = xmin(extent(r_))
+       xmax       = xmax(extent(r_))
+       ymin       = ymin(extent(r_))
+       ymax       = ymax(extent(r_))
+       nrows      = nrow(r_)
+       ncols      = ncol(r_)
+       totalcells = ncell(r_)
+       resolution = res(r_)[1]
+       vegindex   = (values(r_)[cell])
+       
+       # Calculate UpperLeft(UL), UpperRight(UR), LowerLeft(LL), and LowerRight(LR) 
+       #   coordinates for selected cell/pixel from raster
+       
+       row = ceiling(cell / ncols)
+       col = cell %% ncols
+       
+       xclose = ((col - 1) * resolution) + xmin
+       xfar   = (col * resolution) + xmin
+       yclose = -((row - 1) * resolution) + ymax
+       yfar   = -(row * resolution) + ymax
+       
+       midcellx = xclose + (resolution * .5)
+       midcelly = yclose - (resolution * .5)
+       midcell  = c(midcellx, midcelly)
+       
+       datalon = c(xclose, xfar, xfar, xclose ,xclose)
+       datalat = c(yclose, yclose, yfar, yfar, yclose)
+       
+       id_ = paste0(name, '_', row, '_', col, '_', vegindex)
+      
+       # Draw the pixel polygon on the leaflet map
+       add_polyline(datalon, datalat, id_, .95, 'red')
+
+       ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,
+                   ' --Row: ', row, ' --Column: ', col, ' --Pft Number: ', vegindex,
+                   ' --Middle of Cell lon: ', midcell[1], ' lat: ', midcell[2])
+       print (ps)
+       
+       # Build Dataframe   reactive value = data$pixel_df
+       data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Lat = midcelly, Lon = midcellx, pft = vegindex))
+       print (data$pixel_df)
+       
+    }
   }
   
   # Creates boundary box for clipping rasters using lat/lon from phenocam site
   crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL, secondary=NULL){
     us_pth = './www/uslandcover_modis.tif'
-    us_r = raster(us_pth)
-    e = as(extent(lon_-.35, lon_+.35, lat_-.25, lat_+.25), 'SpatialPolygons')
+    us_r   = raster(us_pth)
+    e      = as(extent(lon_-.35, lon_+.35, lat_-.25, lat_+.25), 'SpatialPolygons')
     crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
-    r = crop(us_r, e)
+    r      = crop(us_r, e)
     
     if (reclassify == FALSE){
       return (r)
@@ -674,18 +700,18 @@ server = function(input, output, session) {
             17,NA)
       
       if(!is.null(primary)){
-        prim = primary*2
+        prim    = primary*2
         m[prim] = 1
         }
       if(!is.null(secondary)){
-        sec = secondary*2
+        sec    = secondary*2
         m[sec] = 2
         }
 
       # m[water] = 3
       
       rclmat = matrix(m, ncol=2, byrow=TRUE)
-      rc = reclassify(r, rclmat)
+      rc     = reclassify(r, rclmat)
       
       return (rc)
     }
@@ -694,15 +720,15 @@ server = function(input, output, session) {
 
   # Grabs the list of 3_day csv data from phenocam website
   get_site_roi_3day_csvs = function(name){
-    url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', sep = '')
+    url  = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', sep = '')
     page = read_html(url)
 
     site_hrefs = page %>% html_nodes("a") %>% html_attr("href")
-    # csvs_ = site_hrefs[grep('3day.csv|1day.csv', site_hrefs)]  #How to grab both 1 and 3 day csvs
-    csvs_ = site_hrefs[grep('3day.csv|gcc90', site_hrefs)]
-    csvs_ = csvs_[grep('XX|.png', csvs_, invert=TRUE)]  #invert will take all strings without this
-    csv = csvs_[grep('gcc90_3day', csvs_)]
-    csv = csv[1]
+    # csvs_    = site_hrefs[grep('3day.csv|1day.csv', site_hrefs)]  #How to grab both 1 and 3 day csvs
+    csvs_      = site_hrefs[grep('3day.csv|gcc90', site_hrefs)]
+    csvs_      = csvs_[grep('XX|.png', csvs_, invert=TRUE)]  #invert will take all strings without this
+    csv        = csvs_[grep('gcc90_3day', csvs_)]
+    csv        = csv[1]
 
     csv_url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', csv, sep = '')
     print (csv_url)
@@ -729,21 +755,21 @@ server = function(input, output, session) {
       if (veg_type=='None'){
         baseurl = 'https://phenocam.sr.unh.edu'
         siteurl = paste('https://phenocam.sr.unh.edu/webcam/sites/',name,'/', sep = '')
-        page = read_html(siteurl)
-        html = page %>% html_nodes("a") %>% html_attr('href')
-        html = grep('data/archive', html, value=TRUE)[[1]]
-        html = paste(baseurl, html, sep='')
+        page    = read_html(siteurl)
+        html    = page %>% html_nodes("a") %>% html_attr('href')
+        html    = grep('data/archive', html, value=TRUE)[[1]]
+        html    = paste(baseurl, html, sep='')
 
         page2 = read_html(html)
         html2 = page2 %>% html_nodes("a") %>% html_attr('href')
         html2 = grep('data/archive', html2, value=TRUE)
         html2 = grep('.tif', html2, value=TRUE)
 
-        roi = strsplit(html2, '/')[[1]]
-        roi = grep('.tif', roi, value=TRUE)
-        roi = strsplit(roi, name)[[1]]
-        roi = grep('.tif', roi, value=TRUE)
-        roi = strsplit(roi, '.tif')[[1]]
+        roi     = strsplit(html2, '/')[[1]]
+        roi     = grep('.tif', roi, value=TRUE)
+        roi     = strsplit(roi, name)[[1]]
+        roi     = grep('.tif', roi, value=TRUE)
+        roi     = strsplit(roi, '.tif')[[1]]
         roi_url = paste('https://phenocam.sr.unh.edu/data/archive/',
                         name, '/ROI/', name, roi, '_overlay.png', sep = '')
       }else{
@@ -790,17 +816,17 @@ server = function(input, output, session) {
     lat =  site_data_$lat
     lon =  site_data_$lon
     dst = sqrt(los**2 + los**2)
-    c = rotate_pt(lon, lat, (azm_-25), dst)
-    b = rotate_pt(lon, lat, (azm_+25), dst)
-    cx = c[[1]]
-    cy = c[[2]]
-    bx = b[[1]]
-    by = b[[2]]
+    c   = rotate_pt(lon, lat, (azm_-25), dst)
+    b   = rotate_pt(lon, lat, (azm_+25), dst)
+    cx  = c[[1]]
+    cy  = c[[2]]
+    bx  = b[[1]]
+    by  = b[[2]]
 
     datalon = c(lon,cx,bx,lon)
     datalat = c(lat,cy,by,lat)
-    camera = site_data_$site
-    id_ = paste('fov',camera, sep='')
+    camera  = site_data_$site
+    id_     = paste('fov',camera, sep='')
     add_polyline(datalon, datalat, id_, .45, 'red')
   }
 
@@ -811,9 +837,9 @@ server = function(input, output, session) {
       # clearShapes()%>%
       addPolylines( datalon_,
                     datalat_,
-                    layerId=id_,
-                    opacity=opacity_,
-                    color = color_)
+                    layerId = id_,
+                    opacity = opacity_,
+                    color   = color_)
   }
 
 
@@ -822,9 +848,9 @@ server = function(input, output, session) {
       # clearShapes()%>%
       addPolygons( datalon_,
                     datalat_,
-                    layerId=id_,
-                    opacity=opacity_,
-                    color = color_)
+                    layerId = id_,
+                    opacity = opacity_,
+                    color   = color_)
   }
 
 
@@ -837,17 +863,17 @@ server = function(input, output, session) {
 
   # Zoom to site
   zoom_to_site = function(site_, zoom){
-    site_data = get_site_info(site_)
-    description = site_data$site_description
+    site_data          = get_site_info(site_)
+    description        = site_data$site_description
     camera_orientation = site_data$camera_orientation
-    lat = site_data$lat
-    lon = site_data$lon
-    cam_orientation = as.character(site_data$camera_orientation)
+    lat                = site_data$lat
+    lon                = site_data$lon
+    cam_orientation    = as.character(site_data$camera_orientation)
 
-    degrees = as.numeric(orientation_key[cam_orientation])
+    degrees   = as.numeric(orientation_key[cam_orientation])
     elevation = site_data$elev
-    camera = site_data$site
-    drawROI = FALSE
+    camera    = site_data$site
+    drawROI   = FALSE
 
     if (zoom == TRUE){
       drawROI = isolate(input$drawROI)
@@ -870,7 +896,7 @@ server = function(input, output, session) {
 
   # Rotate a point based on AZM
   rotate_pt = function(lon, lat, azm, r){
-    rad = azm * (pi / 180)
+    rad  = azm * (pi / 180)
     lon_ = lon + (r * sin(rad))
     lat_ = lat + (r * cos(rad))
     return (list(lon_, lat_))
@@ -947,10 +973,10 @@ server = function(input, output, session) {
   build_polygon_table = function(){
     # Creating Dataframe with 1 record per shapefile
     df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
-    x = df
+    x  = df
     # x$Date = Sys.time() + seq_len(nrow(x))
     output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
-    proxy = dataTableProxy('pAOIchart')
+    proxy            = dataTableProxy('pAOIchart')
     observeEvent(input$pAOIchart_cell_edit, {
       info = input$pAOIchart_cell_edit
       str(info)
