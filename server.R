@@ -22,8 +22,12 @@ server = function(input, output, session) {
 
   data    = reactiveValues(
                       draw_mode = FALSE,
-                      c2    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a', 
+                      # Colors from GIMP (prefer) - colors for pft classifications
+                      c2    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',   
                                  '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#89cae3'),
+                      # Colors from MODIS / NASA (daac)
+                      # c2    = c('#008000', '#00ff00', '#99cc00', '#99ff99', '#339966', '#993366', '#ffcc99', '#ccffcc',
+                      #           "#ffcc00", "#ff9900", '#006699', '#ffff00', '#ff0000', '#999966', '#808080', '#000080'),
                       run   = 0,
                       names = c(),
                       df    = data.frame())
@@ -61,7 +65,7 @@ server = function(input, output, session) {
 
   ## Create the map
   output$map = renderLeaflet({
-    leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE)) %>%
+    leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE, doubleClickZoom = FALSE)) %>%
       addTiles(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.jpg",
         attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
@@ -94,7 +98,7 @@ server = function(input, output, session) {
                                               shapeOptions = drawShapeOptions(
                                                               clickable = TRUE,
                                                               color     = 'black',
-                                                              fillColor = 'yellow')))  %>%
+                                                              fillColor = 'blue')))  %>%
       # Rendering the mouseoutput (aka lat / lon)
       onRender("function(el,x){
                this.on('mousemove', function(e) {
@@ -148,15 +152,12 @@ server = function(input, output, session) {
     }else{shinyjs::hide(id = 'modisLegend')}
   })
   
-  # Start of Drawing
+  # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
     data$draw_mode = TRUE
+    print ('Starting Draw Mode')
   })
-  # Stop of Drawing
-  observeEvent(input$leafmap_draw_stop, {
-    data$draw_mode = FALSE
-  })
-  
+
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
       # Leaflet ID to add to the shapefile dataframe
@@ -194,7 +195,12 @@ server = function(input, output, session) {
       # Building the polygon table from the data$df dataframe containing all of the leaflet polygon data
       build_polygon_table()
 
-      print (data$df)
+      # print (data$df)
+      # sets highlight pixel to on
+      data$draw_mode = FALSE
+      print ('Exiting Draw Mode')
+      
+      print (input$map_draw_stop)
       
   })
 
@@ -610,17 +616,17 @@ server = function(input, output, session) {
 
   # Click on map to show popup of lat/lon
   observeEvent(input$map_click,{
-      if (data$draw_mode == FALSE){
-      click = input$map_click
-      site  = input$site
-      if (panel$mode == 'analyzer'){
-        if (!is.null(click)) {
-          showpos(x = click$lng, y = click$lat, site)
-        }
-      }
+        if (input$highlightPixelMode == TRUE){
+          click = input$map_click
+          site  = input$site
+          if (panel$mode == 'analyzer'){
+            if (!is.null(click)) {
+              showpos(x = click$lng, y = click$lat, site)
+            }
+          }
     }
   })
-
+  
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -1080,11 +1086,13 @@ server = function(input, output, session) {
     leafletProxy('map') %>%
       addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
                 labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
-                           'Shrubland', 'Shrubland', 'Savanna', 'Savanna','Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'Water'),
-                colors = data$c2, title = 'MODIS Land Cover 2016') %>%
+                           'Closed Shrubland', 'Open Shrubland', 'Woody Savannas', 'Savannas','Grasslands', 'Permanent Wetlands', 'Croplands', 'Urban and Built-Up', 
+                           'Cropland/Natural Vegetation', 'Barren or Sparsely Vegetated', 'Water'),
+                colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
       hideGroup("MODIS Land Cover 2016") %>%
       clearControls() %>%
       addLegend(group = 'MODIS Reclassified 2016', position = "bottomright",
-                labels = c("Primary ROI", "Secondary ROI"), colors= c("#79c400","#ffee00"), title = 'MODIS Reclassified 2016')
+                labels = c("Primary ROI", "Secondary ROI"), colors= c("#79c400","#ffee00"), title = 'MODIS Reclassified 2016',
+                opacity = .9)
   }
 }
