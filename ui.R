@@ -39,7 +39,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
-                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 20,
+                                      draggable = TRUE,  top = 'auto', left = 250, right = 'auto' , bottom = 10,
                                       width = 375, height = 225,
                                       actionButton('showImage', '-', value=FALSE),
                                       actionButton('showROIimage', 'Overlay selected ROI'),
@@ -60,15 +60,10 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       ),
 
                         absolutePanel(id = 'mouseBox', class = 'panel panel-default', fixed = TRUE,
-                                      draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 75,
+                                      draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 85,
                                       width = 240, height = 40,
                                       verbatimTextOutput("mouse")
                                       ),
-                        
-                        # absolutePanel(id = 'showHidePlot', class = 'panel panel-default', fixed = TRUE,
-                        #               draggable = FALSE, top = 150, left = 'auto', right = 320, bottom = 'auto',
-                        #               actionButton('hidePlot', 'Hide Plot')
-                        #               ),
 
                         absolutePanel(id = 'siteTitle', class = 'panel panel-default', fixed = FALSE,
                                       draggable = FALSE,  top = 25, left = 'auto', right = 320 , bottom = 'auto',

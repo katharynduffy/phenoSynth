@@ -21,6 +21,9 @@ server = function(input, output, session) {
   
 
   data    = reactiveValues(
+                      draw_mode = FALSE,
+                      c2    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a', 
+                                 '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#89cae3'),
                       run   = 0,
                       names = c(),
                       df    = data.frame())
@@ -64,13 +67,13 @@ server = function(input, output, session) {
         attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
         group = "World Imagery"
       ) %>%
-      addWMSTiles(
-        "http://webmap.ornl.gov/ogcbroker/wms?",
-        layers      = "10004_31",
-        options     = WMSTileOptions(format = "image/png", transparent = TRUE, opacity=.6),
-        attribution = "MODIS Land Cover (MCD12Q1) &copy NASA",
-        group       = "MODIS Land Cover"
-      ) %>%
+      # addWMSTiles(
+      #   "http://webmap.ornl.gov/ogcbroker/wms?",
+      #   layers      = "10004_31",
+      #   options     = WMSTileOptions(format = "image/png", transparent = TRUE, opacity=.6),
+      #   attribution = "MODIS Land Cover (MCD12Q1) &copy NASA",
+      #   group       = "MODIS Land Cover"
+      # ) %>%
       addProviderTiles(
         "OpenTopoMap",
         group   = "Open Topo Map",
@@ -112,7 +115,7 @@ server = function(input, output, session) {
       # Adds the layers options to top left of Map
       addLayersControl(
         baseGroups    = c("World Imagery", "Open Topo Map"),
-        overlayGroups = c('MODIS Land Cover'),
+        # overlayGroups = c('MODIS Land Cover'),
         position      = c("topleft"),
         options       = layersControlOptions(collapsed = TRUE))
     })
@@ -145,9 +148,17 @@ server = function(input, output, session) {
     }else{shinyjs::hide(id = 'modisLegend')}
   })
   
+  # Start of Drawing
+  observeEvent(input$map_draw_start, {
+    data$draw_mode = TRUE
+  })
+  # Stop of Drawing
+  observeEvent(input$leafmap_draw_stop, {
+    data$draw_mode = FALSE
+  })
+  
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
-
       # Leaflet ID to add to the shapefile dataframe
       id = input$map_draw_new_feature$properties$`_leaflet_id`
 
@@ -184,12 +195,12 @@ server = function(input, output, session) {
       build_polygon_table()
 
       print (data$df)
+      
   })
 
 
   # When edited feature gets saved
   observeEvent(input$map_draw_edited_features, {
-
     # Leaflet ID to edit
     id = input$map_draw_edited_features$features[[1]]$properties$`_leaflet_id`
 
@@ -545,13 +556,12 @@ server = function(input, output, session) {
     }
     if (prim_b|secon_b == TRUE){
       leafletProxy('map') %>% 
-        hideGroup("MODIS Land Cover 2016") %>%
-        addRasterImage(r, opacity = .5, project=TRUE, group='MODIS Land Cover 2016') %>%
+        addRasterImage(r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c2) %>%
         addRasterImage(rc, opacity = .5, project=TRUE, group= 'MODIS Reclassified 2016', colors=c) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                         overlayGroups = c('MODIS Land Cover', 'MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
+                         overlayGroups = c('MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
                          position = c("topleft"),
-                         options = layersControlOptions(collapsed = TRUE))
+                         options = layersControlOptions(collapsed = FALSE))
     }
     print (site_data$primary_veg_type[1])
     print (site_data$secondary_veg_type[1])
@@ -600,11 +610,13 @@ server = function(input, output, session) {
 
   # Click on map to show popup of lat/lon
   observeEvent(input$map_click,{
-    click = input$map_click
-    site  = input$site
-    if (panel$mode == 'analyzer'){
-      if (!is.null(click)) {
-        showpos(x = click$lng, y = click$lat, site)
+      if (data$draw_mode == FALSE){
+      click = input$map_click
+      site  = input$site
+      if (panel$mode == 'analyzer'){
+        if (!is.null(click)) {
+          showpos(x = click$lng, y = click$lat, site)
+        }
       }
     }
   })
@@ -613,6 +625,7 @@ server = function(input, output, session) {
   #  FUNCTIONS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
+  # Creates a polyline surrounding any MODIS 2016 500m pixel from cropped raster
   showpos = function(x=NULL, y=NULL, name) {
     # If clicked within the Raster on the leaflet map
     r_ = data$r
@@ -1064,8 +1077,14 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'site')
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
-    leafletProxy('map') %>% clearControls() %>%
-      addLegend(values = c(1,2), group = "landcover_prim_sec", position = "bottomright",
-                labels = c("Primary ROI", "Secondary ROI"), colors= c("#79c400","#ffee00"))
+    leafletProxy('map') %>%
+      addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
+                labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
+                           'Shrubland', 'Shrubland', 'Savanna', 'Savanna','Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'Water'),
+                colors = data$c2, title = 'MODIS Land Cover 2016') %>%
+      hideGroup("MODIS Land Cover 2016") %>%
+      clearControls() %>%
+      addLegend(group = 'MODIS Reclassified 2016', position = "bottomright",
+                labels = c("Primary ROI", "Secondary ROI"), colors= c("#79c400","#ffee00"), title = 'MODIS Reclassified 2016')
   }
 }
