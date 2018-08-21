@@ -1,0 +1,246 @@
+---
+title: "ornldaac_workflow"
+author: "Kyle"
+date: "8/21/2018"
+output: html_document
+---
+
+Use this repos <https://github.com/ornldaac/webinar-modis-viirs-august2018/blob/master/NotebookR.ipynb>
+
+
+## Importing Libraries
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+
+# Plots:
+library(ggplot2)
+library(scales)
+library(viridis)
+require(gridExtra)
+
+# Rasters:
+library(raster)
+library(rasterVis)
+
+options(warn=-1)
+```
+
+## Getting products
+
+### 
+```{r}
+url <- "https://modis.ornl.gov/rst/api/v1/"
+
+response <- GET("https://modis.ornl.gov/rst/api/v1/products")
+http_status(response)$message
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+products <- content(response)$products
+typeof(products)
+products[1]
+```
+
+## Get dates
+
+```{r}
+# Set dates request parameters
+prod <- 'VNP13A1'   # MODIS product
+lat <- 35.71326     # Input latitude
+lon <- -83.51047    # Input longitude
+
+r <- GET(paste0("https://modis.ornl.gov/rst/api/v1/",prod,"/dates?latitude=",lat,"&longitude=",lon)) # Get dates response
+dates <- content(r)$dates # Parse response object to list
+modis_dates <- unlist(lapply(dates, function(dt) dt$modis_date)) # Split list of lists into list of modis date strings
+calendar_dates <- as.Date(unlist(lapply(dates, function(dt) dt$calendar_date))) # and also into R date objects
+doys <- substr(modis_dates,start=6,stop=8) # Also get a list of days of the year
+
+# Print the first ten modis dates
+paste(modis_dates[1:10])
+
+```
+
+## Get subset
+
+```{r}
+# Set the remaining subset request parameters
+data_band <- '500_m_16_days_EVI2'        # Daytime LST band name
+qc_band <- '500_m_16_days_VI_Quality'    # Daytime QC band name
+above_below <- 2                         # km above/below
+left_right <- 2                          # km left/right
+
+requestURL <- function(latitude, longitude, product, band, start_date, end_date, kmAB, kmLR){
+    return(
+        paste0(
+            url,product,"/subset?",
+            "latitude=",latitude,
+            "&longitude=",longitude,
+            "&band=",band,
+            "&startDate=",start_date,
+            "&endDate=",end_date,
+            "&kmAboveBelow=",kmAB,
+            "&kmLeftRight=",kmLR
+        )
+    )
+}
+
+r <- GET(requestURL(lat, lon, prod, data_band, modis_dates[1], modis_dates[1], above_below, left_right))
+subset <- fromJSON(toJSON(content(r)))
+subset
+```
+
+## Get subset Metadata
+
+```{r}
+nrow <- as.integer(subset$nrow)             # number of rows
+ncol <- as.integer(subset$ncol)             # number of columns
+xllcorner <- as.double(subset$xllcorner)    # lower left hand corner x-coordinate
+yllcorner <- as.double(subset$yllcorner)    # lower left hand corner y-coordinate
+cellsize <- as.double(subset$cellsize)      # pixel size
+scale <- as.double(subset$scale)            # scale factor
+
+cat(
+    "Row count: ",nrow,
+    "\nCol count: ",ncol,
+    "\nLower left X: ",xllcorner,
+    "\nLower left Y: ",yllcorner,
+    "\nPixel size: ",cellsize,
+    "\nScale factor: ",scale
+)
+```
+
+## Format the subset response to a familiar structure
+
+```{r}
+# Get subset$subset$data as a new data frame and transpose so that rows are timesteps and columns are pixels
+format_subset <- t(as.data.frame(subset$subset$data, col.names=subset$subset$modis_date, check.names=FALSE))
+format_subset <- format_subset*as.numeric(scale)
+format_subset
+```
+
+## Plot the grid as a raster!  -- This is what We are doing using the Landcover we get from Appeears, lets see how this differs!
+
+```{r}
+# Make function to create raster objects
+r_template <- function(vals, nrow,ncol,xllcorner,yllcorner,cellsize){
+    return(
+        raster(
+            vals = vals,
+            nrows = nrow,
+            ncols = ncol,
+            xmn = xllcorner,
+            xmx = xllcorner + (ncol*cellsize),
+            ymn = yllcorner,
+            ymx = yllcorner + (nrow*cellsize),
+            crs = '+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs ',
+            resolution = cellsize 
+        )
+    )
+}
+
+# Use subset metadata and the new function to make raster object
+r_subset <- r_template(format_subset, nrow, ncol, xllcorner, yllcorner, cellsize)
+# Warp to WGS84 as another raster object
+r_subset_wgs84 <- projectRaster(r_subset, crs = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs ')
+
+# Plot both with rasterVis::levelplot
+r_ras1 <- levelplot(r_subset, main = paste0("EVI on ",subset$subset$calendar_date," (Sinu)"), margin = FALSE)
+r_ras2 <- levelplot(r_subset_wgs84, main = paste0("EVI on ",subset$subset$calendar_date," (WGS84)"), margin = FALSE)
+
+r_subset # Print raster (sinu) details
+grid.arrange(r_ras1, r_ras2, ncol=2) # Display raster grids with gridExtra::grid.arrange
+
+# Save raster objects as GeoTIFFs
+#writeRaster(r_subset,'sinu_subset.tif',options=c('COMPRESS=LZW'))
+#writeRaster(r_subset_wgs84,'wgs84_subset.tif',options=c('COMPRESS=LZW'))
+```
+
+## Make a time series from multiple subset requests
+
+```{r}
+start_time <- Sys.time()
+
+# Initialize response data.frames to store the returned LST and QC data
+proddata <- data.frame()
+qcdata <- data.frame()
+
+# Iterate through the list of dates and submit subset requests.
+for (dt in modis_dates){
+
+    # Submit request and append to LST time series
+    r <- GET(requestURL(lat, lon, prod, data_band, dt, dt, above_below, left_right))
+    subset <- fromJSON(toJSON(content(r)))
+    proddata <- rbind(proddata, subset$subset)
+
+    # Submit request and append to QC time series
+    r <- GET(requestURL(lat, lon, prod, qc_band, dt, dt, above_below, left_right))
+    qcsubset <- fromJSON(toJSON(content(r)))
+    qcdata <- rbind(qcdata, qcsubset$subset)
+    print (dt)
+    
+}
+
+saveRDS(proddata,file = "data/proddata.rds") # Save the data
+saveRDS(qcdata,file = "data/qcdata.rds")
+
+end_time <- Sys.time()
+end_time - start_time
+```
+
+## Load from a file if you have already downloaded, and don't run the previous code
+
+```{r}
+proddata <- readRDS(file = "data/proddata.rds")
+qcdata <- readRDS(file = "data/qcdata.rds")
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
