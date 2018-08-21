@@ -10,8 +10,7 @@ Use this repos <https://github.com/ornldaac/webinar-modis-viirs-august2018/blob/
 
 ## Importing Libraries
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r}
 library(httr)
 library(jsonlite)
 
@@ -52,9 +51,10 @@ products[1]
 
 ```{r}
 # Set dates request parameters
-prod <- 'VNP13A1'   # MODIS product
-lat <- 35.71326     # Input latitude
-lon <- -83.51047    # Input longitude
+# prod <- 'MOD13Q1'   # MODIS product
+prod <- 'MCD12Q1'
+lat <- 35.7879     # Input latitude
+lon <- -75.9038    # Input longitude
 
 r <- GET(paste0("https://modis.ornl.gov/rst/api/v1/",prod,"/dates?latitude=",lat,"&longitude=",lon)) # Get dates response
 dates <- content(r)$dates # Parse response object to list
@@ -64,6 +64,7 @@ doys <- substr(modis_dates,start=6,stop=8) # Also get a list of days of the year
 
 # Print the first ten modis dates
 paste(modis_dates[1:10])
+modis_dates
 
 ```
 
@@ -71,10 +72,11 @@ paste(modis_dates[1:10])
 
 ```{r}
 # Set the remaining subset request parameters
-data_band <- '500_m_16_days_EVI2'        # Daytime LST band name
-qc_band <- '500_m_16_days_VI_Quality'    # Daytime QC band name
-above_below <- 2                         # km above/below
-left_right <- 2                          # km left/right
+# data_band <- '250m_16_days_NDVI'               # Daytime LST band name
+data_band = 'LC_Type1'
+qc_band <- '250m_16_days_pixel_reliability'    # Daytime QC band name
+above_below <- 1                               # km above/below
+left_right <- 1                                # km left/right
 
 requestURL <- function(latitude, longitude, product, band, start_date, end_date, kmAB, kmLR){
     return(
@@ -91,10 +93,12 @@ requestURL <- function(latitude, longitude, product, band, start_date, end_date,
     )
 }
 
-r <- GET(requestURL(lat, lon, prod, data_band, modis_dates[1], modis_dates[1], above_below, left_right))
+r <- GET(requestURL(lat, lon, prod, data_band, modis_dates[16], modis_dates[16], above_below, left_right))
 subset <- fromJSON(toJSON(content(r)))
 subset
 ```
+
+
 
 ## Get subset Metadata
 
@@ -104,8 +108,8 @@ ncol <- as.integer(subset$ncol)             # number of columns
 xllcorner <- as.double(subset$xllcorner)    # lower left hand corner x-coordinate
 yllcorner <- as.double(subset$yllcorner)    # lower left hand corner y-coordinate
 cellsize <- as.double(subset$cellsize)      # pixel size
-scale <- as.double(subset$scale)            # scale factor
-
+# scale <- as.double(subset$scale)            # scale factor
+scale = 1
 cat(
     "Row count: ",nrow,
     "\nCol count: ",ncol,
@@ -120,7 +124,7 @@ cat(
 
 ```{r}
 # Get subset$subset$data as a new data frame and transpose so that rows are timesteps and columns are pixels
-format_subset <- t(as.data.frame(subset$subset$data, col.names=subset$subset$modis_date, check.names=FALSE))
+format_subset <- t(as.data.frame(subset$subset[[1]]$data, col.names=subset$subset$modis_date, check.names=FALSE))
 format_subset <- format_subset*as.numeric(scale)
 format_subset
 ```
@@ -151,8 +155,8 @@ r_subset <- r_template(format_subset, nrow, ncol, xllcorner, yllcorner, cellsize
 r_subset_wgs84 <- projectRaster(r_subset, crs = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs ')
 
 # Plot both with rasterVis::levelplot
-r_ras1 <- levelplot(r_subset, main = paste0("EVI on ",subset$subset$calendar_date," (Sinu)"), margin = FALSE)
-r_ras2 <- levelplot(r_subset_wgs84, main = paste0("EVI on ",subset$subset$calendar_date," (WGS84)"), margin = FALSE)
+r_ras1 <- levelplot(r_subset, main = paste0("NDVI on ",subset$subset$calendar_date," (Sinu)"), margin = FALSE)
+r_ras2 <- levelplot(r_subset_wgs84, main = paste0("NDVI on ",subset$subset$calendar_date," (WGS84)"), margin = FALSE)
 
 r_subset # Print raster (sinu) details
 grid.arrange(r_ras1, r_ras2, ncol=2) # Display raster grids with gridExtra::grid.arrange
@@ -199,14 +203,6 @@ end_time - start_time
 ```{r}
 proddata <- readRDS(file = "data/proddata.rds")
 qcdata <- readRDS(file = "data/qcdata.rds")
-```
-
-```{r}
-
-```
-
-```{r}
-
 ```
 
 ```{r}
