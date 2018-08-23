@@ -36,7 +36,8 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
                                       actionButton('showModisSubset', 'Plot MODIS subset'),
                                       actionButton('plotPhenocamGCC', 'Plot GCC'),
-                                      checkboxInput("highlightPixelMode", "Highlight Pixel Mode", value = FALSE)
+                                      checkboxInput("highlightPixelMode", "Highlight Pixel Mode", value = FALSE),
+                                      actionButton('getAPPEEARSpoints', 'AppEEARS')
 
                                                                             ),
 

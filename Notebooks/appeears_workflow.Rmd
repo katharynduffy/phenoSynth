@@ -5,5 +5,287 @@ date: "8/21/2018"
 output: html_document
 ---
 
+# AppEEARS api for R and grabbing box for NDVI timeseries
+
+## Login
+documentation: <https://lpdaacsvc.cr.usgs.gov/appeears/api/?language=R#login>
+
 ```{r}
+library(httr)
+library(jsonlite)
+
+username = ''
+password = ''
+
+secret <- base64_enc(paste(username, password, sep = ":"))
+response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/login", 
+                             add_headers("Authorization" = paste("Basic", gsub("\n", "", secret)),
+                                         "Content-Type" = "application/x-www-form-urlencoded;charset=UTF-8"), 
+                             body = "grant_type=client_credentials")
+token_response = response
+token_response
+```
+
+## Get Products list (33 is MOD13Q1, and 4 is MCD12Q1)
+
+```{r}
+response <- GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/product")
+product_response <- toJSON(content(response))
+
+# create a list indexed by the product name and version
+products <- fromJSON(product_response)
+products[[33]]$Product
+length(products)
+
+# for (x in c(1:91)){
+#   print (x)
+#   print (products[[x]]$Product)
+# }
+
+```
+
+
+# Area Task Submition (using Query String)
+## Using the area option to grab a box from 1 year of the LandCover Layer MCD12Q1 with Type1 as the band
+documentation: <https://lpdaacsvc.cr.usgs.gov/appeears/api/?language=R#submit-task>
+
+```{r}
+
+task_type_ = 'area'
+task_name_ = 'United States Landcover1'
+startDate_ = '12-12-2015'
+endDate_   = '03-03-2016'
+layer_     = 'MCD12Q1.006, LC_Type1'
+format_    = 'geotiff'
+projection_name_ = "sinu_modis"
+bbox_ = '-126.2109375, 22.5, -63.3515625, 50.765625'
+# coordinates_ = '{-126.2109375, 22.5}, {-126.2109375, 50.765625}, {-63.3515625, 50.765625}, {-63.3515625, 22.5}, {-126.2109375, 22.5}'
+
+
+task <- list(task_type       = task_type_, 
+             task_name       = task_name_,
+             startDate       = startDate_, 
+             endDate         = endDate_, 
+             layer           = layer_, 
+             bbox            = bbox_,
+             file_type       = 'geotiff',
+             projection_name = projection_name_)
+
+# submit the task request
+token <- paste("Bearer", content(token_response)$token)
+response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
+response
+```
+
+# Point Task Submition (using Query String)
+## Using the point option to grab a pixel from one lat/lon 
+
+```{r}
+# Title for AppEEARS task
+task_name_ = 'Fort Collins Point10'
+
+task_type_ = 'point'
+startDate_ = '01-01-2014'
+endDate_   = '01-01-2015'
+layer_     = 'MOD13Q1.006,_250m_16_days_NDVI'
+# layer_ = 'MOD11A1.006,LST_Day_1km'
+coordinate_1 = '40.5, -105.0'
+coordinate_2 = '40.6, -105.1'
+coordinate_3 = '40.7, -105.2'
+
+
+
+task <- list(task_type = task_type_, 
+             task_name = task_name_, 
+             startDate = startDate_, 
+             endDate = endDate_, 
+             layer = layer_,
+             coordinate = coordinate_1,
+             coordinate = coordinate_2,
+             coordinate = coordinate_3)
+
+# This is how you can iterate over the list to add coordinates
+#   - Could be helpful for adding all highlighted pixel lat/lon
+#     to 1 task
+
+# list_ = list(name = 'Kyle')
+# for (x in c(1:10)){
+#   add_this = list(coordinate = x)
+#   list_ = append(list_, add_this)
+# }
+# print (list_)
+
+# submit the task request
+token <- paste("Bearer", content(token_response)$token)
+response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
+response
+
+```
+
+
+```{r}
+task_type_ = 'area'
+task_name_ = 'Fort Collins area test'
+startDate_ = '01-01-2014'
+endDate_   = '01-01-2018'
+layer_     = 'MOD13Q1.006, _250m_16_days_NDVI'
+format_    = 'geotiff'
+projection_name_ = "sinu_modis"
+bbox_ = '-104.982119165361, 40.5666814327214, -104.944096170366, 40.5952334867392'
+
+
+task <- list(task_type       = task_type_, 
+             task_name       = task_name_,
+             startDate       = startDate_, 
+             endDate         = endDate_, 
+             layer           = layer_, 
+             bbox            = bbox_,
+             file_type       = 'geotiff',
+             projection_name = projection_name_)
+
+# submit the task request
+token <- paste("Bearer", content(token_response)$token)
+response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
+response
+```
+
+
+
+# Attempting to build json to submit.  
+## Creating a task as a JSON for the Task.
+
+```{r}
+library(jsonlite)
+# MM-DD-YYYY
+
+task_type_ = 'area'
+task_name_ = 'United States Landcover1'
+file_type_ = 'GeoJSON'
+startDate_ = '12-12-2015'
+endDate_   = '03-03-2016'
+layer_     = 'MOD13Q1'
+product_   = '250m_16_days_NDVI'
+format_    = 'geotiff'
+projection_name_ = "sinu_modis"
+coordinates_ = '[[[-126.2109375, 22.5], [-126.2109375, 50.765625], [-63.3515625, 50.765625], [-63.3515625, 22.5], [-126.2109375, 22.5]]]'
+
+geo_       = list(type = 'FeatureCollection',
+                  fileName = 'User-Drawn-Polygon',
+                  features = list(type = 'Feature',
+                                  geometry = list(type = 'Polygon',
+                                                  coordinates = coordinates_)))
+
+
+dates_ = list(startDate = startDate_,
+              endDate   = endDate_)
+
+format_ = list(type = file_type_)
+
+layers_    = list(product = product_, 
+                  layer   = layer_)
+
+params_    = list(dates  = dates_,
+                  layers = layers_,
+                  geo    = geo_,
+                  output = output_)
+
+output_ = list(format     = format_,
+               projection = projection_name_)
+
+
+task = list(task_type = task_type_, 
+            task_name = task_name_, 
+            params    = params_)
+
+task_json = toJSON(task)
+task_json
+print (class(task_json))
+
+```
+
+
+
+
+```{r}
+
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+
+```{r}
+
+```
+
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
 ```

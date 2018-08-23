@@ -26,6 +26,26 @@ if(!require(devtools)){install.packages("devtools")}
 devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
 library(MODISTools)
 
+
+
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+
+# Plots:
+library(ggplot2)
+library(scales)
+library(viridis)
+require(gridExtra)
+
+# Rasters:
+library(raster)
+library(rasterVis)
+
+options(warn=-1)
+
+
+
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))
