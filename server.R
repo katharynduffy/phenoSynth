@@ -140,17 +140,17 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
 
   
-  # Adds Legend for MODIS Land Cover
-  observeEvent(input$map_groups,{
-    map_layers = input$map_groups
-    if ('MODIS Land Cover' %in% map_layers){
-      shinyjs::show(id = 'modisLegend')
-      insertUI(selector = '#image2',
-               ui = tags$div(id='modisLegend_',
-                             tags$img(src   = 'igbp-legend.png', class= 'img',
-                                      style = "position: absolute; z-index: 3; top:0px; left:0px;")))
-    }else{shinyjs::hide(id = 'modisLegend')}
-  })
+  # # Adds Legend for MODIS Land Cover
+  # observeEvent(input$map_groups,{
+  #   map_layers = input$map_groups
+  #   if ('MODIS Land Cover' %in% map_layers){
+  #     shinyjs::show(id = 'modisLegend')
+  #     insertUI(selector = '#image2',
+  #              ui = tags$div(id='modisLegend_',
+  #                            tags$img(src   = 'igbp-legend.png', class= 'img',
+  #                                     style = "position: absolute; z-index: 3; top:0px; left:0px;")))
+  #   }else{shinyjs::hide(id = 'modisLegend')}
+  # })
   
   # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
@@ -333,14 +333,14 @@ server = function(input, output, session) {
   })
 
 
-  # Change Map Layer 1
-  observeEvent(input$layer, {
-    layers = input$layer
-    print('Running Change Map Layer 1')
-    leafletProxy("map", data = variables$sites_df) %>%
-      clearTiles() %>%
-      addProviderTiles(layers)
-  })
+  # # Change Map Layer 1
+  # observeEvent(input$layer, {
+  #   layers = input$layer
+  #   print('Running Change Map Layer 1')
+  #   leafletProxy("map", data = variables$sites_df) %>%
+  #     clearTiles() %>%
+  #     addProviderTiles(layers)
+  # })
 
 
   # Observer for the azm changes from 0-360 on the slider
@@ -459,62 +459,56 @@ server = function(input, output, session) {
     if (site_ %in% modis$cached_ndvi){
       output$currentPlot <- renderPlot({ modis$cached_ndvi[site_] })
     } else{
-    
+      
       lat_       = site_data$lat[1]
       lon_       = site_data$lon[1]
       date_end   = as.Date(site_data$date_end[1])
       date_start = as.Date(site_data$date_start[1])
+      subset     <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
+                              start = date_start,end = date_end,km_lr = 1,km_ab = 1,site_name = site_,internal = TRUE)
+      print (str(subset))
       
-      # get_ornldaac_raster(lat_, lon_, 'MOD13Q1', '250m_16_days_NDVI' )
-      get_ornldaac_raster(lat_, lon_, 'MCD12Q1', 'LC_Type1')
+      NDVIsubset <- mt_subset(product   = "MOD13Q1",
+                              lat       = lat_,
+                              lon       = lon_,
+                              band      = "250m_16_days_NDVI",
+                              start     = date_start,
+                              end       = date_end,
+                              km_lr     = 1,
+                              km_ab     = 1,
+                              site_name = site_,
+                              internal  = TRUE)
+      
+      QCsubset   <- mt_subset(product   = "MOD13Q1",
+                              lat       = lat_,
+                              lon       =   lon_,
+                              band      = "250m_16_days_pixel_reliability",
+                              start     = date_start,
+                              end       = date_end,
+                              km_lr     = 1,
+                              km_ab     = 1,
+                              site_name = site_,
+                              internal  = TRUE)
+      
+      cleanNDVI      = data.frame(NDVI=NDVIsubset$data$data, QC=QCsubset$data$data, Date=as.Date.factor(QCsubset$data$calendar_date))
+      cleanNDVI      = cleanNDVI%>%filter(QC<1)
+      cleanNDVI$NDVI = cleanNDVI$NDVI*.0001
       
       
-      # subset     <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
-      #                     start = date_start,end = date_end,km_lr = 1,km_ab = 1,site_name = site_,internal = TRUE)
-      # print (str(subset))
-      # 
-      # 
-      # NDVIsubset <- mt_subset(product   = "MOD13Q1",
-      #                         lat       = lat_,
-      #                         lon       = lon_,
-      #                         band      = "250m_16_days_NDVI",
-      #                         start     = date_start,
-      #                         end       = date_end,
-      #                         km_lr     = 1,
-      #                         km_ab     = 1,
-      #                         site_name = site_,
-      #                         internal  = TRUE)
-      # 
-      # QCsubset   <- mt_subset(product   = "MOD13Q1",
-      #                         lat       = lat_,
-      #                         lon       =   lon_,
-      #                         band      = "250m_16_days_pixel_reliability",
-      #                         start     = date_start,
-      #                         end       = date_end,
-      #                         km_lr     = 1,
-      #                         km_ab     = 1,
-      #                         site_name = site_,
-      #                         internal  = TRUE)
-      # 
-      # cleanNDVI      = data.frame(NDVI=NDVIsubset$data$data, QC=QCsubset$data$data, Date=as.Date.factor(QCsubset$data$calendar_date))
-      # cleanNDVI      = cleanNDVI%>%filter(QC<1)
-      # cleanNDVI$NDVI = cleanNDVI$NDVI*.0001
-      # 
-      # 
-      # p = ggplot(data = cleanNDVI, aes(x= Date, y= NDVI)) +
-      #   geom_point() +
-      #   scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
-      #   theme(axis.text.x = element_text(angle = 45, hjust =1))
-      # p  + ggthemes::theme_few()
-      # 
-      # #plot p here, where that goes in the UI we don't know yet
-      # modis$data = cleanNDVI
-      # shinyjs::show(id = 'plotpanel')
-      # shinyjs::show(id = 'showHidePlot')
-      # output$currentPlot <- renderPlot({ p })
-      # modis$cached_ndvi[[site_]] = p
-      # print (modis$cached_ndvi[site_])
-      # print (p)
+      p = ggplot(data = cleanNDVI, aes(x= Date, y= NDVI)) +
+        geom_point() +
+        scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
+        theme(axis.text.x = element_text(angle = 45, hjust =1))
+      p  + ggthemes::theme_few()  
+      
+      #plot p here, where that goes in the UI we don't know yet
+      modis$data = cleanNDVI
+      shinyjs::show(id = 'plotpanel')
+      shinyjs::show(id = 'showHidePlot')
+      output$currentPlot <- renderPlot({ p })
+      modis$cached_ndvi[[site_]] = p
+      print (modis$cached_ndvi[site_])
+      print (p)
     }
     
   })
@@ -542,7 +536,7 @@ server = function(input, output, session) {
     primary_key   = subset(pft_df, pft_abbreviated == as.character(site_data$primary_veg_type[1]))$pft_key[1]
     secondary_key = subset(pft_df, pft_abbreviated == as.character(site_data$secondary_veg_type[1]))$pft_key[1]
     
-    c      = c('#79c400', '#ffee00')
+    c           = c('#79c400', '#ffee00')
     r      = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
     data$r = r
     
@@ -568,7 +562,7 @@ server = function(input, output, session) {
     }
     if (prim_b|secon_b == TRUE){
       leafletProxy('map') %>% 
-        addRasterImage(r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c2) %>%
+        addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c2) %>%
         addRasterImage(rc, opacity = .55, project=TRUE, group= 'MODIS Reclassified 2016', colors=c) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                          overlayGroups = c('MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
@@ -581,7 +575,7 @@ server = function(input, output, session) {
       updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
     }else{
       updateSelectInput(session, 'pftSelection', choices = veg_types)
-      }
+    }
   })
 
 
@@ -627,7 +621,9 @@ server = function(input, output, session) {
           site  = input$site
           if (panel$mode == 'analyzer'){
             if (!is.null(click)) {
-              showpos(x = click$lng, y = click$lat, site)
+              lon_ = click$lng
+              lat_ = click$lat
+              showpos(x = lon_ , y = lat_, site)
             }
           }
     }
@@ -663,7 +659,7 @@ server = function(input, output, session) {
     
     print ('test1')
     # # submit the task request
-    token    = paste0('Bearer ',"iUHztGcqwzkHiRm4mlKKZtxjEPFp75V9uaT-uD7o9fMw0F8WCCeUtTxDlUNrtEI_z-VguKmLv4bVcjz1d_aH_A")
+    token    = paste0('Bearer ',"IwnpK6qUMK2WahpGNyYSLdbyWqVM6_OYB2d8_8wRK0oFFHYxDnz73SXSkV_tKE58x2sTCxtnBqYENkqORJawFQ")
     print('test2')
     response = POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
     print('test3')
@@ -686,110 +682,19 @@ server = function(input, output, session) {
     return (p)
   }
   
-  # # Creates pulls NDVI data from ornldaac
-  # get_ornldaac_data = function(){
-  # }
-  # Grabs raster of the site from ornldaac
-  get_ornldaac_raster = function(lat, lon, prod, layer){
-    print ('plotting raster')
-    url <- "https://modis.ornl.gov/rst/api/v1/"
-    response <- GET("https://modis.ornl.gov/rst/api/v1/products")
-    
-    # prod <- 'MOD13Q1'   # MODIS product
-    # lat <- 35.7879     # Input latitude
-    # lon <- -75.9038    # Input longitude
-    
-    r <- GET(paste0("https://modis.ornl.gov/rst/api/v1/",prod,"/dates?latitude=",lat,"&longitude=",lon)) # Get dates response
-    dates <- content(r)$dates # Parse response object to list
-    modis_dates <- unlist(lapply(dates, function(dt) dt$modis_date)) # Split list of lists into list of modis date strings
-    calendar_dates <- as.Date(unlist(lapply(dates, function(dt) dt$calendar_date))) # and also into R date objects
-    doys <- substr(modis_dates,start=6,stop=8) # Also get a list of days of the year
-    data_band <- layer                             # Daytime LST band name
-    # qc_band <- '250m_16_days_pixel_reliability'    # Daytime QC band name
-    above_below <- 10                               # km above/below
-    left_right <- 10                                # km left/right
-    
-    requestURL <- function(latitude, longitude, product, band, start_date, end_date, kmAB, kmLR){
-      return(
-        paste0(
-          url,product,"/subset?",
-          "latitude=",latitude,
-          "&longitude=",longitude,
-          "&band=",band,
-          "&startDate=",start_date,
-          "&endDate=",end_date,
-          "&kmAboveBelow=",kmAB,
-          "&kmLeftRight=",kmLR
-        )
-      )
-    }
-    r <- GET(requestURL(lat, lon, prod, data_band, modis_dates[1], modis_dates[1], above_below, left_right))
-    subset <- fromJSON(toJSON(content(r)))
-    nrow <- as.integer(subset$nrow)             # number of rows
-    ncol <- as.integer(subset$ncol)             # number of columns
-    xllcorner <- as.double(subset$xllcorner)    # lower left hand corner x-coordinate
-    yllcorner <- as.double(subset$yllcorner)    # lower left hand corner y-coordinate
-    cellsize <- as.double(subset$cellsize)      # pixel size
-    # Scale is just a number used to multiply against the NDVI to recalculate the value.
-    if (prod == 'MCD12Q1'){
-      scale = 1
-    }else{
-      scale <- as.double(subset$scale)            # scale factor
-    }
-    
-    cat(
-      "Row count: ",nrow,
-      "\nCol count: ",ncol,
-      "\nLower left X: ",xllcorner,
-      "\nLower left Y: ",yllcorner,
-      "\nPixel size: ",cellsize,
-      "\nScale factor: ",scale
-    )
-    format_subset <- t(as.data.frame(subset$subset[[1]]$data, col.names=subset$subset$modis_date, check.names=FALSE))
-    format_subset <- format_subset*as.numeric(scale)
-    # Make function to create raster objects
-    r_template <- function(vals, nrow,ncol,xllcorner,yllcorner,cellsize){
-      return(
-        raster(
-          vals = vals,
-          nrows = nrow,
-          ncols = ncol,
-          xmn = xllcorner,
-          xmx = xllcorner + (ncol*cellsize),
-          ymn = yllcorner,
-          ymx = yllcorner + (nrow*cellsize),
-          crs = '+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs ',
-          resolution = cellsize 
-        )
-      )
-    }
-    
-    print ('test1')
-    
-    # Use subset metadata and the new function to make raster object
-    r_subset <- r_template(format_subset, nrow, ncol, xllcorner, yllcorner, cellsize)
-    
-    print ('test2')
-    
-    # Warp to WGS84 as another raster object
-    r_subset_wgs84 <- projectRaster(r_subset, crs = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs ')
-    
-    print ('test3')
-    
-    # Plot both with rasterVis::levelplot
-    r_ras1 <- levelplot(r_subset, main = paste0("NDVI on ",subset$subset$calendar_date," (Sinu)"), margin = FALSE)
-    r_ras2 <- levelplot(r_subset_wgs84, main = paste0("NDVI on ",subset$subset$calendar_date," (WGS84)"), margin = FALSE)
-    
-    print ('test4')
-    
-    r_subset # Print raster (sinu) details
-    grid.arrange(r_ras1, r_ras2, ncol=2) # Display raster grids with gridExtra::grid.arrange
-    
-    leafletProxy('map') %>% addRasterImage(r_subset_wgs84, opacity = .8, project=TRUE, colors = data$c2)
+  
+  # Creates a reprojection of a lat/lon WGS84 point into sinusoidal Modis projection
+  get_lat_lon_wgs_from_sinu_pt = function(lon_,lat_){
+    print ('Reprojecting coords to WGS84')
+    xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
+    colnames(xy)    = c('lon', 'lat')
+    coordinates(xy) = ~ lon + lat
+    proj4string(xy) = CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+    p               = spTransform(xy, CRS("+proj=longlat +datum=WGS84"))
+    print (coordinates(xy))
+    print (coordinates(p))
+    return (p)
   }
-  
-  
-  
   
   
   # Creates a polyline surrounding any MODIS 2016 500m pixel from cropped raster
@@ -797,6 +702,9 @@ server = function(input, output, session) {
     # If clicked within the Raster on the leaflet map
     r_ = data$r
     cell = cellFromXY(r_, c(x, y))
+    
+    print (r_)
+
      if (!is.na(cell)) {
        # Variables we will use:  
        #   row, column
@@ -817,8 +725,18 @@ server = function(input, output, session) {
        # Calculate UpperLeft(UL), UpperRight(UR), LowerLeft(LL), and LowerRight(LR) 
        #   coordinates for selected cell/pixel from raster
        
+       print (cell)
+       print (ncols)
+       
        row = ceiling(cell / ncols)
        col = cell %% ncols
+       
+       if (col == 0){
+         col = ncols
+       }
+       
+       print (row)
+       print (col)
        
        xclose = ((col - 1) * resolution) + xmin
        xfar   = (col * resolution) + xmin
@@ -828,7 +746,7 @@ server = function(input, output, session) {
        midcellx = xclose + (resolution * .5)
        midcelly = yclose - (resolution * .5)
        midcell  = c(midcellx, midcelly)
-       
+         
        datalon = c(xclose, xfar, xfar, xclose ,xclose)
        datalat = c(yclose, yclose, yfar, yfar, yclose)
        
@@ -854,32 +772,24 @@ server = function(input, output, session) {
     }
   }
   
+  
   # Creates boundary box for clipping rasters using lat/lon from phenocam site
   crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL, secondary=NULL){
     # us_pth = './www/uslandcover_modis_sinu.tif'
-    # us_pth = './www/uslandcover_modis.tif'
+    us_pth = './www/uslandcover_modis.tif'
     
-    p_transformed = get_x_y_sinu_from_wgs_pt(lon_,lat_)
+    us_r   = raster(us_pth)
+    resolution = res(us_r)[1]
+    print (us_r)
+    print (resolution)
     
-    # lon_ = -8878104.99
-    # lat_ = 4503399.61
-    lon_ = coordinates(p_transformed)[1]
-    lat_ = coordinates(p_transformed)[2]
-    print (coordinates(p_transformed))
-    r_   = raster('./www/uslandcover_modis_sinu.tif')
-    # 
-    e        = as(extent(lon_-100000, lon_+100000, lat_-100000, lat_+100000), 'SpatialPolygons')
-    crs(e)   <- "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
-    r       = crop(r_, e)
+    height = 5 * resolution
+    width  = 5 * resolution
     
-    
-    
-    # us_r   = raster(us_pth)
-    # e      = as(extent(lon_-.15, lon_+.15, lat_-.10, lat_+.10), 'SpatialPolygons')
+    e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
 
-    # crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
-    # crs(e) = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
-    # r      = crop(us_r, e)
+    crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
+    r      = crop(us_r, e)
     
     if (reclassify == FALSE){
       return (r)
@@ -1268,11 +1178,11 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
     leafletProxy('map') %>%
-      addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
-                labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
-                           'Closed Shrubland', 'Open Shrubland', 'Woody Savannas', 'Savannas','Grasslands', 'Permanent Wetlands', 'Croplands', 'Urban and Built-Up',
-                           'Cropland/Natural Vegetation', 'Barren or Sparsely Vegetated', 'Water'),
-                colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
+      # addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
+      #           labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
+      #                      'Closed Shrubland', 'Open Shrubland', 'Woody Savannas', 'Savannas','Grasslands', 'Permanent Wetlands', 'Croplands', 'Urban and Built-Up',
+      #                      'Cropland/Natural Vegetation', 'Barren or Sparsely Vegetated', 'Water'),
+      #           colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
       hideGroup("MODIS Land Cover 2016") %>%
       clearControls() %>%
       addLegend(group = 'MODIS Reclassified 2016', position = "bottomright",
