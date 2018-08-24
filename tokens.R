@@ -7,8 +7,8 @@
 library(httr)
 library(jsonlite)
 
-username = ''
-password = ''
+username = 'katharyn.duffy'
+password = 'P1nyonP1ne'
 
 secret <- base64_enc(paste(username, password, sep = ":"))
 response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/login", 
