@@ -785,7 +785,6 @@ server = function(input, output, session) {
     
     height = 5 * resolution
     width  = 5 * resolution
-    
     e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
 
     crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
@@ -1178,11 +1177,11 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
     leafletProxy('map') %>%
-      # addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
-      #           labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
-      #                      'Closed Shrubland', 'Open Shrubland', 'Woody Savannas', 'Savannas','Grasslands', 'Permanent Wetlands', 'Croplands', 'Urban and Built-Up',
-      #                      'Cropland/Natural Vegetation', 'Barren or Sparsely Vegetated', 'Water'),
-      #           colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
+      addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
+                labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
+                           'Closed Shrubland', 'Open Shrubland', 'Woody Savannas', 'Savannas','Grasslands', 'Permanent Wetlands', 'Croplands', 'Urban and Built-Up',
+                           'Cropland/Natural Vegetation', 'Barren or Sparsely Vegetated', 'Water'),
+                colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
       hideGroup("MODIS Land Cover 2016") %>%
       clearControls() %>%
       addLegend(group = 'MODIS Reclassified 2016', position = "bottomright",
