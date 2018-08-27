@@ -25,6 +25,7 @@ library(ggthemes)
 if(!require(devtools)){install.packages("devtools")}
 devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
 library(MODISTools)
+source('tokens.R')
 
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
