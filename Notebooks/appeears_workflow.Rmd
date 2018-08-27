@@ -5,26 +5,7 @@ date: "8/21/2018"
 output: html_document
 ---
 
-# AppEEARS api for R and grabbing box for NDVI timeseries
 
-## Login
-documentation: <https://lpdaacsvc.cr.usgs.gov/appeears/api/?language=R#login>
-
-```{r}
-library(httr)
-library(jsonlite)
-
-username = ''
-password = ''
-
-secret <- base64_enc(paste(username, password, sep = ":"))
-response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/login", 
-                             add_headers("Authorization" = paste("Basic", gsub("\n", "", secret)),
-                                         "Content-Type" = "application/x-www-form-urlencoded;charset=UTF-8"), 
-                             body = "grant_type=client_credentials")
-token_response = response
-token_response
-```
 
 ## Get Products list (33 is MOD13Q1, and 4 is MCD12Q1)
 
