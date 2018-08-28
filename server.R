@@ -519,22 +519,39 @@ server = function(input, output, session) {
     panel$mode = 'analyzer'
     site       = input$site
     site_data  = get_site_info(site)
+    
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
-    
+    test_site=site_data
+    veg_idx=is.element(roi_files$site, test_site$site)
+    veg_match=roi_files[veg_idx,]
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
     
-    veg.idx   = is.element(pft_df$pft_abbreviated,site_data$primary_veg_type[1] )
+    veg.idx   = is.element(pft_df$pft_abbreviated, veg_match$roitype[1] )
     prim_veg  = pft_df$pft_expanded[veg.idx]
-    prim_veg  = prim_veg[1]
-    veg.idx   = is.element(pft_df$pft_abbreviated, site_data$secondary_veg_type[1])
+    prim_veg  = as.character(prim_veg[1])
+    veg_num1=pft_df$pft_key[veg.idx]
+    #secondary veg type
+    if (nrow(veg_types)<2)
+    {secon_veg = c('NA')
+    veg_types = rbind(prim_veg, secon_veg)
+    veg_num2='NA'}
+    else{veg.idx   = is.element(pft_df$pft_abbreviated, veg_match$roitype[2])
     secon_veg = pft_df$pft_expanded[veg.idx]
-    secon_veg = secon_veg[1]
-    veg_types = c()
+    secon_veg = as.character(secon_veg[1])
+    veg_types = rbind(prim_veg, secon_veg)
+    veg_num2=pft_df$pft_key[veg.idx]}
     
-    primary_key   = subset(pft_df, pft_abbreviated == as.character(site_data$primary_veg_type[1]))$pft_key[1]
-    secondary_key = subset(pft_df, pft_abbreviated == as.character(site_data$secondary_veg_type[1]))$pft_key[1]
+      
+    veg_nums=rbind(veg_num1, veg_num2)
+    veg_types=cbind(veg_types, veg_nums)
+    veg_types=data.frame(veg_types)
+    dplyr::rename(veg_types, PFT.txt=X1, PFT.num=X2)
+    print(veg_types)
+    
+    primary_key   = veg_types[1,]
+    secondary_key = veg_types[2,]
     
     c           = c('#79c400', '#ffee00')
     r      = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
@@ -547,9 +564,9 @@ server = function(input, output, session) {
       # print (prim_veg)
       prim_b    = TRUE
       prim_veg  = paste0('Primary: ', prim_veg)
-      veg_types = append(veg_types, as.character(prim_veg))
+      #veg_types = append(veg_types, as.character(prim_veg))
       rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
-                                  prim = primary_key)
+                                         prim = as.numeric(veg_types[1, 2]))
     }
     if (site_data$secondary_veg_type[1] == ''){print ('no secondary vegetation type found')
     }else{
@@ -558,7 +575,7 @@ server = function(input, output, session) {
       secon_veg = paste0('Secondary: ', secon_veg)
       veg_types = append(veg_types, as.character(secon_veg))
       rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, 
-                                  prim = primary_key, sec = secondary_key)
+                                         prim = as.numeric(veg_types[1, 2]), sec = as.numeric(veg_types[2, 2]))
     }
     if (prim_b|secon_b == TRUE){
       leafletProxy('map') %>% 
@@ -569,12 +586,11 @@ server = function(input, output, session) {
                          position = c("topleft"),
                          options = layersControlOptions(collapsed = FALSE))
     }
-    print (site_data$primary_veg_type[1])
-    print (site_data$secondary_veg_type[1])
+    
     if (is.null(veg_types)){
       updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
     }else{
-      updateSelectInput(session, 'pftSelection', choices = veg_types)
+      updateSelectInput(session, 'pftSelection', choices = veg_types[,1])
     }
   })
 
