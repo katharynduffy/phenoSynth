@@ -587,7 +587,7 @@ server = function(input, output, session) {
       # print (prim_veg)
       prim_b    = TRUE
       prim_veg  = paste0('Primary: ', prim_veg)
-      veg_types = append(veg_types, as.character(prim_veg))
+      veg_types = veg_types
       rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
                                          prim = as.numeric(veg_num1))
     }
@@ -596,7 +596,7 @@ server = function(input, output, session) {
       # print (secon_veg)
       secon_b   = TRUE
       secon_veg = paste0('Secondary: ', secon_veg)
-      veg_types = append(veg_types, as.character(secon_veg))
+      veg_types = veg_types
       rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
                                          prim = as.numeric(veg_num1), sec = as.numeric(veg_num1))
     }
@@ -1223,8 +1223,8 @@ server = function(input, output, session) {
                 colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
       hideGroup("MODIS Land Cover 2016") %>%
       clearControls() %>%
-      addLegend(group = 'MODIS Reclassified 2016', position = "bottomright",
-                labels = c("Primary ROI", "Secondary ROI"), colors= c("#79c400","#ffee00"), title = 'MODIS Reclassified 2016',
+      addLegend(group = 'MODIS Vegetation Cover Agreement', position = "bottomright",
+                labels = c("Vegetation Cover Match", "Additional Vegetation Cover Match"), colors= c("#79c400","#ffee00"), title = 'MODIS Reclassified 2016',
                 opacity = .9)
   }
 }
