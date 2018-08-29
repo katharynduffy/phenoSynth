@@ -49,11 +49,11 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       tags$div(id = 'image')
                                       ),
                         
-                        absolutePanel(id = 'modisLegend', class = 'panel panel-default', #fixed = TRUE,
-                                      draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270,
-                                      width = 375, height = 225,
-                                      tags$div(id = 'image2')
-                                      ),
+                        # absolutePanel(id = 'modisLegend', class = 'panel panel-default', #fixed = TRUE,
+                        #               draggable = TRUE,  top = 'auto', left = 20, right = 'auto' , bottom = 270,
+                        #               width = 375, height = 225,
+                        #               tags$div(id = 'image2')
+                        #               ),
 
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 400, right = 'auto' , bottom = 20,
