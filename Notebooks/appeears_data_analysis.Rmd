@@ -6,7 +6,14 @@ output: html_document
 ---
 
 
-### Site and AppEEARS task ID from (K. Enns) tasks.
+### Site and AppEEARS task ID from (K. Enns) tasks, edited by KDuffy
+
+```{r}
+library(jsonlite)
+library(ncdf4)
+library(ncdf4.helpers)
+library(PCICt)
+```
 
 ```{r}
 site_name    = 'argacp1'
@@ -26,7 +33,8 @@ bundle_response = prettify(toJSON(content(response), auto_unbox = TRUE))
 document = fromJSON(txt=bundle_response)
 files = document$files
 files
-
+```
+```{r}
 # csv files 
 csvs      = subset(files, file_type == 'csv')
 quality_lookup_id     = csvs[grep('Quality-lookup', csvs$file_name), ]$file_id
@@ -37,8 +45,6 @@ netcdf    = subset(files, file_type == 'nc')
 netcdf_id = netcdf$file_id
 ```
 
-
-### 
 
 ```{r}
 get_download_folder = function(){
@@ -65,19 +71,23 @@ filepath = paste(dest_dir, filename, sep = '')
 response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, '/', download_this_file, sep = ""),
                       write_disk(filepath, overwrite = TRUE), progress())
 ```
+```{r}
+ndvi_output=nc_open(filepath)
+```
 
-
+```{r}
+lon <- ncvar_get(ndvi_output, varid = "lon")
+lat <- ncvar_get(ndvi_output, varid = "lat")
+time <- ncvar_get(ndvi_output, varid = "time")
+ndvi<-ncvar_get(ndvi_output, varid='_250m_16_days_NDVI')
+ndvi_VI<-ncvar_get(ndvi_output, varid='_250m_16_days_VI_Quality')
+```
 # Read in the netcdf(that we just downloaded above) to R
 ```{r}
 
 library(raster)
 
 netCDF_file = filepath
-NDVI = raster(netCDF_file,  varname = "_250m_16_days_NDVI")
-
-library(leaflet)
-leaflet('map') %>% addTiles() %>% addRasterImage(NDVI, opacity = .7)
-
 ```
 
 
