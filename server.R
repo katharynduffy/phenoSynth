@@ -582,23 +582,23 @@ server = function(input, output, session) {
 
     prim_b  = FALSE
     secon_b = FALSE
-    if (site_data$primary_veg_type[1] == ''){print ('no primary vegetation type found')
+    if (nrow(veg_match)<1){print ('no PhenoCam ROI found')
     }else{
       # print (prim_veg)
       prim_b    = TRUE
       prim_veg  = paste0('Primary: ', prim_veg)
-      veg_types = append(veg_types, as.character(prim_veg))
+      veg_types = veg_types
       rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
                                          prim = as.numeric(veg_num1))
     }
-    if (site_data$secondary_veg_type[1] == ''){print ('no secondary vegetation type found')
+    if (nrow(veg_match)<2){print ('Only 1 available ROI from PhenoCam')
     }else{
       # print (secon_veg)
       secon_b   = TRUE
       secon_veg = paste0('Secondary: ', secon_veg)
-      veg_types = append(veg_types, as.character(secon_veg))
+      veg_types = veg_types
       rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
-                                         prim = as.numeric(veg_num1), sec = as.numeric(veg_num1))
+                                         prim = as.numeric(veg_num1), sec = as.numeric(veg_num2))
     }
     if (prim_b|secon_b == TRUE){
       leafletProxy('map') %>%
@@ -1223,8 +1223,8 @@ server = function(input, output, session) {
                 colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
       hideGroup("MODIS Land Cover 2016") %>%
       clearControls() %>%
-      addLegend(group = 'MODIS Reclassified 2016', position = "bottomright",
-                labels = c("Primary ROI", "Secondary ROI"), colors= c("#79c400","#ffee00"), title = 'MODIS Reclassified 2016',
+      addLegend(group = 'MODIS Vegetation Cover Match', position = "bottomright",
+                labels = c("Selected Vegetation Cover Match", "Additional Vegetation Cover Match"), colors= c("#79c400","#ffee00"), title = 'Vegetation Cover Match',
                 opacity = .9)
   }
 }

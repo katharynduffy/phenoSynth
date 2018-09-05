@@ -5,4 +5,5 @@
 .Rapp.history
 .DS_Store
 rsconnect/
+tokens/
 tokens.R
