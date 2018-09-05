@@ -1,0 +1,92 @@
+---
+title: "appeears_data_analysis"
+author: "K. Enns"
+date: "9/4/2018"
+output: html_document
+---
+
+
+### Site and AppEEARS task ID from (K. Enns) tasks.
+
+```{r}
+site_name    = 'argacp1'
+site_task_id = "488a997e-9fdc-4561-9bb8-048bb85d2423"
+```
+
+
+
+### Grab bundle from above task
+```{r}
+library(httr)
+site_task_id
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, sep = ""))
+bundle_response = prettify(toJSON(content(response), auto_unbox = TRUE))
+
+# all files in bundle
+document = fromJSON(txt=bundle_response)
+files = document$files
+files
+
+# csv files 
+csvs      = subset(files, file_type == 'csv')
+quality_lookup_id     = csvs[grep('Quality-lookup', csvs$file_name), ]$file_id
+quality_statistics_id = csvs[grep('Quality-Statistics', csvs$file_name), ]$file_id
+  
+# Net cdf
+netcdf    = subset(files, file_type == 'nc')
+netcdf_id = netcdf$file_id
+```
+
+
+### 
+
+```{r}
+get_download_folder = function(){
+  if (Sys.info()['sysname'] == 'Darwin'){
+    folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
+  }else if (Sys.info()['sysname'] == 'Windows'){
+    folder = paste('C:/Downloads/', sep = '')
+  }else{
+    folder = ''
+  }
+  return (folder)
+  }
+
+download_this_file = netcdf_id
+# # retrieve the filename from the file_id
+bundle = fromJSON(bundle_response)$files
+filename = bundle[bundle$file_id == download_this_file,]$file_name
+# create a destination directory to store the file in
+dest_dir = get_download_folder()
+filepath = paste(dest_dir, filename, sep = '')
+# suppressWarnings(dir.create(dirname(filepath)))
+
+# write the file to disk using the destination directory and file name 
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, '/', download_this_file, sep = ""),
+                      write_disk(filepath, overwrite = TRUE), progress())
+```
+
+
+# Read in the netcdf(that we just downloaded above) to R
+```{r}
+
+library(raster)
+
+netCDF_file = filepath
+NDVI = raster(netCDF_file,  varname = "_250m_16_days_NDVI")
+
+library(leaflet)
+leaflet('map') %>% addTiles() %>% addRasterImage(NDVI, opacity = .7)
+
+```
+
+
+
+
+
+
+
+
+
+
+
