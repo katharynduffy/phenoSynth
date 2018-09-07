@@ -1188,9 +1188,9 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'plotpanel')
     shinyjs::hide(id = 'highlightPixelMode')
     shinyjs::hide(id = 'getAPPEEARSpoints')
-    leafletProxy('map') %>%
-      addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
-                labels = c("Active sites", "Inactive sites"), colors= c("blue","red"))
+    # leafletProxy('map') %>%
+    #   addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
+    #             labels = c("Active sites", "Inactive sites"), colors= c("blue","red"))
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:
