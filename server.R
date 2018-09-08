@@ -82,7 +82,7 @@ server = function(input, output, session) {
         polylineOptions     = FALSE,
         rectangleOptions    = FALSE,
         markerOptions       = FALSE,
-        circleMarkerOptions = FALSE,
+        # circleMarkerOptions = FALSE,
         circleOptions       = FALSE,
         editOptions         = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
         polygonOptions      = drawPolygonOptions(
@@ -1215,16 +1215,16 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'site')
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
-    leafletProxy('map') %>%
-      addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
-                labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
-                           'Closed Shrubland', 'Open Shrubland', 'Woody Savannas', 'Savannas','Grasslands', 'Permanent Wetlands', 'Croplands', 'Urban and Built-Up',
-                           'Cropland/Natural Vegetation', 'Barren or Sparsely Vegetated', 'Water'),
-                colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
-      hideGroup("MODIS Land Cover 2016") %>%
-      clearControls() %>%
-      addLegend(group = 'MODIS Vegetation Cover Match', position = "bottomright",
-                labels = c("Selected Vegetation Cover Match", "Additional Vegetation Cover Match"), colors= c("#79c400","#ffee00"), title = 'Vegetation Cover Match',
-                opacity = .9)
+    # leafletProxy('map') %>%
+    #   addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
+    #             labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
+    #                        'Closed Shrubland', 'Open Shrubland', 'Woody Savannas', 'Savannas','Grasslands', 'Permanent Wetlands', 'Croplands', 'Urban and Built-Up',
+    #                        'Cropland/Natural Vegetation', 'Barren or Sparsely Vegetated', 'Water'),
+    #             colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
+    #   hideGroup("MODIS Land Cover 2016") %>%
+    #   clearControls() %>%
+    #   addLegend(group = 'MODIS Vegetation Cover Match', position = "bottomright",
+    #             labels = c("Selected Vegetation Cover Match", "Additional Vegetation Cover Match"), colors= c("#79c400","#ffee00"), title = 'Vegetation Cover Match',
+    #             opacity = .9)
   }
 }
