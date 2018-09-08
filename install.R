@@ -22,6 +22,7 @@ install.packages("rjson")
 install.packages("RCurl")
 install.packages("ggthemes")
 install.packages("dplyr")
+install.packages('rgdal')
 
 # install.packages("devtools")
 # devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
