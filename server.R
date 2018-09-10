@@ -816,7 +816,7 @@ server = function(input, output, session) {
   crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL, secondary=NULL){
     # us_pth = './www/uslandcover_modis_sinu.tif'
     us_pth = './www/uslandcover_modis.tif'
-    
+
     us_r   = raster(us_pth)
     resolution = res(us_r)[1]
     print (us_r)

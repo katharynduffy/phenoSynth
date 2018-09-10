@@ -1,5 +1,4 @@
 install.packages("tidyverse")
-install.packages("rmarkdown")
 install.packages("httr")
 install.packages("shinydashboard")
 
@@ -13,8 +12,14 @@ install.packages("lattice")
 install.packages("shinyjs")
 install.packages("leaflet.extras")
 install.packages("sp")
+
 install.packages("rvest")
 install.packages("raster")
+install.packages('rgeos')
+install.packages('rgdal')
+
+install.packages("rmarkdown")
+
 install.packages("DT")
 install.packages("htmlwidgets")
 install.packages("ggplot2")
@@ -22,7 +27,7 @@ install.packages("rjson")
 install.packages("RCurl")
 install.packages("ggthemes")
 install.packages("dplyr")
-install.packages('rgdal')
+
 
 # install.packages("devtools")
 # devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
