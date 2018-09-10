@@ -19,7 +19,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                       draggable = FALSE, top = 70, left = "auto", right = 20, bottom = "auto",
-                                      width = 320, height = "auto",
+                                      width = 320, height = "auto", style="z-index:500;",
                                       h2(id = 'explorerTitle', "Site explorer"),
                                       h2(id = 'analyzerTitle', "Site Analyzer"),
                                       actionButton('siteExplorerMode', 'Back to Site Explorer'),
@@ -43,7 +43,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 250, right = 'auto' , bottom = 10,
-                                      width = 375, height = 225,
+                                      width = 375, height = 225, style="z-index:500;",
                                       actionButton('showImage', '-', value=FALSE),
                                       actionButton('showROIimage', 'Overlay selected ROI'),
                                       tags$div(id = 'image')
@@ -57,18 +57,18 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
 
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 400, right = 'auto' , bottom = 20,
-                                      width = 375, height = 225,
+                                      width = 375, height = 225, style="z-index:500;",
                                       actionButton('hidePlot', '-', value=FALSE),
                                       plotOutput("currentPlot", height = 225)
                                       ),
 
                         absolutePanel(id = 'mouseBox', class = 'panel panel-default', fixed = TRUE,
                                       draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 85,
-                                      width = 240, height = 40,
+                                      width = 240, height = 40, style="z-index:500;",
                                       verbatimTextOutput("mouse")
                                       ),
 
-                        absolutePanel(id = 'siteTitle', class = 'panel panel-default', fixed = FALSE,
+                        absolutePanel(id = 'siteTitle', class = 'panel panel-default', fixed = FALSE, style="z-index:500;",
                                       draggable = FALSE,  top = 25, left = 'auto', right = 320 , bottom = 'auto',
                                       div(id = 'analyzerHeader', uiOutput("analyzerTitle"))
                                       ),
