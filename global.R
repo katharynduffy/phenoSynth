@@ -12,6 +12,7 @@ library(lattice)
 library(shinyjs)
 library(leaflet.extras) #
 library(sp)
+library(ncdf4)
 library(rvest)
 library(raster)
 library(jsonlite)
