@@ -22,6 +22,7 @@ library(ggplot2)
 library(rjson)
 library(RCurl)
 library(ggthemes)
+library(httr)
 
 # library(devtools)
 # if(!require(devtools)){install.packages("devtools")}
