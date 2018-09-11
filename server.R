@@ -10,6 +10,9 @@ server = function(input, output, session) {
                       filter   = 'All',
                       sites_df = cams_,
                       sites    = site_names)
+  appeears = reactiveValues(
+                      none = ''
+  )
 
   # 'analyzer' or 'explorer'
   panel   = reactiveValues(mode = '')
@@ -520,10 +523,14 @@ server = function(input, output, session) {
     site       = input$site
     site_data  = get_site_info(site)
     veg_types  = c()
-    
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
     test_site=site_data
+    
+    print (sprintf('grabbing task row from appeears for site: %s', site))
+    appeears$ndvi = get_appeears_task(site)
+    print (appeears$ndvi$task_name)
+    print (appeears$ndvi)
     
     veg_idx    = is.element(roi_files$site, site)
     
@@ -555,27 +562,10 @@ server = function(input, output, session) {
       veg_types = append(veg_types, secon_veg)
       veg_num2=pft_df$pft_key[veg.idx]
     }
-    print (veg_types)
-    print (veg_num1)
-    print (veg_num2)
-    
-    
-    # 
-    #   
-    # veg_nums=rbind(veg_num1, veg_num2)
-    # veg_types=cbind(veg_types, veg_nums)
-    # veg_types=data.frame(veg_types)
-    # dplyr::rename(veg_types, PFT.txt=X1, PFT.num=X2)
-    # print(veg_types)
-    # 
     
     primary_key   = veg_num1
     secondary_key = veg_num2
-    
-    # 
-    # print (primary_key)
-    # print (secondary_key)
-    # 
+
     c           = c('#79c400', '#ffee00')
     r      = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
     data$r = r
@@ -615,6 +605,11 @@ server = function(input, output, session) {
     }else{
       updateSelectInput(session, 'pftSelection', choices = veg_types)
     }
+    
+    file = download_nc(appeears$ndvi$task_id)
+    ndvi_output = nc_open(file)
+    ndvi_output
+    delete_nc(appeears$ndvi$task_id)
   })
 
 
@@ -819,9 +814,7 @@ server = function(input, output, session) {
 
     us_r   = raster(us_pth)
     resolution = res(us_r)[1]
-    print (us_r)
-    print (resolution)
-    
+
     height = 5 * resolution
     width  = 5 * resolution
     e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
@@ -1227,4 +1220,77 @@ server = function(input, output, session) {
     #             labels = c("Selected Vegetation Cover Match", "Additional Vegetation Cover Match"), colors= c("#79c400","#ffee00"), title = 'Vegetation Cover Match',
     #             opacity = .9)
   }
+  
+  get_site_from_task = function(task_name_){
+    elements = strsplit(task_name_, split = '_', fixed=TRUE)
+    element_length = length(elements[[1]])
+    if (element_length == 5){
+      site_name_ = elements[[1]][1]
+      return (site_name_)
+    }else if(element_length > 5){
+      num = element_length - 5
+      elem = elements[[1]][1]
+      for (x in c(1:num)){
+        elem = paste(elem, elements[[1]][x+1], sep='_')
+      }
+      return (elem)
+    }else{
+      sprintf('This task is missing information/invalid: %s', task_name_)
+      return(FALSE)
+    }
+  }
+  
+  get_appeears_task = function(name){
+    task_pos = grep(name ,appeears_tasks$task_name)
+    for (i in c(1:length(task_pos))){
+      row = get_site_from_task(appeears_tasks[task_pos[i],]$task_name)
+      if (row == name){
+        task_ = appeears_tasks[task_pos[i],]$task_name
+      }
+    }
+    return (subset(appeears_tasks, appeears_tasks$task_name == task_))
+  }
+  
+  download_nc = function(site_task_id_){
+    response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
+    bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+    
+    # all files in bundle
+    document = jsonlite::fromJSON(txt=bundle_response)
+    files = document$files
+    
+    netcdf    = subset(files, file_type == 'nc')
+    netcdf_id = netcdf$file_id
+    
+    download_this_file = netcdf_id
+    # # retrieve the filename from the file_id
+    bundle = fromJSON(bundle_response)$files
+    filename = bundle[[1]]$file_name
+    # create a destination directory to store the file in
+    dest_dir = './www/'
+    filepath = paste(dest_dir, filename, sep = '')
+    # suppressWarnings(dir.create(dirname(filepath)))
+    
+    # write the file to disk using the destination directory and file name 
+    response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, '/', download_this_file, sep = ""),
+                   write_disk(filepath, overwrite = TRUE), progress())
+    return (filepath)
+  }
+  
+  delete_nc = function(site_task_id_){
+    response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
+    bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+    document = jsonlite::fromJSON(txt=bundle_response)
+    files = document$files
+    netcdf    = subset(files, file_type == 'nc')
+    netcdf_id = netcdf$file_id
+    download_this_file = netcdf_id
+    # # retrieve the filename from the file_id
+    bundle = fromJSON(bundle_response)$files
+    filename = bundle[[1]]$file_name
+    filepath = paste0('./www/', filename)
+    print (filepath)
+    if (file.exists(filepath)) file.remove(filepath)
+  }
+  
 }

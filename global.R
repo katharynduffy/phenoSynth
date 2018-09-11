@@ -74,5 +74,8 @@ site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
 roi_files = rois$results
 
+# Load in dataframe with cached AppEEARS tasks
+appeears_tasks = readRDS(file = './www/cache_df.df')
+print (head(appeears_tasks))
 
 
