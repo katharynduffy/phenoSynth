@@ -605,42 +605,6 @@ server = function(input, output, session) {
     }else{
       updateSelectInput(session, 'pftSelection', choices = veg_types)
     }
-    
-    
-    
-    # load in netcdf for NDVI layer
-    #------------------------------------------------------------------------
-    file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
-    file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
-    ndvi_output  = nc_open(file_ndvi)
-    v6_QA_lut      = read.csv(file_ndvi_qa)
-    delete_file(file_ndvi)
-    delete_file(file_ndvi_qa)
-    
-    # netcdf manipulation
-    #------------------------------------------------------------------------
-    v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
-    v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-    
-    # Set lat and lon arrays for NDVI data
-    lat_NDVI = ncvar_get(ndvi_output, "lat")
-    lon_NDVI = ncvar_get(ndvi_output, "lon")
-    
-    # Grab the fill value and set to NA
-    fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
-    v6_NDVI[v6_NDVI == fillvalue$value] = NA
-    
-    # Define the coordinate referense system proj.4 string
-    crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
-    
-    # Grab first observation of NDVI and Quality datasets
-    v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-    v6_NDVI_original = v6_NDVI
-    v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-    #------------------------------------------------------------------------
-    YlGn = brewer.pal(9, "YlGn")
-    leafletProxy('map') %>% addRasterImage(v6_NDVI_original, opacity = .7, group = 'Blahblah', col = YlGn)
-
   })
 
 
@@ -698,39 +662,71 @@ server = function(input, output, session) {
   
   # Overlay button for ROI in image panel (AppEEARS)
   observeEvent(input$getAPPEEARSpoints, {
-    print ('Sending lat/lons from highlighted pixels to AppEEARS')
-    # Title for AppEEARS task
     
-    task_name_ = paste0(input$site, '_', format(Sys.time(), '%m_%d_%y_%H%M'))
-    task_type_ = 'point'
-    startDate_ = '01-01-2014'
-    endDate_   = '01-02-2014'
-    # layer_     = 'MOD13Q1.006,_250m_16_days_NDVI'   #250m
-    layer_     = 'MCD12Q1.006,LC_Type1'             #500m
+    # load in netcdf for NDVI layer
+    #------------------------------------------------------------------------
+    file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
+    file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
+    ndvi_output  = nc_open(file_ndvi)
+    v6_QA_lut      = read.csv(file_ndvi_qa)
+    delete_file(file_ndvi)
+    delete_file(file_ndvi_qa)
     
-    task <- list(task_type = task_type_, 
-                 task_name = task_name_, 
-                 startDate = startDate_, 
-                 endDate = endDate_, 
-                 layer = layer_)
+    # netcdf manipulation
+    #------------------------------------------------------------------------
+    v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
+    v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
     
-    lat_list = data$pixel_df$Lat
-    lon_list = data$pixel_df$Lon
+    # Set lat and lon arrays for NDVI data
+    lat_NDVI = ncvar_get(ndvi_output, "lat")
+    lon_NDVI = ncvar_get(ndvi_output, "lon")
     
-    count = 0
-    for (x in lat_list){
-      count = count + 1
-      add_this = list(coordinate = paste0(x, ',', lon_list[count]))
-      task = append(task, add_this)
-    }
+    # Grab the fill value and set to NA
+    fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
+    v6_NDVI[v6_NDVI == fillvalue$value] = NA
     
-    print ('test1')
-    # # submit the task request
-    token    = paste0('Bearer ',"IwnpK6qUMK2WahpGNyYSLdbyWqVM6_OYB2d8_8wRK0oFFHYxDnz73SXSkV_tKE58x2sTCxtnBqYENkqORJawFQ")
-    print('test2')
-    response = POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
-    print('test3')
-    print (response)
+    # Define the coordinate referense system proj.4 string
+    crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
+    
+    # Grab first observation of NDVI and Quality datasets
+    v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
+    v6_NDVI_original = v6_NDVI
+    v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
+    #------------------------------------------------------------------------
+    YlGn = brewer.pal(9, "YlGn")
+    leafletProxy('map') %>% addRasterImage(v6_NDVI_original, opacity = .7, group = 'Blahblah', col = YlGn)
+
+    
+    # task_name_ = paste0(input$site, '_', format(Sys.time(), '%m_%d_%y_%H%M'))
+    # task_type_ = 'point'
+    # startDate_ = '01-01-2014'
+    # endDate_   = '01-02-2014'
+    # # layer_     = 'MOD13Q1.006,_250m_16_days_NDVI'   #250m
+    # layer_     = 'MCD12Q1.006,LC_Type1'             #500m
+    # 
+    # task <- list(task_type = task_type_, 
+    #              task_name = task_name_, 
+    #              startDate = startDate_, 
+    #              endDate = endDate_, 
+    #              layer = layer_)
+    # 
+    # lat_list = data$pixel_df$Lat
+    # lon_list = data$pixel_df$Lon
+    # 
+    # count = 0
+    # for (x in lat_list){
+    #   count = count + 1
+    #   add_this = list(coordinate = paste0(x, ',', lon_list[count]))
+    #   task = append(task, add_this)
+    # }
+    # 
+    # print ('test1')
+    # # # submit the task request
+    # token    = paste0('Bearer ',"IwnpK6qUMK2WahpGNyYSLdbyWqVM6_OYB2d8_8wRK0oFFHYxDnz73SXSkV_tKE58x2sTCxtnBqYENkqORJawFQ")
+    # print('test2')
+    # response = POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
+    # print('test3')
+    # print (response)
   })
   
   #--------------------------------------------------------------------------------------------------------------------------------------
