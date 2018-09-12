@@ -606,13 +606,46 @@ server = function(input, output, session) {
       updateSelectInput(session, 'pftSelection', choices = veg_types)
     }
     
-    file = download_nc(appeears$ndvi$task_id)
-    ndvi_output = nc_open(file)
-    ndvi_output
-    delete_nc(appeears$ndvi$task_id)
+    
+    
+    # load in netcdf for NDVI layer
+    #------------------------------------------------------------------------
+    file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
+    file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
+    ndvi_output  = nc_open(file_ndvi)
+    v6_QA_lut      = read.csv(file_ndvi_qa)
+    delete_file(file_ndvi)
+    delete_file(file_ndvi_qa)
+    
+    # netcdf manipulation
+    #------------------------------------------------------------------------
+    v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
+    v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
+    
+    # Set lat and lon arrays for NDVI data
+    lat_NDVI = ncvar_get(ndvi_output, "lat")
+    lon_NDVI = ncvar_get(ndvi_output, "lon")
+    
+    # Grab the fill value and set to NA
+    fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
+    v6_NDVI[v6_NDVI == fillvalue$value] = NA
+    
+    # Define the coordinate referense system proj.4 string
+    crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
+    
+    # Grab first observation of NDVI and Quality datasets
+    v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
+    v6_NDVI_original = v6_NDVI
+    v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
+    #------------------------------------------------------------------------
+    YlGn = brewer.pal(9, "YlGn")
+    leafletProxy('map') %>% addRasterImage(v6_NDVI_original, opacity = .7, group = 'Blahblah', col = YlGn)
+
   })
 
 
+  
+  
   #Button switches to Site explorer mode
   observeEvent(input$siteExplorerMode,{
     print ('Switching to Explorer Mode')
@@ -1221,6 +1254,7 @@ server = function(input, output, session) {
     #             opacity = .9)
   }
   
+  # Returns site name from a cached task
   get_site_from_task = function(task_name_){
     elements = strsplit(task_name_, split = '_', fixed=TRUE)
     element_length = length(elements[[1]])
@@ -1240,6 +1274,7 @@ server = function(input, output, session) {
     }
   }
   
+  # Given a site name, function returns the appeears task record
   get_appeears_task = function(name){
     task_pos = grep(name ,appeears_tasks$task_name)
     for (i in c(1:length(task_pos))){
@@ -1251,46 +1286,50 @@ server = function(input, output, session) {
     return (subset(appeears_tasks, appeears_tasks$task_name == task_))
   }
   
-  download_nc = function(site_task_id_){
+  
+  # Downloads file from bundle (whichever ft is set to (only nc and qa_csv))
+  download_bundle_file = function(site_task_id_, ft){
     response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
     bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
-    
-    # all files in bundle
     document = jsonlite::fromJSON(txt=bundle_response)
     files = document$files
-    
-    netcdf    = subset(files, file_type == 'nc')
-    netcdf_id = netcdf$file_id
-    
-    download_this_file = netcdf_id
-    # # retrieve the filename from the file_id
-    bundle = fromJSON(bundle_response)$files
-    filename = bundle[[1]]$file_name
-    # create a destination directory to store the file in
+    if (ft == 'nc'){
+      netcdf    = subset(files, file_type == 'nc')
+      download_this_file = netcdf$file_id
+      file_name = netcdf$file_name
+    }else if(ft == 'qa_csv'){
+      csvs      = subset(files, file_type == 'csv')
+      qa_csv    = csvs[grep('Quality-lookup', csvs$file_name), ]$file_id
+      download_this_file = qa_csv
+      file_name = csvs[grep('Quality-lookup', csvs$file_name), ]$file_name
+    }
     dest_dir = './www/'
-    filepath = paste(dest_dir, filename, sep = '')
-    # suppressWarnings(dir.create(dirname(filepath)))
-    
-    # write the file to disk using the destination directory and file name 
+    filepath = paste(dest_dir, file_name, sep = '')
     response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, '/', download_this_file, sep = ""),
                    write_disk(filepath, overwrite = TRUE), progress())
     return (filepath)
   }
   
-  delete_nc = function(site_task_id_){
-    response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
-    bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
-    document = jsonlite::fromJSON(txt=bundle_response)
-    files = document$files
-    netcdf    = subset(files, file_type == 'nc')
-    netcdf_id = netcdf$file_id
-    download_this_file = netcdf_id
-    # # retrieve the filename from the file_id
-    bundle = fromJSON(bundle_response)$files
-    filename = bundle[[1]]$file_name
-    filepath = paste0('./www/', filename)
-    print (filepath)
-    if (file.exists(filepath)) file.remove(filepath)
+  
+  # Deletes the netcdf from input filepath
+  delete_file = function(filepath_){
+    if (file.exists(filepath_)) file.remove(filepath_)
+  }
+  
+  # Builds a color palet for the modis landcover raster layer
+  build_pft_palette = function(raster_){
+    colors = c()
+    color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
+                      '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
+    v = unique(values(raster_))
+    remove = c(NA)
+    v = v [! v %in% remove]
+    v = sort(v, decreasing = FALSE)
+    print (v)
+    for (x in v){
+      colors = c(colors, color_list[x])
+    }
+    return (colors)
   }
   
 }
