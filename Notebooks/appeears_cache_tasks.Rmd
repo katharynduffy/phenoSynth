@@ -1,0 +1,245 @@
+---
+title: "appeears_cache_tasks"
+author: "K. Enns"
+date: "9/5/2018"
+output: html_document
+---
+
+### Creates a dataframe out of all of the tasks submitted to AppEEARS under your account
+```{r}
+library(httr)
+token         = paste("Bearer", content(token_response)$token)
+response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
+task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+tasks = jsonlite::fromJSON(txt=task_response)
+tasks
+```
+
+### Function to grab date from task_name
+```{r}
+get_date_from_task = function(task_name_){
+  elements = strsplit(task_name_, split = '_', fixed=TRUE)
+  element_length = length(elements[[1]])
+
+  if (element_length == 5 ){
+    
+    # Grab date from string
+    year      = elements[[1]][4]
+    month     = elements[[1]][2]
+    day       = elements[[1]][3]
+    hour      = substr(elements[[1]][5], start=1, stop=2)
+    minute    = substr(elements[[1]][5], start=3, stop=4)
+    date      = sprintf('%s-%s-%s_%s:%s', month, day, year, hour, minute)
+    date_date = as.POSIXct(strptime(date, format = '%m-%d-%y'))
+    date_time = as.POSIXct(strptime(date, format = '%m-%d-%y_%H:%M'))
+         
+    # print (names(unclass(as.POSIXlt(date_date))))
+    return (date_time)
+    
+  } else if(element_length > 5){
+    num = element_length - 5
+    elem = elements[[1]][1]
+    
+    year      = elements[[1]][4+num]
+    month     = elements[[1]][2+num]
+    day       = elements[[1]][3+num]
+    hour      = substr(elements[[1]][5+num], start=1, stop=2)
+    minute    = substr(elements[[1]][5+num], start=3, stop=4)
+    date      = sprintf('%s-%s-%s_%s:%s', month, day, year, hour, minute)
+    date_date = as.POSIXct(strptime(date, format = '%m-%d-%y'))
+    date_time = as.POSIXct(strptime(date, format = '%m-%d-%y_%H:%M'))
+    
+  }else{
+    print (sprintf('This task is missing information/invalid: %s', task_name_))
+    return (FALSE)
+  }
+}
+
+# Tests: 
+# get_date_from_task('arsgacp1_08_30_18_1452')
+# print (get_date_from_task('ars_gacp1_08_30_18_1452'))
+# get_date_from_task('arsgacp1testest1452')
+```
+
+### Function that uses date from the task name to see how recent it is
+```{r}
+# Input should be class "POSIXct" "POSIXt"
+get_date_age = function(date_){
+  current_time    = Sys.time()
+  time_difference = current_time - date_
+  return (time_difference)
+}
+
+# Tests:
+# test_date = get_date_from_task('arsgacp1_08_30_18_1452')
+# task_age  = get_date_age(test_date)
+# print (sprintf('Age of this task submition: %s days', task_age ))
+```
+
+### Function to grab site name from task_name
+```{r}
+get_site_from_task = function(task_name_){
+  elements = strsplit(task_name_, split = '_', fixed=TRUE)
+  element_length = length(elements[[1]])
+  if (element_length == 5){
+    site_name_ = elements[[1]][1]
+    return (site_name_)
+  }else if(element_length > 5){
+    num = element_length - 5
+    elem = elements[[1]][1]
+    for (x in c(1:num)){
+      elem = paste(elem, elements[[1]][x+1], sep='_')
+    }
+    return (elem)
+  }else{
+    sprintf('This task is missing information/invalid: %s', task_name_)
+    return(FALSE)
+  }
+}
+
+# Tests:
+get_site_from_task('kelloggswitchgrass_09_06_18_0839')
+# get_site_from_task('arsgacp1testest1452')
+```
+
+### Example using all of the above functions to get date/site name/task age
+```{r}
+example_task_name = 'arsgacp1_08_30_18_1452'
+date      = get_date_from_task(example_task_name)
+date_dif  = get_date_age(date)
+site_name = get_site_from_task(example_task_name)
+
+print (sprintf('site: %s,  date: %s,  task age: %s days', site_name, date, date_dif))
+
+```
+
+### Pullin in dataframe of phenocams
+```{r}
+table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
+df        = read.csv(url(table_url))
+```
+
+### Grabbing 4 specific tasks (just for show)
+```{r}
+tasks[c(1,12,3,4),]
+```
+
+### Getting most recent task for each site that exists.  Errors on sites that haven't been submitted
+###   as tasks yet
+```{r}
+# Just to clarify:  this script is meant to only grab the most recent task for each site submitted by the
+#    cronjob script and create a CSV from that.  This script is a temporary solution to get around using
+#    passwords to get the appropriate data for the application.
+sites = df$site
+headers = names(tasks)
+# cache_df = data.frame(matrix(vector(),ncol=length(headers)))
+# cache_df = data.frame()
+# names(cache_df) = headers
+
+
+cache_df = data.frame(matrix(vector(), 0, 16,
+                dimnames=list(c(), headers)),
+                stringsAsFactors=F)
+str(cache_df)
+# not in
+'%!in%' <- function(x,y)!('%in%'(x,y))
+  
+# for (x in c(1:length(sites))){
+for (x in c(1:length(df$site))){
+  print (sprintf('SITE: %s -----------------------------------', sites[x]))
+  site_name = sites[x]
+  site_rows    = tasks[grep(site_name, tasks$task_name), ]
+  task_names = site_rows$task_name
+  
+  # Doing a string match to fix error when a site's name lives in another site's name
+  #   and tries to create a duplicate row and leave the shorter site name out
+  tasks_name_list = c()
+  
+  # if (grepl('_', site_name) == FALSE){
+  for (n in task_names){
+    name_           = get_site_from_task(n)
+    tasks_name_list = c(tasks_name_list, name_)
+    }
+  correct_rows = which(tasks_name_list %in% site_name)
+  site_rows = site_rows[correct_rows,]
+  # }
+  
+  
+  
+  dates = c()
+  for (i in c(1:nrow(site_rows))){
+    # Add these dates to a list and then see which one is most recent or is in the structure we want
+    task_n = task_names[i]
+    task_date_ = get_date_from_task(task_n)
+    # Parsing out bad rows based on task_date data
+    if (!is.na(task_date_) && task_date_ != 0){
+      dates = c(dates, task_date_)
+    }
+  }
+  max_date = (max(dates))
+  newest_task = site_rows$task_name[match(max_date,dates)]
+  print (newest_task)
+  newest_task_date = as.POSIXct(subset(tasks, tasks$task_name == newest_task)$completed)
+  task_age  = get_date_age(newest_task_date)
+  # print (sprintf('Age of this task submition: %s days', task_age ))
+  # print (sprintf('Index for most recent task: %s', newest_task))
+  add_row  = site_rows[grep(newest_task, site_rows$task_name), ]
+  
+  cache_df = rbind(cache_df, add_row)
+}
+cache_df
+```
+
+### Check unique tasks in Appeears based on phenocam sites to see is lengths match
+```{r}
+list = c()
+for (i in cache_df$task_name){
+  list = c(list, i)
+}
+print (length(unique(list)))
+print (length(df$site))
+```
+
+### Save out cache file for Most Current AppEEARS tasks
+```{r}
+saveRDS(cache_df, file = './www/cache_df.df')
+```
+
+### Load in file
+```{r}
+dfdf = readRDS(file = './www/cache_df.df')
+```
+
+
+### Function used to grab the row from cached appeears tasks using a phenocam site name
+```{r}
+get_appeears_task = function(name){
+  task_pos = grep(site ,dfdf$task_name)
+  
+  task_pos
+  
+  for (i in c(1:length(task_pos))){
+    row = get_site_from_task(dfdf[task_pos[i],]$task_name)
+    if (row == site){
+      task_ = dfdf[task_pos[i],]$task_name
+    }
+    print (get_site_from_task(dfdf[task_pos[i],]$task_name))
+  }
+  return (subset(dfdf, dfdf$task_name == task_))
+}
+site = 'arbutuslake'
+get_appeears_task(site)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

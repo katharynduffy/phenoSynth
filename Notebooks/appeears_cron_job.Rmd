@@ -1,0 +1,400 @@
+---
+title: "appeears_cron_job"
+author: "K. Enns"
+date: "9/4/2018"
+output: html_document
+---
+
+# This code will create a task from all phenocam sites and grab all the available data from AppEEARS for MOD13Q1 (250 NDVI Layer)
+### Builds all the requets for each Phenocam site with a 1 degree buffer in WGS
+
+### Getting phenocam csv for site lat/lon data
+```{r}
+# Variables
+table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
+df        = read.csv(url(table_url))
+cams_     = df
+
+cams_$site
+site_name = 'arsgacp1'
+data      = subset(cams_, site == 'acadia')
+lon       = data$lon
+lat       = data$lat
+
+subset(df, df$site == 'eastend')
+
+nrow(df)
+```
+
+### looping through sites to send area requests to AppEEARS for each site using a .5 degree buffer (polygon) around the site.
+```{r}
+
+# Function that checks to see if the Task has already been submitted/completed within the last 2 weeks
+
+# AppEEARS can only process 100 tasks at a time!!
+# Loop through each row (each row is 1 site) and submit a task to AppEEARS
+# for (x in c(1:length(df$site))){
+for (x in c(500:500)){    #401 to 501 last run
+  data       = df[x,]
+  site       = data$site
+  lat        = data$lat
+  lon        = data$lon
+  starteDate = data$date_start
+  endDate    = data$date_end
+  print (site)
+
+  task_name_ = paste0(site, '_', format(Sys.time(), '%m_%d_%y_%H%M'))
+  print (task_name_)
+  task_type_ = 'area'
+  startDate_ = '01-01-2000'
+  endDate_   = '08-30-2018'
+  layer_     = 'MOD13Q1.006, _250m_16_days_NDVI'
+  format_    = 'netcdf4'
+  projection_name_ = "geographic"
+  
+  
+  # build boundary box based on lat/lon from site
+  degree = .5
+  # bbox needs to look like this: {min_longitude},{min_latitude},{max_longitude},{max_latitude}
+  bbox_ = as.character(paste0(lon-degree,',', lon+degree,',', lat-degree,',', lat+degree))
+  print (bbox_)
+  xmin = lon-degree
+  xmax = lon+degree
+  ymin = lat-degree
+  ymax = lat+degree
+  pt1 = c(xmin,ymin)
+  pt2 = c(xmax,ymin)
+  pt3 = c(xmax,ymax)
+  pt4 = c(xmin,ymax)
+  
+  coords_ = list(pt1,pt2,pt3,pt4,pt1)
+  
+  task_list = list(task_type = 'area', 
+                 task_name = task_name_,
+                 params    =  list(dates  = list(list(startDate = startDate_,
+                                                 endDate   = endDate_)),
+                                   layers = list(list(layer   = '_250m_16_days_NDVI',
+                                                      product = 'MOD13Q1.006')),
+                                   output = list(format     = list(type = 'netcdf4'),
+                                                 projection = 'geographic'),
+                                   geo    = list(type = 'FeatureCollection',
+                                                 fileName = 'User-Drawn-Polygon',
+                                                 features = list(list(type = 'Feature',
+                                                                 geometry = list (type = 'Polygon',
+                                                                                  coordinates = list(coords_)))))))
+  
+  ###########################################################
+  ### Comment this section out unless submitting requests ###
+  ###########################################################
+  
+  task_json = rjson::toJSON(task_list)
+  print (rjson::toJSON(task_list))
+
+  # # submit the task request
+  token <- paste("Bearer", content(token_response)$token)
+  response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", body = task_json, encode = "json",
+                         add_headers(Authorization = token, "Content-Type" = "application/json"))
+  task_response <- prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+  
+  ###########################################################
+  ### Comment this section out unless submitting requests ###
+  ###########################################################
+}
+
+
+
+
+```
+
+### Find all tasks for account
+```{r}
+token         = paste("Bearer", content(token_response)$token)
+response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
+task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+tasks = jsonlite::fromJSON(txt=task_response)
+tasks
+unique(tasks$task_name)
+```
+
+### Grab the task_id for the phenocam site we want
+```{r}
+site_name
+site_row     = tasks[grep(site_name, tasks$task_name), ]
+site_row[2,]
+site_task_id = site_row[2,]$task_id
+site_task_id
+
+```
+
+### Grabbing bundle for lat/lon (site) to get the files desired and their associated id (sha256)
+### (Does not requre an authentication!!!)
+```{r}
+library(httr)
+site_task_id
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, sep = ""))
+bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+
+# all files in bundle
+document = jsonlite::fromJSON(txt=bundle_response)
+files = document$files
+files
+
+# csv files 
+csvs      = subset(files, file_type == 'csv')
+quality_lookup_id     = csvs[grep('Quality-lookup', csvs$file_name), ]$file_id
+quality_statistics_id = csvs[grep('Quality-Statistics', csvs$file_name), ]$file_id
+  
+# Net cdf
+netcdf    = subset(files, file_type == 'nc')
+netcdf_id = netcdf$file_id
+```
+
+### Download the files in memory for app to use
+```{r}
+# task id for the site
+sprintf('%s task id : %s', site_name, site_task_id)
+
+# file id for file to download
+sprintf('Quality Lookup CSV id     : %s', quality_lookup_id)
+sprintf('Quality statistics CSV id : %s', quality_statistics_id)
+sprintf('Net CDF id                : %s', netcdf_id)
+```
+
+### Download this file from AppEEARS task id filtered out previously
+```{r}
+
+download_this_file = netcdf_id
+# # retrieve the filename from the file_id
+bundle = fromJSON(bundle_response)$files
+filename = bundle[bundle$file_id == download_this_file,]$file_name
+# create a destination directory to store the file in
+dest_dir = '/path/to/download/folder'
+filepath = paste(dest_dir, filename, sep = '')
+# suppressWarnings(dir.create(dirname(filepath)))
+filepath
+
+# write the file to disk using the destination directory and file name 
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, '/', download_this_file, sep = ""),
+                      write_disk(filepath, overwrite = TRUE), progress())
+response
+```
+
+
+# Below is code in progress to Create a task using a shapefile/geojson (simple shapefile works)
+
+#### Creating a shapefile of contiguous US to use to submit a task to appeears
+```{r}
+library(rgdal)
+library(raster)
+library(rgeos)
+library(sp)
+library(leaflet)
+library(spdplyr)
+library(geojsonio)
+
+crs_wgs = "+proj=longlat +datum=WGS84 +no_defs"
+gClip = function(shp, bb){
+  if(class(bb) == "matrix"){
+    b_poly = as(extent(as.vector(t(bb))), "SpatialPolygons")
+    proj4string(b_poly) = CRS(crs_wgs)
+  }else {
+    b_poly = as(extent(bb), "SpatialPolygons")
+    proj4string(b_poly) = CRS(crs_wgs)
+  }
+  gIntersection(shp, b_poly, byid = TRUE)
+}
+
+bb = c(-138, -56, 21,54)
+# shape_US_nad = readOGR(dsn = "./www/cb_2017_us_nation_20m", layer = "cb_2017_us_nation_20m")
+
+shape_US_wgs  = spTransform(shape_US,CRS(crs_wgs))
+shape_contigious_US_wgs = gClip(shape_US_wgs, bb)
+
+leaflet(shape_US_wgs) %>% addTiles() %>%
+    addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.5)
+
+leaflet(shape_contigious_US_wgs) %>% addTiles() %>%
+    addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.5)
+
+shape_contigious_US_wgs_json = geojsonio::geojson_json(shape_contigious_US_wgs)
+
+test = rgdal::readOGR(shape_contigious_US_wgs_json)
+
+leaflet() %>% addTiles() %>% addPolygons(data=test, weight=2)
+
+
+length(shape_contigious_US_wgs@polygons[[1]]@Polygons)
+
+
+
+# Calling function in next cell
+coords_compiled = get_latlon_from_shapefile(shape_contigious_US_wgs)
+print (coords_compiled)
+
+leaflet('map') %>% addTiles() %>% addPolygons(lng = lons, lat=lats)
+print (coords_compiled)
+task_list = list(task_type = 'area', 
+                 task_name = 'Contiguous US 1yr 2017 MOD13Q1 NDVI',
+                 params    =  list(dates  = list(list(startDate = '01-01-2017',
+                                                 endDate   = '01-01-2018')),
+                                   layers = list(list(layer   = '_250m_16_days_NDVI',
+                                                      product = 'MOD13Q1.006')),
+                                   output = list(format     = list(type = 'netcdf4'),
+                                                 projection = 'geographic'),
+                                   geo    = list(type = 'FeatureCollection',
+                                                 fileName = 'User-Drawn-Polygon',
+                                                 features = shape_colorado_wgs_json)))
+
+task_json = rjson::toJSON(task_list)
+
+# write(task_json, file = './www/testtaskjson.json')
+print (rjson::toJSON(task_list))
+
+
+# submit the task request
+token <- paste("Bearer", content(token_response)$token)
+response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", body = task_json, encode = "json",
+                       add_headers(Authorization = token, "Content-Type" = "application/json"))
+task_response <- prettify(toJSON(content(response), auto_unbox = TRUE))
+task_response
+
+```
+
+
+# This cell takes a shapefile as input (works)
+#### Creating a json file in WGS84 to submit to appeears through API (Using area)
+```{r}
+# shape_states_nad = readOGR(dsn = "./downloads/cb_2017_us_state_500k", layer = 'cb_2017_us_state_500k')
+shape_colorado_wgs      = spTransform(shape_colorado_nad, CRS("+proj=longlat +ellps=WGS84"))
+shape_colorado_wgs_json = geojson_json(shape_colorado_wgs)
+
+leaflet() %>% addTiles() %>% addPolygons(data=shape_colorado_wgs, weight=2)
+shape_colorado_wgs_json
+print (shape_colorado_wgs)
+shape_colorado_wgs_json = geojsonio::geojson_json(shape_colorado_wgs)
+# print (shape_colorado_wgs@polygons[[1]]@Polygons[[1]]@coords)
+
+
+# Function that takes a shapefile and returns a list of lon/lat coordinates
+#   that can be sent in a JSON task to AppEEARS
+get_latlon_from_shapefile = function(shapefile){
+  # Shapefile Coordinates
+  coordinates(shapefile)
+  coords = shapefile@polygons[[1]]@Polygons[[1]]@coords
+  # Build coordinates for json
+  coords_compiled = list()
+  lats = c()
+  lons = c()
+  # Loop through the coordinates and build them into a list AppEEARS tasks can use
+  for (x in c(1:(length(coords)/2))){
+    lon = coords[x,1]
+    lat = coords[x,2]
+    lons = append(lons, lon)
+    lats = append(lats, lat)
+    lon_lat = c(lon, lat)
+    coords_compiled = append(coords_compiled, list(lon_lat))
+  }
+  return (coords_compiled)
+}
+
+coords_compiled = get_latlon_from_shapefile(shape_colorado_wgs)
+print (coords_compiled)
+
+leaflet('map') %>% addTiles() %>% addPolygons(lng = lons, lat=lats)
+print (coords_compiled)
+task_list = list(task_type = 'area', 
+                 task_name = 'Colorado Test geojson2',
+                 params    =  list(dates  = list(list(startDate = '01-01-2000',
+                                                 endDate   = '08-29-2018')),
+                                   layers = list(list(layer   = '_250m_16_days_NDVI',
+                                                      product = 'MOD13Q1.006')),
+                                   output = list(format     = list(type = 'netcdf4'),
+                                                 projection = 'geographic'),
+                                   geo    = list(type = 'FeatureCollection',
+                                                 fileName = 'User-Drawn-Polygon',
+                                                 features = list(list(type = 'Feature',
+                                                                 geometry = list (type = 'Polygon',
+                                                                                  coordinates = list(coords_compiled)))))))
+
+task_json = rjson::toJSON(task_list)
+
+# write(task_json, file = './www/testtaskjson.json')
+print (rjson::toJSON(task_list))
+
+
+# submit the task request
+token <- paste("Bearer", content(token_response)$token)
+response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", body = task_json, encode = "json",
+                       add_headers(Authorization = token, "Content-Type" = "application/json"))
+task_response <- prettify(toJSON(content(response), auto_unbox = TRUE))
+task_response
+```
+
+
+## Manually input the coordinates for a box
+
+```{r}
+
+coords_ = list(c(-58,21),c(-58,54),c(-138,54),c(-138,53),c(-58,21))
+coords_
+task_list = list(task_type = 'area', 
+                 task_name = 'Colorado Test geojson',
+                 params    =  list(dates  = list(list(startDate = '01-01-2000',
+                                                 endDate   = '08-29-2018')),
+                                   layers = list(list(layer   = '_250m_16_days_NDVI',
+                                                      product = 'MOD13Q1.006')),
+                                   output = list(format     = list(type = 'netcdf4'),
+                                                 projection = 'geographic'),
+                                   geo    = list(type = 'FeatureCollection',
+                                                 fileName = 'User-Drawn-Polygon',
+                                                 features = list(list(type = 'Feature',
+                                                                 geometry = list (type = 'Polygon',
+                                                                                  coordinates = list(coords_)))))))
+
+task_json = rjson::toJSON(task_list)
+# write(task_json, file = './www/testtaskjson.json')
+print (prettify(rjson::toJSON(task_list)))
+# submit the task request
+token <- paste("Bearer", content(token_response)$token)
+response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", body = task_json, encode = "json",
+                       add_headers(Authorization = token, "Content-Type" = "application/json"))
+task_response <- prettify(toJSON(content(response), auto_unbox = TRUE))
+task_response
+```
+
+
+
+
+```{r}
+task_type_ = 'area'
+task_name_ = 'test with geo'
+startDate_ = '01-01-2000'
+endDate_   = '08-29-2018'
+layer_     = 'MOD13Q1.006, _250m_16_days_NDVI'
+format_    = 'NetCDF4'
+projection_name_ = "geographic"
+# bbox_ = '-126.2109375, 22.5, -63.3515625, 50.765625'
+bbox_ = '-138, -56, 21, 54'
+# coordinates_ = '{-126.2109375, 22.5}, {-126.2109375, 50.765625}, {-63.3515625, 50.765625}, {-63.3515625, 22.5}, {-126.2109375, 22.5}'
+
+
+task <- list(task_type       = task_type_, 
+             task_name       = task_name_,
+             startDate       = startDate_, 
+             endDate         = endDate_, 
+             layer           = layer_, 
+             # bbox            = bbox_,
+             coordinates     = shape_colorado_wgs_json,
+             file_type       = format_,
+             projection_name = projection_name_)
+
+
+
+# submit the task request
+token <- paste("Bearer", content(token_response)$token)
+response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
+response
+
+```

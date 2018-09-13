@@ -33,7 +33,8 @@ server = function(input, output, session) {
                       #           "#ffcc00", "#ff9900", '#006699', '#ffff00', '#ff0000', '#999966', '#808080', '#000080'),
                       run   = 0,
                       names = c(),
-                      df    = data.frame())
+                      df    = data.frame(),
+                      veg_types = c())
 
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
@@ -525,90 +526,73 @@ server = function(input, output, session) {
     veg_types  = c()
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
-    test_site=site_data
-    
-    print (sprintf('grabbing task row from appeears for site: %s', site))
-    appeears$ndvi = get_appeears_task(site)
-    print (appeears$ndvi$task_name)
-    print (appeears$ndvi)
-    
-    veg_idx    = is.element(roi_files$site, site)
-    
-    veg_match     = roi_files[veg_idx,]
-
-    print (veg_match)
-    print (nrow(veg_match))
     
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
-
-    veg.idx   = is.element(pft_df$pft_abbreviated, veg_match$roitype[1])
-    prim_veg  = pft_df$pft_expanded[veg.idx]
-    prim_veg  = as.character(prim_veg[1])
-
-    veg_num1=pft_df$pft_key[veg.idx]
-
-    veg_types = append(veg_types, prim_veg)
-
     
-    if (nrow(veg_match)<2){
-      secon_veg = c('NA')
-      veg_types = veg_types = append(veg_types, secon_veg)
-      veg_num2='NA'
-    }else{
-      veg.idx   = is.element(pft_df$pft_abbreviated, veg_match$roitype[2])
-      secon_veg = pft_df$pft_expanded[veg.idx]
-      secon_veg = as.character(secon_veg[1])
-      veg_types = append(veg_types, secon_veg)
-      veg_num2=pft_df$pft_key[veg.idx]
-    }
+    print (sprintf('grabbing task row from appeears for site: %s', site))
+    appeears$ndvi = get_appeears_task(site)
     
-    primary_key   = veg_num1
-    secondary_key = veg_num2
-
-    c           = c('#79c400', '#ffee00')
-    r      = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
-    data$r = r
-
-    prim_b  = FALSE
-    secon_b = FALSE
-    if (nrow(veg_match)<1){print ('no PhenoCam ROI found')
-    }else{
-      # print (prim_veg)
-      prim_b    = TRUE
-      prim_veg  = paste0('Primary: ', prim_veg)
-      veg_types = veg_types
-      rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
-                                         prim = as.numeric(veg_num1))
-    }
-    if (nrow(veg_match)<2){print ('Only 1 available ROI from PhenoCam')
-    }else{
-      # print (secon_veg)
-      secon_b   = TRUE
-      secon_veg = paste0('Secondary: ', secon_veg)
-      veg_types = veg_types
-      rc        = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE,
-                                         prim = as.numeric(veg_num1), sec = as.numeric(veg_num2))
-    }
-    if (prim_b|secon_b == TRUE){
-      leafletProxy('map') %>%
-        addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c2) %>%
-        addRasterImage(rc, opacity = .55, project=TRUE, group= 'MODIS Reclassified 2016', colors=c) %>%
-        addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                         overlayGroups = c('MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
-                         position = c("topleft"),
-                         options = layersControlOptions(collapsed = FALSE))
-    }
-
-    if (is.null(veg_types)){
+    veg_idx    = is.element(roi_files$site, site)
+    veg_match     = roi_files[veg_idx,]
+    
+    print (veg_match)
+    
+    if (nrow(veg_match) == 0){
       updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
     }else{
+      veg_types = c()
+      for (i in c(1:nrow(veg_match))){
+        print (i)
+        veg.idx   = is.element(pft_df$pft_abbreviated, veg_match$roitype[i])
+        veg       = pft_df$pft_expanded[veg.idx]
+        add_veg   = as.character(veg[1])
+        veg_types = c(veg_types, paste0(add_veg, '_', i))
+      }
+      data$veg_types = veg_types
+      print (data$veg_types)
       updateSelectInput(session, 'pftSelection', choices = veg_types)
     }
   })
-
-
   
+  # When ROI Vegetation type changes replot highlighted veg type
+  observeEvent(input$pftSelection, {
+    if (panel$mode == 'analyzer'){
+        print ('Running pft Selection')
+        
+        site       = input$site
+        site_data  = get_site_info(site)
+        pft = input$pftSelection
+    
+        r      = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
+        c3 = build_pft_palette(r)
+        print(c3$colors)
+        print(c3$names)
+        
+        data$r = r
+        print (pft)
+        
+        pft = strsplit(pft, '_')[[1]][1]
+        print (pft)
+        pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
+        print (pft_key)
+        
+        rc   = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, primary = as.numeric(pft_key))
+
+        leafletProxy('map') %>%
+          clearControls() %>%
+          clearImages() %>%
+          addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
+          addRasterImage(rc, opacity = .55, project=TRUE, group= 'MODIS Reclassified 2016', colors= 'green') %>%
+          addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft") %>%
+          addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+                           overlayGroups = c('MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
+                           position = c("topleft"),
+                           options = layersControlOptions(collapsed = FALSE)) %>%
+          hideGroup('MODIS Land Cover 2016')
+    }
+  })
+
   
   #Button switches to Site explorer mode
   observeEvent(input$siteExplorerMode,{
@@ -662,7 +646,6 @@ server = function(input, output, session) {
   
   # Overlay button for ROI in image panel (AppEEARS)
   observeEvent(input$getAPPEEARSpoints, {
-    
     # load in netcdf for NDVI layer
     #------------------------------------------------------------------------
     file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
@@ -687,6 +670,7 @@ server = function(input, output, session) {
     
     # Define the coordinate referense system proj.4 string
     crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
+    # crs = CRS("+proj=longlat +datum=WGS84")
     
     # Grab first observation of NDVI and Quality datasets
     v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
@@ -694,39 +678,8 @@ server = function(input, output, session) {
     v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
     #------------------------------------------------------------------------
     YlGn = brewer.pal(9, "YlGn")
-    leafletProxy('map') %>% addRasterImage(v6_NDVI_original, opacity = .7, group = 'Blahblah', col = YlGn)
-
+    leafletProxy('map') %>% addRasterImage(v6_NDVI_original, opacity = .7, group = 'test1', col = YlGn)
     
-    # task_name_ = paste0(input$site, '_', format(Sys.time(), '%m_%d_%y_%H%M'))
-    # task_type_ = 'point'
-    # startDate_ = '01-01-2014'
-    # endDate_   = '01-02-2014'
-    # # layer_     = 'MOD13Q1.006,_250m_16_days_NDVI'   #250m
-    # layer_     = 'MCD12Q1.006,LC_Type1'             #500m
-    # 
-    # task <- list(task_type = task_type_, 
-    #              task_name = task_name_, 
-    #              startDate = startDate_, 
-    #              endDate = endDate_, 
-    #              layer = layer_)
-    # 
-    # lat_list = data$pixel_df$Lat
-    # lon_list = data$pixel_df$Lon
-    # 
-    # count = 0
-    # for (x in lat_list){
-    #   count = count + 1
-    #   add_this = list(coordinate = paste0(x, ',', lon_list[count]))
-    #   task = append(task, add_this)
-    # }
-    # 
-    # print ('test1')
-    # # # submit the task request
-    # token    = paste0('Bearer ',"IwnpK6qUMK2WahpGNyYSLdbyWqVM6_OYB2d8_8wRK0oFFHYxDnz73SXSkV_tKE58x2sTCxtnBqYENkqORJawFQ")
-    # print('test2')
-    # response = POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
-    # print('test3')
-    # print (response)
   })
   
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -844,10 +797,12 @@ server = function(input, output, session) {
     us_r   = raster(us_pth)
     resolution = res(us_r)[1]
 
-    height = 5 * resolution
-    width  = 5 * resolution
+    # height = 5 * resolution
+    # width  = 5 * resolution
+    height = .03
+    width  = .05
     e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
-
+    
     crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
     r      = crop(us_r, e)
     
@@ -876,6 +831,7 @@ server = function(input, output, session) {
             16,NA,
             17,NA)
       
+      
       if(!is.null(primary)){
         prim    = primary*2
         m[prim] = 1
@@ -885,6 +841,7 @@ server = function(input, output, session) {
         m[sec] = 2
         }
 
+      print (m)
       # m[water] = 3
       
       rclmat = matrix(m, ncol=2, byrow=TRUE)
@@ -1210,9 +1167,15 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'plotpanel')
     shinyjs::hide(id = 'highlightPixelMode')
     shinyjs::hide(id = 'getAPPEEARSpoints')
-    # leafletProxy('map') %>%
-    #   addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
-    #             labels = c("Active sites", "Inactive sites"), colors= c("blue","red"))
+    leafletProxy('map') %>%
+      clearControls() %>%
+      clearShapes() %>%
+      addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
+                labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
+      addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+                     position = c("topleft"),
+                     options = layersControlOptions(collapsed = TRUE)) 
+    
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:
@@ -1237,17 +1200,6 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'site')
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
-    # leafletProxy('map') %>%
-    #   addLegend(group = 'MODIS Land Cover 2016', position = 'bottomleft',
-    #             labels = c('Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
-    #                        'Closed Shrubland', 'Open Shrubland', 'Woody Savannas', 'Savannas','Grasslands', 'Permanent Wetlands', 'Croplands', 'Urban and Built-Up',
-    #                        'Cropland/Natural Vegetation', 'Barren or Sparsely Vegetated', 'Water'),
-    #             colors = data$c2, title = 'MODIS Land Cover 2016', opacity = .9) %>%
-    #   hideGroup("MODIS Land Cover 2016") %>%
-    #   clearControls() %>%
-    #   addLegend(group = 'MODIS Vegetation Cover Match', position = "bottomright",
-    #             labels = c("Selected Vegetation Cover Match", "Additional Vegetation Cover Match"), colors= c("#79c400","#ffee00"), title = 'Vegetation Cover Match',
-    #             opacity = .9)
   }
   
   # Returns site name from a cached task
@@ -1314,18 +1266,29 @@ server = function(input, output, session) {
   
   # Builds a color palet for the modis landcover raster layer
   build_pft_palette = function(raster_){
+    print ('building palet')
     colors = c()
+    names  = c()
     color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
                       '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
     v = unique(values(raster_))
     remove = c(NA)
     v = v [! v %in% remove]
     v = sort(v, decreasing = FALSE)
-    print (v)
+    
     for (x in v){
-      colors = c(colors, color_list[x])
+      if (x == 17){
+        colors = c(colors,color_list[17])
+        name   = as.character(subset(pft_df, pft_df$pft_key == 0)$pft_expanded)
+        names  = c(names, name)
+      }else{
+        colors = c(colors, color_list[x])
+        name   = as.character(subset(pft_df, pft_df$pft_key == x)$pft_expanded)
+        names  = c(names, name)
+      }
     }
-    return (colors)
+    colors_ = list('colors' = colors, 'names' = names)
+    return (colors_)
   }
   
 }
