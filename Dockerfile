@@ -5,6 +5,8 @@ USER root
 
 RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
 
+RUN echo 'sanitize_errors off;disable_protocols xdr-streaming xhr-streaming iframe-eventsource iframe-htmlfile;' >> /etc/shiny-server/shiny-server.conf
+
 COPY . ${HOME}
 RUN chown -R ${NB_USER} ${HOME}
 USER ${NB_USER}

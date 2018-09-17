@@ -562,9 +562,9 @@ server = function(input, output, session) {
         
         site       = input$site
         site_data  = get_site_info(site)
-        pft = input$pftSelection
+        pft        = input$pftSelection
     
-        r      = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
+        r  = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
         c3 = build_pft_palette(r)
         print(c3$colors)
         print(c3$names)
@@ -793,8 +793,9 @@ server = function(input, output, session) {
   crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL, secondary=NULL){
     # us_pth = './www/uslandcover_modis_sinu.tif'
     us_pth = './www/uslandcover_modis.tif'
+    global_pth = './www/global_landcover.tif'
 
-    us_r   = raster(us_pth)
+    us_r   = raster(global_pth)
     resolution = res(us_r)[1]
 
     # height = 5 * resolution
