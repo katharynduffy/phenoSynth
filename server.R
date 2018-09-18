@@ -582,8 +582,10 @@ server = function(input, output, session) {
           addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
           addRasterImage(rc, opacity = .55, project=TRUE, group= 'MODIS Reclassified 2016', colors= c('green','black')) %>%
           addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95) %>%
+          addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= 'green') %>%
+          addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft") %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                           overlayGroups = c('MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
+                           overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE)) %>%
           hideGroup('MODIS Reclassified 2016')
