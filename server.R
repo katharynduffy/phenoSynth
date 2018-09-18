@@ -563,33 +563,30 @@ server = function(input, output, session) {
         site       = input$site
         site_data  = get_site_info(site)
         pft        = input$pftSelection
-    
+
         r  = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
         c3 = build_pft_palette(r)
-        print(c3$colors)
-        print(c3$names)
         
         data$r = r
-        print (pft)
         
         pft = strsplit(pft, '_')[[1]][1]
-        print (pft)
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
-        print (pft_key)
-        
-        rc   = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, primary = as.numeric(pft_key))
 
+        rc   = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, primary = as.numeric(pft_key))
+        print ('unique values for the rc ratser')
+        print (unique(values(rc)))
+        print (length(unique(values(rc))))
         leafletProxy('map') %>%
           clearControls() %>%
           clearImages() %>%
           addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
-          addRasterImage(rc, opacity = .55, project=TRUE, group= 'MODIS Reclassified 2016', colors= 'green') %>%
-          addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft") %>%
+          addRasterImage(rc, opacity = .55, project=TRUE, group= 'MODIS Reclassified 2016', colors= c('green','black')) %>%
+          addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95) %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                            overlayGroups = c('MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE)) %>%
-          hideGroup('MODIS Land Cover 2016')
+          hideGroup('MODIS Reclassified 2016')
     }
   })
 
@@ -790,13 +787,12 @@ server = function(input, output, session) {
   
   
   # Creates boundary box for clipping rasters using lat/lon from phenocam site
-  crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL, secondary=NULL){
-    # us_pth = './www/uslandcover_modis_sinu.tif'
-    us_pth = './www/uslandcover_modis.tif'
-    global_pth = './www/global_landcover.tif'
+  crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL){
+    # us_pth = './www/uslandcover_modis.tif'
+    global_pth = './www/global_landcover_2016.tif'
 
-    us_r   = raster(global_pth)
-    resolution = res(us_r)[1]
+    global_r   = raster::raster(global_pth)
+    # resolution = res(global_r)[1]
 
     # height = 5 * resolution
     # width  = 5 * resolution
@@ -805,7 +801,8 @@ server = function(input, output, session) {
     e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
     
     crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
-    r      = crop(us_r, e)
+    
+    r      = raster::crop(global_r, e)
     
     if (reclassify == FALSE){
       return (r)
@@ -813,41 +810,55 @@ server = function(input, output, session) {
     }else if (reclassify == TRUE){
       
       water = 17*2
-      
-      m = c(1,NA,
-            2,NA,
-            3,NA,
-            4,NA,
-            5,NA,
-            6,NA,
-            7,NA,
-            8,NA,
-            9,NA,
-            10,NA,
-            11,NA,
-            12,NA,
-            13,NA,
-            14,NA,
-            15,NA,
-            16,NA,
-            17,NA)
+
+      m = c(1,2,
+            2,2,
+            3,2,
+            4,2,
+            5,2,
+            6,2,
+            7,2,
+            8,2,
+            9,2,
+            10,2,
+            11,2,
+            12,2,
+            13,2,
+            14,2,
+            15,2,
+            16,2,
+            17,2)
       
       
       if(!is.null(primary)){
         prim    = primary*2
         m[prim] = 1
         }
-      if(!is.null(secondary)){
-        sec    = secondary*2
-        m[sec] = 2
-        }
-
-      print (m)
-      # m[water] = 3
       
       rclmat = matrix(m, ncol=2, byrow=TRUE)
-      rc     = reclassify(r, rclmat)
-      
+      print (rclmat)
+      rc     = raster::reclassify(r, rclmat)
+      if (length(unique(values(rc))) == 1){
+        m = c(1,NA,
+              2,NA,
+              3,NA,
+              4,NA,
+              5,NA,
+              6,NA,
+              7,NA,
+              8,NA,
+              9,NA,
+              10,NA,
+              11,NA,
+              12,NA,
+              13,NA,
+              14,NA,
+              15,NA,
+              16,NA,
+              17,NA)
+        rclmat = matrix(m, ncol=2, byrow=TRUE)
+        rc     = raster::reclassify(r, rclmat)
+      }
       return (rc)
     }
   }
