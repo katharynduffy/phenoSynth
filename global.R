@@ -25,6 +25,7 @@ library(rjson)
 library(RCurl)
 library(ggthemes)
 library(httr)
+library(shinycssloaders)
 
 # library(devtools)
 # if(!require(devtools)){install.packages("devtools")}

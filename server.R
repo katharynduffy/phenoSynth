@@ -531,7 +531,8 @@ server = function(input, output, session) {
     switch_to_analyzer_panel()
     
     print (sprintf('grabbing task row from appeears for site: %s', site))
-    appeears$ndvi = get_appeears_task(site)
+    appeears$ndvi = get_appeears_task(site)#%>% withSpinner()
+    
     
     veg_idx    = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
@@ -583,10 +584,10 @@ server = function(input, output, session) {
           clearControls() %>%
           clearImages() %>%
           addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
-          addRasterImage(rc, opacity = .55, project=TRUE, group= 'MODIS Reclassified 2016', colors= 'green') %>%
+          addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= 'green') %>%
           addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft") %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                           overlayGroups = c('MODIS Land Cover 2016', 'MODIS Reclassified 2016'),
+                           overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE)) %>%
           hideGroup('MODIS Land Cover 2016')
