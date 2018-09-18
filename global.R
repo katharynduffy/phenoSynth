@@ -33,7 +33,7 @@ library(shinycssloaders)
 # library(MODISTools)
 # source('tokens.R')
 
-# Variables we will use
+# Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))
 colnames(df)
