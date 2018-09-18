@@ -3,7 +3,7 @@
 
 # Libraries
 library(shiny)          # Provides web framework for building web applications
-library(leaflet)        # 
+library(leaflet)        #
 library(dplyr)
 library(readr)
 library(RColorBrewer)
@@ -79,5 +79,3 @@ roi_files = rois$results
 
 # Load in dataframe with cached AppEEARS tasks
 appeears_tasks = readRDS(file = './www/cache_df.df')
-
-

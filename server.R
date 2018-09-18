@@ -21,7 +21,7 @@ server = function(input, output, session) {
 
   modis   = reactiveValues(data = data.frame(),
                          cached_ndvi = list())
-  
+
 
   data    = reactiveValues(
                       draw_mode = FALSE,
@@ -130,7 +130,7 @@ server = function(input, output, session) {
     }
   })
 
-  
+
   #initiating with observer
   observe({
     switch_to_explorer_panel()
@@ -143,7 +143,7 @@ server = function(input, output, session) {
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
-  
+
   # # Adds Legend for MODIS Land Cover
   # observeEvent(input$map_groups,{
   #   map_layers = input$map_groups
@@ -155,7 +155,7 @@ server = function(input, output, session) {
   #                                     style = "position: absolute; z-index: 3; top:0px; left:0px;")))
   #   }else{shinyjs::hide(id = 'modisLegend')}
   # })
-  
+
   # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
     data$draw_mode = TRUE
@@ -203,9 +203,9 @@ server = function(input, output, session) {
       # sets highlight pixel to on
       data$draw_mode = FALSE
       print ('Exiting Draw Mode')
-      
+
       print (input$map_draw_stop)
-      
+
   })
 
 
@@ -457,13 +457,13 @@ server = function(input, output, session) {
     site      = input$site
     site_data = get_site_info(site)
     site_     = site_data$site[1]
-    
+
     print (modis$cached_ndvi)
-    
+
     if (site_ %in% modis$cached_ndvi){
       output$currentPlot <- renderPlot({ modis$cached_ndvi[site_] })
     } else{
-      
+
       lat_       = site_data$lat[1]
       lon_       = site_data$lon[1]
       date_end   = as.Date(site_data$date_end[1])
@@ -471,7 +471,7 @@ server = function(input, output, session) {
       subset     <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
                               start = date_start,end = date_end,km_lr = 1,km_ab = 1,site_name = site_,internal = TRUE)
       print (str(subset))
-      
+
       NDVIsubset <- mt_subset(product   = "MOD13Q1",
                               lat       = lat_,
                               lon       = lon_,
@@ -482,7 +482,7 @@ server = function(input, output, session) {
                               km_ab     = 1,
                               site_name = site_,
                               internal  = TRUE)
-      
+
       QCsubset   <- mt_subset(product   = "MOD13Q1",
                               lat       = lat_,
                               lon       =   lon_,
@@ -493,18 +493,18 @@ server = function(input, output, session) {
                               km_ab     = 1,
                               site_name = site_,
                               internal  = TRUE)
-      
+
       cleanNDVI      = data.frame(NDVI=NDVIsubset$data$data, QC=QCsubset$data$data, Date=as.Date.factor(QCsubset$data$calendar_date))
       cleanNDVI      = cleanNDVI%>%filter(QC<1)
       cleanNDVI$NDVI = cleanNDVI$NDVI*.0001
-      
-      
+
+
       p = ggplot(data = cleanNDVI, aes(x= Date, y= NDVI)) +
         geom_point() +
         scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", date_labels = "%Y %B") +
         theme(axis.text.x = element_text(angle = 45, hjust =1))
-      p  + ggthemes::theme_few()  
-      
+      p  + ggthemes::theme_few()
+
       #plot p here, where that goes in the UI we don't know yet
       modis$data = cleanNDVI
       shinyjs::show(id = 'plotpanel')
@@ -514,7 +514,7 @@ server = function(input, output, session) {
       print (modis$cached_ndvi[site_])
       print (p)
     }
-    
+
   })
 
 
@@ -526,18 +526,19 @@ server = function(input, output, session) {
     veg_types  = c()
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
-    
+
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
-    
+
     print (sprintf('grabbing task row from appeears for site: %s', site))
     appeears$ndvi = get_appeears_task(site)
-    
+
+
     veg_idx    = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
-    
+
     print (veg_match)
-    
+
     if (nrow(veg_match) == 0){
       updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
     }else{
@@ -554,21 +555,21 @@ server = function(input, output, session) {
       updateSelectInput(session, 'pftSelection', choices = veg_types)
     }
   })
-  
+
   # When ROI Vegetation type changes replot highlighted veg type
   observeEvent(input$pftSelection, {
     if (panel$mode == 'analyzer'){
         print ('Running pft Selection')
-        
+
         site       = input$site
         site_data  = get_site_info(site)
         pft        = input$pftSelection
 
         r  = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
         c3 = build_pft_palette(r)
-        
+
         data$r = r
-        
+
         pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
 
@@ -582,8 +583,6 @@ server = function(input, output, session) {
           addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
           addRasterImage(rc, opacity = .55, project=TRUE, group= 'MODIS Reclassified 2016', colors= c('green','black')) %>%
           addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95) %>%
-          addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= 'green') %>%
-          addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft") %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                            position = c("topleft"),
@@ -592,7 +591,7 @@ server = function(input, output, session) {
     }
   })
 
-  
+
   #Button switches to Site explorer mode
   observeEvent(input$siteExplorerMode,{
     print ('Switching to Explorer Mode')
@@ -612,14 +611,14 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'plotpanel')
     shinyjs::hide(id = 'showHidePlot')
   })
-  
+
   # Minimize button in image panel
   observeEvent(input$showImage, {
     shinyjs::hide(id = 'currentImage')
     updateCheckboxInput(session, inputId = 'drawImage', value=FALSE)
     updateCheckboxInput(session, inputId = 'drawImageROI', value=FALSE)
   })
-  
+
   # Overlay button for ROI in image panel
   observeEvent(input$showROIimage, {
     updateCheckboxInput(session, inputId = 'drawImage', value=TRUE)
@@ -642,7 +641,7 @@ server = function(input, output, session) {
           }
     }
   })
-  
+
   # Overlay button for ROI in image panel (AppEEARS)
   observeEvent(input$getAPPEEARSpoints, {
     # load in netcdf for NDVI layer
@@ -653,24 +652,24 @@ server = function(input, output, session) {
     v6_QA_lut      = read.csv(file_ndvi_qa)
     delete_file(file_ndvi)
     delete_file(file_ndvi_qa)
-    
+
     # netcdf manipulation
     #------------------------------------------------------------------------
     v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
     v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-    
+
     # Set lat and lon arrays for NDVI data
     lat_NDVI = ncvar_get(ndvi_output, "lat")
     lon_NDVI = ncvar_get(ndvi_output, "lon")
-    
+
     # Grab the fill value and set to NA
     fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
     v6_NDVI[v6_NDVI == fillvalue$value] = NA
-    
+
     # Define the coordinate referense system proj.4 string
     crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
     # crs = CRS("+proj=longlat +datum=WGS84")
-    
+
     # Grab first observation of NDVI and Quality datasets
     v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
     v6_NDVI_original = v6_NDVI
@@ -678,9 +677,9 @@ server = function(input, output, session) {
     #------------------------------------------------------------------------
     YlGn = brewer.pal(9, "YlGn")
     leafletProxy('map') %>% addRasterImage(v6_NDVI_original, opacity = .7, group = 'test1', col = YlGn)
-    
+
   })
-  
+
   #--------------------------------------------------------------------------------------------------------------------------------------
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
@@ -696,8 +695,8 @@ server = function(input, output, session) {
     p               = spTransform(xy, CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"))
     return (p)
   }
-  
-  
+
+
   # Creates a reprojection of a lat/lon WGS84 point into sinusoidal Modis projection
   get_lat_lon_wgs_from_sinu_pt = function(lon_,lat_){
     print ('Reprojecting coords to WGS84')
@@ -710,23 +709,23 @@ server = function(input, output, session) {
     print (coordinates(p))
     return (p)
   }
-  
-  
+
+
   # Creates a polyline surrounding any MODIS 2016 500m pixel from cropped raster
   showpos = function(x=NULL, y=NULL, name) {
     # If clicked within the Raster on the leaflet map
     r_ = data$r
     cell = cellFromXY(r_, c(x, y))
-    
+
     print (r_)
 
      if (!is.na(cell)) {
-       # Variables we will use:  
+       # Variables we will use:
        #   row, column
        #   resolution (aka cell size / pixel size)
        #   x (longitude) , y (latitude)
        #   ulraster (Upper Left Corner of the raster in lat/lon)
-    
+
        xmin       = xmin(extent(r_))
        xmax       = xmax(extent(r_))
        ymin       = ymin(extent(r_))
@@ -736,37 +735,37 @@ server = function(input, output, session) {
        totalcells = ncell(r_)
        resolution = res(r_)[1]
        vegindex   = (values(r_)[cell])
-       
-       # Calculate UpperLeft(UL), UpperRight(UR), LowerLeft(LL), and LowerRight(LR) 
+
+       # Calculate UpperLeft(UL), UpperRight(UR), LowerLeft(LL), and LowerRight(LR)
        #   coordinates for selected cell/pixel from raster
-       
+
        print (cell)
        print (ncols)
-       
+
        row = ceiling(cell / ncols)
        col = cell %% ncols
-       
+
        if (col == 0){
          col = ncols
        }
-       
+
        print (row)
        print (col)
-       
+
        xclose = ((col - 1) * resolution) + xmin
        xfar   = (col * resolution) + xmin
        yclose = -((row - 1) * resolution) + ymax
        yfar   = -(row * resolution) + ymax
-       
+
        midcellx = xclose + (resolution * .5)
        midcelly = yclose - (resolution * .5)
        midcell  = c(midcellx, midcelly)
-         
+
        datalon = c(xclose, xfar, xfar, xclose ,xclose)
        datalat = c(yclose, yclose, yfar, yfar, yclose)
-       
+
        id_ = paste0(name, '_', row, '_', col, '_', vegindex)
-       
+
        # Check to see if already drawn, and if so remove it from df and leaflet map
        if (id_ %in% data$pixel_df$Id){
          remove_polyline(id = id_, all = FALSE)
@@ -774,20 +773,20 @@ server = function(input, output, session) {
        }else{
          # Draw the pixel polygon on the leaflet map
          add_polyline(datalon, datalat, id_, .95, 'red')
-  
+
          ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,
                      ' --Row: ', row, ' --Column: ', col, ' --Pft Number: ', vegindex,
                      ' --Middle of Cell lon: ', midcell[1], ' lat: ', midcell[2])
          print (ps)
-         
+
          # Build Dataframe   reactive value = data$pixel_df
          data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Lat = midcelly, Lon = midcellx, pft = vegindex))
        }
        print (data$pixel_df)
     }
   }
-  
-  
+
+
   # Creates boundary box for clipping rasters using lat/lon from phenocam site
   crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL){
     # us_pth = './www/uslandcover_modis.tif'
@@ -801,16 +800,16 @@ server = function(input, output, session) {
     height = .03
     width  = .05
     e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
-    
+
     crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
-    
+
     r      = raster::crop(global_r, e)
-    
+
     if (reclassify == FALSE){
       return (r)
-      
+
     }else if (reclassify == TRUE){
-      
+
       water = 17*2
 
       m = c(1,2,
@@ -830,13 +829,13 @@ server = function(input, output, session) {
             15,2,
             16,2,
             17,2)
-      
-      
+
+
       if(!is.null(primary)){
         prim    = primary*2
         m[prim] = 1
         }
-      
+
       rclmat = matrix(m, ncol=2, byrow=TRUE)
       print (rclmat)
       rc     = raster::reclassify(r, rclmat)
@@ -864,7 +863,7 @@ server = function(input, output, session) {
       return (rc)
     }
   }
-  
+
 
   # Grabs the list of 3_day csv data from phenocam website
   get_site_roi_3day_csvs = function(name){
@@ -1188,8 +1187,8 @@ server = function(input, output, session) {
                 labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
       addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                      position = c("topleft"),
-                     options = layersControlOptions(collapsed = TRUE)) 
-    
+                     options = layersControlOptions(collapsed = TRUE))
+
   }
   switch_to_analyzer_panel = function(){
     # Ids to show:
@@ -1215,7 +1214,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
   }
-  
+
   # Returns site name from a cached task
   get_site_from_task = function(task_name_){
     elements = strsplit(task_name_, split = '_', fixed=TRUE)
@@ -1235,7 +1234,7 @@ server = function(input, output, session) {
       return(FALSE)
     }
   }
-  
+
   # Given a site name, function returns the appeears task record
   get_appeears_task = function(name){
     task_pos = grep(name ,appeears_tasks$task_name)
@@ -1247,8 +1246,8 @@ server = function(input, output, session) {
     }
     return (subset(appeears_tasks, appeears_tasks$task_name == task_))
   }
-  
-  
+
+
   # Downloads file from bundle (whichever ft is set to (only nc and qa_csv))
   download_bundle_file = function(site_task_id_, ft){
     response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
@@ -1271,13 +1270,13 @@ server = function(input, output, session) {
                    write_disk(filepath, overwrite = TRUE), progress())
     return (filepath)
   }
-  
-  
+
+
   # Deletes the netcdf from input filepath
   delete_file = function(filepath_){
     if (file.exists(filepath_)) file.remove(filepath_)
   }
-  
+
   # Builds a color palet for the modis landcover raster layer
   build_pft_palette = function(raster_){
     print ('building palet')
@@ -1289,7 +1288,7 @@ server = function(input, output, session) {
     remove = c(NA)
     v = v [! v %in% remove]
     v = sort(v, decreasing = FALSE)
-    
+
     for (x in v){
       if (x == 17){
         colors = c(colors,color_list[17])
@@ -1304,5 +1303,5 @@ server = function(input, output, session) {
     colors_ = list('colors' = colors, 'names' = names)
     return (colors_)
   }
-  
+
 }
