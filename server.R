@@ -518,22 +518,22 @@ server = function(input, output, session) {
     veg_idx    = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
 
-    print (veg_match)
-
     if (nrow(veg_match) == 0){
       updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
     }else{
       veg_types = c()
       for (i in c(1:nrow(veg_match))){
-        print (i)
         veg.idx   = is.element(pft_df$pft_abbreviated, veg_match$roitype[i])
         veg       = pft_df$pft_expanded[veg.idx]
         add_veg   = as.character(veg[1])
         veg_types = c(veg_types, paste0(add_veg, '_', i))
       }
       data$veg_types = veg_types
-      print (data$veg_types)
+      
+      print ('Attempting to run pft selection observer')
       updateSelectInput(session, 'pftSelection', choices = veg_types)
+      
+      
     }
   })
 
@@ -555,22 +555,20 @@ server = function(input, output, session) {
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
 
         rc   = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, primary = as.numeric(pft_key))
-        print ('unique values for the rc ratser')
-        print (unique(values(rc)))
-        print (length(unique(values(rc))))
         leafletProxy('map') %>%
           clearControls() %>%
           clearImages() %>%
           addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
           addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','black')) %>%
-          addLegend(labels = c3$names, group = 'MODIS Land Cover 2016', colors = c3$colors, position = "bottomleft", opacity = .95) %>%
+          addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95) %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', highlighted$group),
                            position = c("topleft"),
-                           options = layersControlOptions(collapsed = FALSE)) %>%
-          hideGroup('MODIS Land Cover 2016') %>%
+                           options = layersControlOptions(collapsed = FALSE))
+          # hideGroup('MODIS Land Cover 2016') %>%
           # hideGroup(highlighted$group) %>%
-          clearControls()
+        
+        # removeUI(selector = '.leaflet-bottom leaflet-left.info legend leaflet-control')
     }
   })
 
@@ -819,18 +817,8 @@ server = function(input, output, session) {
        plot (data$pixel_sps)
     }
   }
-  
-  
-  # Combines all highlighted pixels into one shapefile from the data$pixel_df reactive dataframe
-  get_pixel_shp = function(){
-    #Do stuff here
-    print ('creating shapefile for all currently highlighted pixels')
-  }
-  
-  
-  
 
-
+  
   # Creates boundary box for clipping rasters using lat/lon from phenocam site
   crop_MODIS_2016_raster = function(lat_, lon_, reclassify=FALSE, primary=NULL){
     # us_pth = './www/uslandcover_modis.tif'
@@ -881,7 +869,6 @@ server = function(input, output, session) {
         }
 
       rclmat = matrix(m, ncol=2, byrow=TRUE)
-      print (rclmat)
       rc     = raster::reclassify(r, rclmat)
       if (length(unique(values(rc))) == 1){
         m = c(1,NA,
@@ -1154,7 +1141,6 @@ server = function(input, output, session) {
   count = function(){
     isolate({
       counter$countervalue = counter$countervalue + 1
-      print (counter$countervalue)
     })
   }
 
@@ -1228,6 +1214,7 @@ server = function(input, output, session) {
     leafletProxy('map') %>%
       clearControls() %>%
       clearShapes() %>%
+      clearImages() %>%
       addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
                 labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
       addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
