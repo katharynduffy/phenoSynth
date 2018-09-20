@@ -11,8 +11,10 @@ server = function(input, output, session) {
                       sites_df = cams_,
                       sites    = site_names)
   appeears = reactiveValues(
-                      none = ''
-  )
+                      none = '')
+  
+  highlighted = reactiveValues(
+                      group = '')
 
   # 'analyzer' or 'explorer'
   panel   = reactiveValues(mode = '')
@@ -20,7 +22,7 @@ server = function(input, output, session) {
   counter = reactiveValues(countervalue = 0)
 
   modis   = reactiveValues(data = data.frame(),
-                         cached_ndvi = list())
+                           cached_ndvi = list())
 
 
   data    = reactiveValues(
@@ -34,11 +36,12 @@ server = function(input, output, session) {
                       run   = 0,
                       names = c(),
                       df    = data.frame(),
-                      veg_types = c())
+                      veg_types = c(),
+                      pixel_sps =   SpatialPolygons(list()))
 
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
-                                                              data=data.frame(notes=character(0), stringsAsFactors = F)))
+                                                              data=data.frame()))
 
 
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -68,13 +71,6 @@ server = function(input, output, session) {
         attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
         group = "World Imagery"
       ) %>%
-      # addWMSTiles(
-      #   "http://webmap.ornl.gov/ogcbroker/wms?",
-      #   layers      = "10004_31",
-      #   options     = WMSTileOptions(format = "image/png", transparent = TRUE, opacity=.6),
-      #   attribution = "MODIS Land Cover (MCD12Q1) &copy NASA",
-      #   group       = "MODIS Land Cover"
-      # ) %>%
       addProviderTiles(
         "OpenTopoMap",
         group   = "Open Topo Map",
@@ -105,7 +101,7 @@ server = function(input, output, session) {
                Shiny.onInputChange('hover_coordinates', coord)});
                this.on('mouseout', function(e) {
                Shiny.onInputChange('hover_coordinates', null)})
-  }")  %>%
+               }")  %>%
       setView(lng = -93.85, lat = 37.45, zoom = 4) %>%
       addStyleEditor() %>%
       addMeasure(position          = "topleft",
@@ -130,31 +126,16 @@ server = function(input, output, session) {
     }
   })
 
-
   #initiating with observer
   observe({
     switch_to_explorer_panel()
     panel$mode = 'explorer'
-    data$pixel_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
     data$df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
   })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
-
-
-  # # Adds Legend for MODIS Land Cover
-  # observeEvent(input$map_groups,{
-  #   map_layers = input$map_groups
-  #   if ('MODIS Land Cover' %in% map_layers){
-  #     shinyjs::show(id = 'modisLegend')
-  #     insertUI(selector = '#image2',
-  #              ui = tags$div(id='modisLegend_',
-  #                            tags$img(src   = 'igbp-legend.png', class= 'img',
-  #                                     style = "position: absolute; z-index: 3; top:0px; left:0px;")))
-  #   }else{shinyjs::hide(id = 'modisLegend')}
-  # })
 
   # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
@@ -205,7 +186,6 @@ server = function(input, output, session) {
       print ('Exiting Draw Mode')
 
       print (input$map_draw_stop)
-
   })
 
 
@@ -526,6 +506,7 @@ server = function(input, output, session) {
     veg_types  = c()
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
+    highlighted$group = paste0(site, '_pixels')
 
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
@@ -584,10 +565,11 @@ server = function(input, output, session) {
           addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','black')) %>%
           addLegend(labels = c3$names, group = 'MODIS Land Cover 2016', colors = c3$colors, position = "bottomleft", opacity = .95) %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                           overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
+                           overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', highlighted$group),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE)) %>%
           hideGroup('MODIS Land Cover 2016') %>%
+          # hideGroup(highlighted$group) %>%
           clearControls()
     }
   })
@@ -668,8 +650,8 @@ server = function(input, output, session) {
     v6_NDVI[v6_NDVI == fillvalue$value] = NA
 
     # Define the coordinate referense system proj.4 string
-    crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
-    # crs = CRS("+proj=longlat +datum=WGS84")
+    # crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
+    crs = CRS("+proj=longlat +datum=WGS84")
 
     # Grab first observation of NDVI and Quality datasets
     v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
@@ -677,6 +659,10 @@ server = function(input, output, session) {
     v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
     #------------------------------------------------------------------------
     YlGn = brewer.pal(9, "YlGn")
+    
+    extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps, snap = 'in')
+    print (extracted_ndvi)
+
     leafletProxy('map') %>% addRasterImage(v6_NDVI_original, opacity = .7, group = 'test1', col = YlGn)
 
   })
@@ -711,6 +697,14 @@ server = function(input, output, session) {
     return (p)
   }
 
+  # Converts the highlighted pixel coords into a spatialpolygon class
+  matrix_to_polygon = function(matrix, id){
+    p   = Polygon(matrix)
+    ps  = Polygons(list(p), ID = id)
+    sps = SpatialPolygons(list(ps))
+    proj4string(sps) = CRS("+proj=longlat +datum=WGS84")
+    return (sps)
+  }
 
   # Creates a polyline surrounding any MODIS 2016 500m pixel from cropped raster
   showpos = function(x=NULL, y=NULL, name) {
@@ -765,15 +759,25 @@ server = function(input, output, session) {
        datalon = c(xclose, xfar, xfar, xclose ,xclose)
        datalat = c(yclose, yclose, yfar, yfar, yclose)
 
-       id_ = paste0(name, '_', row, '_', col, '_', vegindex)
+       id_     = paste0(name, '_', row, '_', col, '_', vegindex)
+       ids = unique(ggplot2::fortify(data$pixel_sps)$id)
 
        # Check to see if already drawn, and if so remove it from df and leaflet map
        if (id_ %in% data$pixel_df$Id){
          remove_polyline(id = id_, all = FALSE)
          data$pixel_df = subset(data$pixel_df, Id!=id_)
+         
+         # Remove polygon from data$pixel_sps
+         len = length(ids)
+         lst = c(1:len)
+         pos = which(unique(ggplot2::fortify(data$pixel_sps)$id) %in% c(id_))
+         lst_ = lst[-(pos)]
+         data$pixel_sps = data$pixel_sps[lst_]
+         
+         
        }else{
          # Draw the pixel polygon on the leaflet map
-         add_polyline(datalon, datalat, id_, .95, 'red')
+         add_polygon(datalon, datalat, id_, .95, 'red',highlighted$group)
 
          ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,
                      ' --Row: ', row, ' --Column: ', col, ' --Pft Number: ', vegindex,
@@ -781,11 +785,50 @@ server = function(input, output, session) {
          print (ps)
 
          # Build Dataframe   reactive value = data$pixel_df
-         data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Lat = midcelly, Lon = midcellx, pft = vegindex))
+         data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Lat = midcelly, Lon = midcellx, pft = vegindex, 
+                                                         pt1_lat = datalat[1], pt1_lon = datalon[1],
+                                                         pt2_lat = datalat[2], pt2_lon = datalon[2],
+                                                         pt3_lat = datalat[3], pt3_lon = datalon[3],
+                                                         pt4_lat = datalat[4], pt4_lon = datalon[4],
+                                                         pt5_lat = datalat[5], pt5_lon = datalon[5]))
+         
+         pixel  = matrix_to_polygon(rbind(c(datalon[1], datalat[1]),
+                                          c(datalon[2], datalat[2]), 
+                                          c(datalon[3], datalat[3]),
+                                          c(datalon[4], datalat[4]),
+                                          c(datalon[5], datalat[5])), id_)
+
+         
+         # If the polygon already exists, then remove it from pixel_sps
+
+         
+         # if the polygon doesn't exist, then add it to pixel_sps
+         
+         
+         print (length(data$pixel_sps))
+         if (length(data$pixel_sps) == 0){
+           data$pixel_sps = pixel
+         }else{
+          data$pixel_sps = rbind(data$pixel_sps, pixel)
+         }
+
        }
+       print (unique(ggplot2::fortify(data$pixel_sps)$id))
        print (data$pixel_df)
+       print (data$pixel_sps)
+       plot (data$pixel_sps)
     }
   }
+  
+  
+  # Combines all highlighted pixels into one shapefile from the data$pixel_df reactive dataframe
+  get_pixel_shp = function(){
+    #Do stuff here
+    print ('creating shapefile for all currently highlighted pixels')
+  }
+  
+  
+  
 
 
   # Creates boundary box for clipping rasters using lat/lon from phenocam site
@@ -980,25 +1023,25 @@ server = function(input, output, session) {
 
 
   # Add a polyline layer to the map
-  add_polyline = function(datalon_, datalat_, id_, opacity_, color_='red'){
+  add_polyline = function(datalon_, datalat_, id_, opacity_, color_='red', group_=NULL){
     leafletProxy("map", data = variables$sites_df) %>%
-      # clearShapes()%>%
       addPolylines( datalon_,
                     datalat_,
                     layerId = id_,
                     opacity = opacity_,
-                    color   = color_)
+                    color   = color_,
+                    group   = group_)
   }
 
 
-  add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red'){
+  add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red', group_ = NULL){
     leafletProxy("map", data = variables$sites_df) %>%
-      # clearShapes()%>%
       addPolygons( datalon_,
                     datalat_,
                     layerId = id_,
                     opacity = opacity_,
-                    color   = color_)
+                    color   = color_,
+                    group   = group_)
   }
 
 
@@ -1157,6 +1200,7 @@ server = function(input, output, session) {
 
   switch_to_explorer_panel = function(){
     # Ids to show:
+    data$pixel_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
     shinyjs::show(id = 'explorerTitle')
     shinyjs::show(id = 'usZoom')
     shinyjs::show(id = 'showSites')
