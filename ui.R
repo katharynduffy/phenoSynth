@@ -29,16 +29,16 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       selectInput("filterSites", 'Filter Sites by', site_filters, selected = 'All', multiple = FALSE),
                                       selectInput("site", "Phenocam Site Name", site_names, selected = 'acadia'),
                                       actionButton('analyzerMode', 'Enter Analyze Mode'),
-                                      checkboxInput("drawROI", "See Field of View (FOV)", value = FALSE),
+                                      checkboxInput("drawROI", "See PhenoCam Field of View (FOV)", value = FALSE),
                                       sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0.0 , step = 5),
                                       checkboxInput('drawImage', "Show site PhenoCam Image", value = TRUE),
                                       checkboxInput("drawImageROI", "Show ROI on PhenoCam Image", value = FALSE),
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
                                       #actionButton('showModisSubset', 'Plot MODIS subset'),
-                                      actionButton('plotPhenocamGCC', 'Plot GCC'),
-                                      checkboxInput("highlightPixelMode", "Select Landcover Pixels", value = FALSE),
-                                      checkboxInput("highlightPixelMode", "Select MODIS NDVI Pixels", value = FALSE),
-                                      actionButton('getAPPEEARSpoints', 'AppEEARS')
+                                      checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
+                                      checkboxInput("highlightPixelMode", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
+                                      actionButton('getAPPEEARSpoints', 'AppEEARS'),
+                                      actionButton('plotPhenocamGCC', 'Plot Greenness Curves')
 
                                                                             ),
 
