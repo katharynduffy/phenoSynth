@@ -36,7 +36,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
                                       #actionButton('showModisSubset', 'Plot MODIS subset'),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
-                                      checkboxInput("highlightPixelMode", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
+                                      checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
                                       actionButton('getAPPEEARSpoints', 'AppEEARS'),
                                       actionButton('plotPhenocamGCC', 'Plot Greenness Curves')
 
