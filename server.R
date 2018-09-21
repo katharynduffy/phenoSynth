@@ -537,9 +537,8 @@ server = function(input, output, session) {
       data$r = r
       
       updateSelectInput(session, 'pftSelection', choices = veg_types)
-      
-      # pft = input$pftSelection
-      # print (pft)
+      print (veg_types)
+
       pft = strsplit(veg_types[1], '_')[[1]][1]
       print (pft)
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
