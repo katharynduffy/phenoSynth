@@ -1223,6 +1223,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'modisLegend')
     shinyjs::hide(id = 'plotpanel')
     shinyjs::hide(id = 'highlightPixelMode')
+    shinyjs::hide(id = 'highlightPixelModeNDVI')
     shinyjs::hide(id = 'getAPPEEARSpoints')
     leafletProxy('map') %>%
       clearControls() %>%
@@ -1249,6 +1250,7 @@ server = function(input, output, session) {
     shinyjs::show(id = 'pftSelection')
     shinyjs::show(id = 'getAPPEEARSpoints')
     shinyjs::show(id = 'highlightPixelMode')
+    shinyjs::show(id = 'highlightPixelModeNDVI')
     # Ids to hide:
     shinyjs::hide(id = 'explorerTitle')
     shinyjs::hide(id = 'usZoom')
