@@ -503,6 +503,7 @@ server = function(input, output, session) {
     panel$mode = 'analyzer'
     site       = input$site
     site_data  = get_site_info(site)
+
     veg_types  = c()
     print ('Switching to Analyze Mode')
     zoom_to_site(site, TRUE)
@@ -515,7 +516,7 @@ server = function(input, output, session) {
     appeears$ndvi = get_appeears_task(site)
 
 
-    veg_idx    = is.element(roi_files$site, site)
+    veg_idx       = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
 
     if (nrow(veg_match) == 0){
@@ -530,10 +531,33 @@ server = function(input, output, session) {
       }
       data$veg_types = veg_types
       
-      print ('Attempting to run pft selection observer')
+      # Building Landcover layer and color pallette for specific pft composition in clipped raster
+      r  = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
+      c3 = build_pft_palette(r)
+      data$r = r
+      
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       
+      # pft = input$pftSelection
+      # print (pft)
+      pft = strsplit(veg_types[1], '_')[[1]][1]
+      print (pft)
+      pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
+      print (as.numeric(pft_key))
       
+      rc   = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, primary = as.numeric(pft_key))
+      leafletProxy('map') %>%
+        clearControls() %>%
+        clearImages() %>%
+        addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
+        addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','black')) %>%
+        addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95) %>%
+        addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+                         overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', highlighted$group),
+                         position = c("topleft"),
+                         options = layersControlOptions(collapsed = FALSE))
+      
+      print ('Attempting to run pft selection observer')
     }
   })
 
@@ -545,30 +569,20 @@ server = function(input, output, session) {
         site       = input$site
         site_data  = get_site_info(site)
         pft        = input$pftSelection
-
-        r  = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=FALSE)
-        c3 = build_pft_palette(r)
-
-        data$r = r
-
+        
+        c3 = build_pft_palette(data$r)
         pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
-
         rc   = crop_MODIS_2016_raster(site_data$lat, site_data$lon, reclassify=TRUE, primary = as.numeric(pft_key))
+        
         leafletProxy('map') %>%
-          clearControls() %>%
           clearImages() %>%
           addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
           addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','black')) %>%
-          addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95) %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', highlighted$group),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE))
-          # hideGroup('MODIS Land Cover 2016') %>%
-          # hideGroup(highlighted$group) %>%
-        
-        # removeUI(selector = '.leaflet-bottom leaflet-left.info legend leaflet-control')
     }
   })
 
@@ -658,8 +672,8 @@ server = function(input, output, session) {
     #------------------------------------------------------------------------
     YlGn = brewer.pal(9, "YlGn")
     
-    extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps, snap = 'in')
-    print (extracted_ndvi)
+    # extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps, snap = 'in')
+    # print (extracted_ndvi)
 
     leafletProxy('map') %>% addRasterImage(v6_NDVI_original, opacity = .7, group = 'test1', col = YlGn)
 
