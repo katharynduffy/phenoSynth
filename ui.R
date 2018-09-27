@@ -38,8 +38,8 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
                                       actionButton('getAPPEEARSpoints', 'AppEEARS'),
-                                      actionButton('plotPhenocamGCC', 'Plot Greenness Curves')
-
+                                      actionButton('plotPhenocamGCC', 'Plot Greenness Curves'),
+                                      actionButton('plotPixelsNDVI', 'Plot NDVI Curves')
                                                                             ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
