@@ -768,7 +768,7 @@ server = function(input, output, session) {
         if (id == 1){
           sp_lines  = event.lines
         } else {
-          sp_lines  = spRbind(sp_lines, event.lines)
+          sp_lines  = rbind(sp_lines, event.lines)
         }
         id = id + 1
       }
