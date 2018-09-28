@@ -7,6 +7,8 @@ output: html_document
 
 ### Downloading netcdf for NDVI from AppEEARS
 ```{r}
+library(httr)
+library(jsonlite)
 # Grab task for poudreriver ndvi netcdf
 site_task_id = 'a11d9256-3efd-449c-85b0-e2af045bfa8a'
 response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, sep = ""))
@@ -160,7 +162,7 @@ int_pixels = list()
 final_ndvi_list = c()
 len = length(dates)
 
-for (x in c(1:len)){
+for (x in c(250:len)){
 # for (x in c(1:2)){
   r_ndvi = raster(t(ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
   values_under_polygon = extract(r_ndvi, pixel_sps)
@@ -194,7 +196,7 @@ print (length(final_ndvi_list))
 
 ### Plot averages of all netcdf pixels under the polygons and plotted by days after 2000-01-01 00:00:00
 ```{r}
-data_df = data.frame(date = dates, ndvi = final_ndvi_list)
+data_df = data.frame(date = dates[250:len], ndvi = final_ndvi_list)
 p = ggplot(data = data_df, aes(x= date, y= ndvi)) + 
   geom_line()
 p
