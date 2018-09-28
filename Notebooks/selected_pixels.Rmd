@@ -1,6 +1,6 @@
 ---
 title: "Selected pixels"
-author: "K. Enns"
+author: "K. Duffy"
 date: "9/17/2018"
 output: html_document
 ---

@@ -557,8 +557,13 @@ server = function(input, output, session) {
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
+
+        addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
+        addRasterImage(rc, opacity = .2, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
+
         addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
         addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','black')) %>%
+
         addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                          overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels'),
@@ -586,8 +591,13 @@ server = function(input, output, session) {
         
         leafletProxy('map') %>%
           clearImages() %>%
+
+          addRasterImage(data$r, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
+          addRasterImage(rc, opacity = .35, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','black')) %>%
+
           addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
           addRasterImage(rc, opacity = .55, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','black')) %>%
+
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels'),
                            position = c("topleft"),
