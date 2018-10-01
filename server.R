@@ -27,17 +27,13 @@ server = function(input, output, session) {
 
   data    = reactiveValues(
                       draw_mode = FALSE,
-                      # Colors from GIMP (prefer) - colors for pft classifications
-                      c2    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
-                                 '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#89cae3'),
-                      # Colors from MODIS / NASA (daac)
-                      # c2    = c('#008000', '#00ff00', '#99cc00', '#99ff99', '#339966', '#993366', '#ffcc99', '#ccffcc',
-                      #           "#ffcc00", "#ff9900", '#006699', '#ffff00', '#ff0000', '#999966', '#808080', '#000080'),
                       run   = 0,
                       names = c(),
                       df    = data.frame(),
                       veg_types = c(),
-                      pixel_sps =   SpatialPolygons(list()))
+                      pixel_sps = SpatialPolygons(list()),
+                      pixel_sps_500m = SpatialPolygons(list()),
+                      pixel_sps_250m = SpatialPolygons(list()))
 
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
@@ -620,6 +616,9 @@ server = function(input, output, session) {
   # Button that plots NDVI
   observeEvent(input$plotPixelsNDVI, {
     print ('Plotting NDVI')
+    
+    # Build out the sp Object for each pixel that has been highlighted using the
+    
   })
 
   # Button that hides GCC Plot
@@ -699,7 +698,7 @@ server = function(input, output, session) {
     
     data$r_ndvi_cropped = crop_raster(site_data$lat, site_data$lon, v6_NDVI)
     
-    # extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps, snap = 'in')
+    # extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps_250, snap = 'in')
     # print (extracted_ndvi)
 
     # leafletProxy('map') %>% addRasterImage(data$r_ndvi_cropped, opacity = .7, group = 'test1', col = YlGn)
@@ -707,7 +706,6 @@ server = function(input, output, session) {
     
     # Build grid
     build_raster_grid(data$r_ndvi_cropped)
-
   })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -807,7 +805,7 @@ server = function(input, output, session) {
   }
 
   # Converts the highlighted pixel coords into a spatialpolygon class
-  matrix_to_polygon = function(matrix, id){
+  matrix_to_polygon = function(matrix, id, type_){
     p   = Polygon(matrix)
     ps  = Polygons(list(p), ID = id)
     sps = SpatialPolygons(list(ps))
@@ -816,7 +814,7 @@ server = function(input, output, session) {
   }
 
   # Creates a polyline surrounding any MODIS 2016 500m pixel from cropped raster
-  showpos = function(x=NULL, y=NULL, name, raster_, type_) {
+  showpos = function(x=NULL, y=NULL, name, raster_, type_) { # type = '500m' or '250m'
     # If clicked within the Raster on the leaflet map
     r_ = raster_
     cell = cellFromXY(r_, c(x, y))
@@ -852,13 +850,10 @@ server = function(input, output, session) {
        if (col == 0){
          col = ncols
        }
-       
-       
 
        print (row)
        print (col)
        
-
        xclose = ((col - 1) * resolution) + xmin
        xfar   = (col * resolution) + xmin
        yclose = -((row - 1) * resolution) + ymax
@@ -879,12 +874,21 @@ server = function(input, output, session) {
          remove_polyline(id = id_, all = FALSE)
          data$pixel_df = subset(data$pixel_df, Id!=id_)
          
-         # Remove polygon from data$pixel_sps
-         len = length(ids)
-         lst = c(1:len)
-         pos = which(unique(ggplot2::fortify(data$pixel_sps)$id) %in% c(id_))
-         lst_ = lst[-(pos)]
-         data$pixel_sps = data$pixel_sps[lst_]
+         if (type_ == '500m'){
+           # Remove polygon from data$pixel_sps_500m
+           len = length(ids)
+           lst = c(1:len)
+           pos = which(unique(ggplot2::fortify(data$pixel_sps_500m)$id) %in% c(id_))
+           lst_ = lst[-(pos)]
+           data$pixel_sps_500m = data$pixel_sps_500m[lst_]
+         }else if (type_ == '250m'){
+           # Remove polygon from data$pixel_sps_250m
+           len = length(ids)
+           lst = c(1:len)
+           pos = which(unique(ggplot2::fortify(data$pixel_sps_250m)$id) %in% c(id_))
+           lst_ = lst[-(pos)]
+           data$pixel_sps_250m = data$pixel_sps_250m[lst_]
+         }
          
        }else{
          # Draw the pixel polygon on the leaflet map
@@ -913,28 +917,43 @@ server = function(input, output, session) {
                                           c(datalon[2], datalat[2]), 
                                           c(datalon[3], datalat[3]),
                                           c(datalon[4], datalat[4]),
-                                          c(datalon[5], datalat[5])), id_)
-
+                                          c(datalon[5], datalat[5])), id_, as.character(type_))
+         print (type_)
          
-         # If the polygon already exists, then remove it from pixel_sps
-
+         if (type_ == '500m'){
+             if (length(data$pixel_sps_500m) == 0){
+               data$pixel_sps_500m = pixel
+             }else{
+               data$pixel_sps_500m = rbind(data$pixel_sps_500m, pixel)
+               
+           }}else if(type_ == '250m'){
+             if (length(data$pixel_sps_250m) == 0){
+               data$pixel_sps_250m = pixel
+             }else{
+               data$pixel_sps_250m = rbind(data$pixel_sps_250m, pixel)
+             }}
          
-         # if the polygon doesn't exist, then add it to pixel_sps
+         print (pixel)
+         print (length(data$pixel_sps_500m))
+         print (length(data$pixel_sps_250m))
+         print ((data$pixel_sps_500m))
+         print ((data$pixel_sps_250m))
          
-         
-         print (length(data$pixel_sps))
-         if (length(data$pixel_sps) == 0){
-           data$pixel_sps = pixel
-         }else{
-          data$pixel_sps = rbind(data$pixel_sps, pixel)
+         if (length(data$pixel_sps_500m) > 0 & length(data$pixel_sps_250m) > 0){
+           data$pixel_sps = rbind(data$pixel_sps_250m, data$pixel_sps_500m)
+         }else if (length(data$pixel_sps_500m) > 0){
+           data$pixel_sps = data$pixel_sps_500m
+         }else if (length(data$pixel_sps_250m) > 0){
+           data$pixel_sps = data$pixel_sps_250m
          }
-
+         
+           
+         print (unique(ggplot2::fortify(data$pixel_sps)$id))
+         print (data$pixel_df)
+       # print (data$pixel_sps)
+       # plot (data$pixel_sps)
        }
-       print (unique(ggplot2::fortify(data$pixel_sps)$id))
-       print (data$pixel_df)
-       print (data$pixel_sps)
-       plot (data$pixel_sps)
-    }
+     }
   }
 
   
