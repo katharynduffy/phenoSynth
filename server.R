@@ -522,8 +522,6 @@ server = function(input, output, session) {
 
     veg_idx       = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
-
-    print ('test1')
     
     if (nrow(veg_match) == 0){
       updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
@@ -550,8 +548,6 @@ server = function(input, output, session) {
       print (pft)
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
       print (as.numeric(pft_key))
-      
-      print ('test1')
       
       rc   = crop_raster(site_data$lat, site_data$lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
       leafletProxy('map') %>%
@@ -841,18 +837,12 @@ server = function(input, output, session) {
        # Calculate UpperLeft(UL), UpperRight(UR), LowerLeft(LL), and LowerRight(LR)
        #   coordinates for selected cell/pixel from raster
 
-       print (cell)
-       print (ncols)
-
        row = ceiling(cell / ncols)
        col = cell %% ncols
 
        if (col == 0){
          col = ncols
        }
-
-       print (row)
-       print (col)
        
        xclose = ((col - 1) * resolution) + xmin
        xfar   = (col * resolution) + xmin
@@ -865,12 +855,7 @@ server = function(input, output, session) {
 
        datalon = c(xclose, xfar, xfar, xclose ,xclose)
        datalat = c(yclose, yclose, yfar, yfar, yclose)
-
        id_     = paste0(name, '_', row, '_', col, '_', vegindex)
-       # ids = unique(ggplot2::fortify(data$pixel_sps)$id)
-       # ids = unique(data$pixel_df$Id)
-       # print (' printing IDS ----------------------------------------------------------')
-       # print (ids)
 
        # Check to see if already drawn, and if so remove it from df and leaflet map
        if (id_ %in% data$pixel_df$Id){
@@ -879,34 +864,23 @@ server = function(input, output, session) {
          
          if (type_ == '500m'){
            # Remove polygon from data$pixel_sps_500m
-           # ids_500m = unique(subset(data$pixel_df, Type == '500m'))
            ids_500m = unique(ggplot2::fortify(data$pixel_sps_500m)$id)
-           print (ids_500m)
            len = length(ids_500m)
-           print (len)
            lst = c(1:len)
-           print (lst)
            pos = which(unique(ggplot2::fortify(data$pixel_sps_500m)$id) %in% c(id_))
-           print (pos)
-           
            lst_ = lst[-(pos)]
-           print ('500 deletion test----------------------------------------------------------')
-           print (lst_)
-           print (data$pixel_sps_500m)
            data$pixel_sps_500m = data$pixel_sps_500m[lst_]
          }else if (type_ == '250m'){
            # Remove polygon from data$pixel_sps_250m
-           # ids_250m = subset(data$pixel_df, data$pixel_df$Type == '250m')
            ids_250m = unique(ggplot2::fortify(data$pixel_sps_250m)$id)
            len = length(ids_250m)
            lst = c(1:len)
            pos = which(unique(ggplot2::fortify(data$pixel_sps_250m)$id) %in% c(id_))
            lst_ = lst[-(pos)]
-           print ('250 deletion test----------------------------------------------------------')
-           print (lst_)
-           print (data$pixel_sps_250m)
            data$pixel_sps_250m = data$pixel_sps_250m[lst_]
          }
+         print ('Dataframe of all highlighted pixels (250m + 500m)')
+         print (data$pixel_df)
          
        }else{
          # Draw the pixel polygon on the leaflet map
@@ -936,7 +910,6 @@ server = function(input, output, session) {
                                           c(datalon[3], datalat[3]),
                                           c(datalon[4], datalat[4]),
                                           c(datalon[5], datalat[5])), id_, as.character(type_))
-         print (type_)
          
          if (type_ == '500m'){
              if (length(data$pixel_sps_500m) == 0){
@@ -951,22 +924,22 @@ server = function(input, output, session) {
                data$pixel_sps_250m = rbind(data$pixel_sps_250m, pixel)
              }}
          
-         print (pixel)
-         print (length(data$pixel_sps_500m))
-         print (length(data$pixel_sps_250m))
+         print ('500m Grid Sp Object info:')
          print ((data$pixel_sps_500m))
+         print ('250m Grid Sp Object info:')
          print ((data$pixel_sps_250m))
          
-         if (length(data$pixel_sps_500m) > 0 & length(data$pixel_sps_250m) > 0){
-           data$pixel_sps = rbind(data$pixel_sps_250m, data$pixel_sps_500m)
-         }else if (length(data$pixel_sps_500m) > 0){
-           data$pixel_sps = data$pixel_sps_500m
-         }else if (length(data$pixel_sps_250m) > 0){
-           data$pixel_sps = data$pixel_sps_250m
-         }
+         # if (length(data$pixel_sps_500m) > 0 & length(data$pixel_sps_250m) > 0){
+         #   data$pixel_sps = rbind(data$pixel_sps_250m, data$pixel_sps_500m)
+         # }else if (length(data$pixel_sps_500m) > 0){
+         #   data$pixel_sps = data$pixel_sps_500m
+         # }else if (length(data$pixel_sps_250m) > 0){
+         #   data$pixel_sps = data$pixel_sps_250m
+         # }
          
            
-         print (unique(ggplot2::fortify(data$pixel_sps)$id))
+         # print (unique(ggplot2::fortify(data$pixel_sps)$id))
+         print ('Dataframe of all highlighted pixels (250m + 500m)')
          print (data$pixel_df)
        # print (data$pixel_sps)
        # plot (data$pixel_sps)
@@ -1334,7 +1307,10 @@ server = function(input, output, session) {
 
   switch_to_explorer_panel = function(){
     # Ids to show:
-    data$pixel_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_sps_500m = SpatialPolygons(list())
+    data$pixel_sps_250m = SpatialPolygons(list())
+    
     shinyjs::show(id = 'explorerTitle')
     shinyjs::show(id = 'usZoom')
     shinyjs::show(id = 'showSites')
