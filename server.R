@@ -867,7 +867,10 @@ server = function(input, output, session) {
        datalat = c(yclose, yclose, yfar, yfar, yclose)
 
        id_     = paste0(name, '_', row, '_', col, '_', vegindex)
-       ids = unique(ggplot2::fortify(data$pixel_sps)$id)
+       # ids = unique(ggplot2::fortify(data$pixel_sps)$id)
+       # ids = unique(data$pixel_df$Id)
+       # print (' printing IDS ----------------------------------------------------------')
+       # print (ids)
 
        # Check to see if already drawn, and if so remove it from df and leaflet map
        if (id_ %in% data$pixel_df$Id){
@@ -876,17 +879,32 @@ server = function(input, output, session) {
          
          if (type_ == '500m'){
            # Remove polygon from data$pixel_sps_500m
-           len = length(ids)
+           # ids_500m = unique(subset(data$pixel_df, Type == '500m'))
+           ids_500m = unique(ggplot2::fortify(data$pixel_sps_500m)$id)
+           print (ids_500m)
+           len = length(ids_500m)
+           print (len)
            lst = c(1:len)
+           print (lst)
            pos = which(unique(ggplot2::fortify(data$pixel_sps_500m)$id) %in% c(id_))
+           print (pos)
+           
            lst_ = lst[-(pos)]
+           print ('500 deletion test----------------------------------------------------------')
+           print (lst_)
+           print (data$pixel_sps_500m)
            data$pixel_sps_500m = data$pixel_sps_500m[lst_]
          }else if (type_ == '250m'){
            # Remove polygon from data$pixel_sps_250m
-           len = length(ids)
+           # ids_250m = subset(data$pixel_df, data$pixel_df$Type == '250m')
+           ids_250m = unique(ggplot2::fortify(data$pixel_sps_250m)$id)
+           len = length(ids_250m)
            lst = c(1:len)
            pos = which(unique(ggplot2::fortify(data$pixel_sps_250m)$id) %in% c(id_))
            lst_ = lst[-(pos)]
+           print ('250 deletion test----------------------------------------------------------')
+           print (lst_)
+           print (data$pixel_sps_250m)
            data$pixel_sps_250m = data$pixel_sps_250m[lst_]
          }
          
