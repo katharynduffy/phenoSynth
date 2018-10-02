@@ -97,6 +97,10 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
            tabPanel('Phenocam Table',
                     DTOutput('x1')
                    ),
+           
+           tabPanel('Plot NDVI',
+                    plotOutput("ndvi_pixels_plot")
+           ),
 
 
            conditionalPanel("false", icon("crosshair"))

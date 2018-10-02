@@ -356,11 +356,12 @@ server = function(input, output, session) {
       degrees         = as.numeric(orientation_key[cam_orientation])
       run_add_polyline(site_data, degrees)
       shinyjs::show(id = 'azm')
-      updateSliderInput(session, 'azm', value = degrees )
+      updateSliderInput(session, 'azm', value = degrees)
     }
     else if (roi_bool == FALSE){
       shinyjs::hide(id = 'azm')
-      remove_polyline()}
+      leafletProxy('map') %>% removeShape(layerId = 'azm_')
+        }
   })
 
 
@@ -613,7 +614,67 @@ server = function(input, output, session) {
   observeEvent(input$plotPixelsNDVI, {
     print ('Plotting NDVI')
     
-    # Build out the sp Object for each pixel that has been highlighted using the
+    nc_data = data$site_nc  # all netcdf
+    dates   = ncvar_get(nc_data, 'time')
+    nc_ndvi = data$ndvi_nc  # only ndvi
+    lat = ncvar_get(nc_data, "lat")
+    lon = ncvar_get(nc_data, "lon")
+    
+    data_plot  = c()
+    polys_len  = c()
+    pixel_len  = c()
+    ndvis_     = c()
+    int_pixels = list()
+    final_ndvi_list = c()
+    len = length(dates)
+    pixels = data$pixel_sps_250m
+    
+    # Setting length of polygons to select with 
+    if (is.null(polys_len)){
+      # Number of polygons (aka highlighted pixels) selected
+      polys_len = length(pixels)
+    }
+    
+    for (x in c(200:len)){
+      # for (x in c(1:2)){
+      r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
+      values_under_polygon = extract(r_ndvi, pixels)
+
+      # Setting length of pixels in each polygon
+      if (length(int_pixels) == 0){
+        for (xx in c(1:polys_len)){
+          # Number of pixels picked up by the highlighted pixel
+          pixel_len  = length(values_under_polygon[[xx]])
+          int_pixels[[xx]] = pixel_len
+        }
+      }
+      
+      ndvi_means = c()
+      # Loop through the different polygons to extract ndvi values and save to dataframe
+      for (i in c(1:polys_len)){
+        ndvi_ = values_under_polygon[[i]]
+        ndvis_ = c(ndvis_, ndvi_)
+        ndvi_means = c(ndvi_means, mean(ndvi_))
+      }
+      final_ndvi_list = c(final_ndvi_list, mean(ndvi_means))
+    }
+    
+    # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
+    #   to build the necessary dataframe lists.
+    # count = 0
+    # for (ii in c(1:length(ndvis_))){
+    #   count = count + 1
+    #   if 
+    # }
+
+    data_df = data.frame(date = dates[200:len], ndvi = final_ndvi_list)
+
+    output$ndvi_pixels_plot <- renderPlot({
+      p = ggplot(data = data_df, aes(x= date, y= ndvi)) +
+        geom_line()
+      p
+    })
+    print ('Plotting Completed')
     
   })
 
@@ -660,8 +721,12 @@ server = function(input, output, session) {
   observeEvent(input$getAPPEEARSpoints, {
     site       = input$site
     site_data  = get_site_info(site)
+    
+    leafletProxy('map') %>%
+      showGroup('Open Topo Map')
     # load in netcdf for NDVI layer
     #------------------------------------------------------------------------
+    
     file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
     file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
     ndvi_output  = nc_open(file_ndvi)
@@ -673,6 +738,8 @@ server = function(input, output, session) {
     #------------------------------------------------------------------------
     v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
     v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
+    
+    data$site_nc = ndvi_output
 
     # Set lat and lon arrays for NDVI data
     lat_NDVI = ncvar_get(ndvi_output, "lat")
@@ -681,6 +748,8 @@ server = function(input, output, session) {
     # Grab the fill value and set to NA
     fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
     v6_NDVI[v6_NDVI == fillvalue$value] = NA
+    
+    data$ndvi_nc = v6_NDVI
 
     # Define the coordinate referense system proj.4 string
     crs = CRS("+proj=longlat +datum=WGS84")
@@ -702,6 +771,8 @@ server = function(input, output, session) {
     
     # Build grid
     build_raster_grid(data$r_ndvi_cropped)
+    shinyjs::show(id = 'plotPixelsNDVI')
+    
   })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -772,7 +843,12 @@ server = function(input, output, session) {
       addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                        overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels', '250m Highlighted Pixels', '250m MODIS Grid'),
                        position = c("topleft"),
-                       options = layersControlOptions(collapsed = FALSE))
+                       options = layersControlOptions(collapsed = FALSE)) %>%
+      hideGroup('500m Highlighted Pixels') %>%
+      showGroup('500m Highlighted Pixels') %>%
+      hideGroup('250m Highlighted Pixels') %>%
+      showGroup('250m Highlighted Pixels')
+    updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
   }
   
   
@@ -928,21 +1004,9 @@ server = function(input, output, session) {
          print ((data$pixel_sps_500m))
          print ('250m Grid Sp Object info:')
          print ((data$pixel_sps_250m))
-         
-         # if (length(data$pixel_sps_500m) > 0 & length(data$pixel_sps_250m) > 0){
-         #   data$pixel_sps = rbind(data$pixel_sps_250m, data$pixel_sps_500m)
-         # }else if (length(data$pixel_sps_500m) > 0){
-         #   data$pixel_sps = data$pixel_sps_500m
-         # }else if (length(data$pixel_sps_250m) > 0){
-         #   data$pixel_sps = data$pixel_sps_250m
-         # }
-         
-           
-         # print (unique(ggplot2::fortify(data$pixel_sps)$id))
+   
          print ('Dataframe of all highlighted pixels (250m + 500m)')
          print (data$pixel_df)
-       # print (data$pixel_sps)
-       # plot (data$pixel_sps)
        }
      }
   }
@@ -1106,7 +1170,6 @@ server = function(input, output, session) {
   # Radians to degrees
   rad2deg = function(rad) {(rad * 180) / (pi)}
 
-
   # Given row from sites, create points for polyline from site.
   #   This function uses angle for field of view and los as the
   #   far distance of the FOV.
@@ -1126,7 +1189,7 @@ server = function(input, output, session) {
     datalat = c(lat,cy,by,lat)
     camera  = site_data_$site
     id_     = paste('fov',camera, sep='')
-    add_polyline(datalon, datalat, id_, .45, 'red')
+    add_polyline(datalon, datalat, id_ = 'azm_', .45, 'red', group_ = 'azm_')
   }
 
 
@@ -1152,7 +1215,6 @@ server = function(input, output, session) {
                     group   = group_)
   }
 
-
   # remove all polylines
   remove_polyline = function(id_=NULL, all=TRUE){
     if (all == TRUE){
@@ -1162,7 +1224,6 @@ server = function(input, output, session) {
         leafletProxy('map') %>% removeShape(layerId = id_)
       }
   }
-
 
   # Zoom to site
   zoom_to_site = function(site_, zoom){
@@ -1183,7 +1244,6 @@ server = function(input, output, session) {
       leafletProxy('map', data = variables$sites_df) %>%
         clearPopups() %>%
         clearMarkers() %>%
-        # clearShapes() %>%
         # Can add differen't markers when we zoom in at some point, but for now we will use these circle markers from above
         addCircleMarkers(lng=lon,lat=lat,label=camera, layerId=camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
                          style = get_marker_style()), opacity = .80, fillColor = getColor(cams=site_data), color = getColor(cams=site_data),
@@ -1337,6 +1397,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'highlightPixelMode')
     shinyjs::hide(id = 'highlightPixelModeNDVI')
     shinyjs::hide(id = 'getAPPEEARSpoints')
+    shinyjs::hide(id = 'plotPixelsNDVI')
     leafletProxy('map') %>%
       clearControls() %>%
       clearShapes() %>%
@@ -1372,6 +1433,9 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'site')
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
+    shinyjs::hide(id = 'plotPixelsNDVI')
+    
+    updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
   }
 
   # Returns site name from a cached task
