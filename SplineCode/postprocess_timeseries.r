@@ -16,7 +16,7 @@ library(rjson)
 library(phenocamr)
 
 ## override a couple of function
-#source("./expand_phenocam.r")
+source("./expand_phenocam.r")
 #source("./contract_phenocam.r")
 
 ## setup command line options/args
@@ -59,27 +59,10 @@ truncate <- args$truncate
 
 ARCHIVE_DIR = "/data/archive"
 
-## set the temp file directory so that it's
-## easier to find partial results when debugging
-set.tempdir("./tmp")
-if (verbose) {
-    print(paste0("Set tempdir() to: ", tempdir()))
-}
         
 ## Set working directory, where data is stored.
 ## Use an environment var to set directory.
-mywd=Sys.getenv(c("PHENOCAM_R_DATA"), unset=NA)
-if (is.na(mywd)) {
-   mywd = "./"
-}    
 
-if (verbose) {
-    print(paste0("Verbose: ", verbose))
-    print(paste0("Truncate: ", truncate))
-    print(paste0("Data Directory: ", mywd))
-    print(paste0("Site name: ", sitename))
-    print(paste0("ROI name: ", roiname))
-}
 
 ## The original version of the script read in an processed
 ## a list of ROIs.  This version just does a single one.
@@ -95,10 +78,7 @@ if (verbose) {
 roiparts = strsplit(roiname, split = "_")
 veg_type = roiparts[[1]][1]
 roi_id = roiparts[[1]][2]
-if (verbose) {
-    print(paste0("ROI Type: ", veg_type))
-    print(paste0("ROI ID: ", roi_id))
-}
+
 
 
 ## sel = c(
@@ -124,9 +104,7 @@ if (verbose) {
 ## copy data files to local directory
 
 ## data_record_1: site specific metadata files
-if (verbose) {
-    cat("-- copying data record 1\n")
-}
+
 json_file = sprintf("%s_meta.json", sitename)
 system(sprintf('cp %s/%s/%s ./data_record_1/',
                ARCHIVE_DIR,
