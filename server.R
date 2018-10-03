@@ -611,8 +611,12 @@ server = function(input, output, session) {
   })
   
   # Button that plots NDVI
-  observeEvent(input$plotPixelsNDVI, {
+  observeEvent(input$plotDataButton, {
     print ('Plotting NDVI')
+    # Inputs from popup
+    data_type_selected  = input$dataTypes
+    pixel_type_selected = input$pixelTypes
+    
     site       = input$site
     site_data  = get_site_info(site)
     
@@ -645,61 +649,64 @@ server = function(input, output, session) {
       polys_len = length(pixels)
     }
     
-    for (x in c(1:len)){
-      # for (x in c(1:2)){
-      r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
-      values_under_polygon = extract(r_ndvi, pixels)
-
-      # Setting length of pixels in each polygon
-      if (length(int_pixels) == 0){
-        for (xx in c(1:polys_len)){
-          # Number of pixels picked up by the highlighted pixel
-          pixel_len  = length(values_under_polygon[[xx]])
-          int_pixels[[xx]] = pixel_len
+    if (is.null(pixels)){
+      print ('No pixels selected')
+    }else{
+      for (x in c(1:len)){
+        # for (x in c(1:2)){
+        r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
+        values_under_polygon = extract(r_ndvi, pixels)
+  
+        # Setting length of pixels in each polygon
+        if (length(int_pixels) == 0){
+          for (xx in c(1:polys_len)){
+            # Number of pixels picked up by the highlighted pixel
+            pixel_len  = length(values_under_polygon[[xx]])
+            int_pixels[[xx]] = pixel_len
+          }
         }
+        
+        ndvi_means = c()
+        # Loop through the different polygons to extract ndvi values and save to dataframe
+        for (i in c(1:polys_len)){
+          ndvi_ = values_under_polygon[[i]]
+          ndvis_ = c(ndvis_, ndvi_)
+          # ndvi_means = c(ndvi_means, mean(ndvi_))
+        }
+        # final_ndvi_list = c(final_ndvi_list, mean(ndvi_means))
       }
       
-      ndvi_means = c()
-      # Loop through the different polygons to extract ndvi values and save to dataframe
+      # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
+      #   to build the necessary dataframe lists.
+      list_ = list()
+      cols  = c()
       for (i in c(1:polys_len)){
-        ndvi_ = values_under_polygon[[i]]
-        ndvis_ = c(ndvis_, ndvi_)
-        # ndvi_means = c(ndvi_means, mean(ndvi_))
+        col = paste0('pixel_', as.character(i))
+        cols = c(cols, col)
+        a = c(1:(length(ndvis_)))
+        b = a[seq((1 + (i-1)), length(a), polys_len)]
+        print (col)
+        print (b)
+        list_[[col]] = ndvis_[b]
       }
-      # final_ndvi_list = c(final_ndvi_list, mean(ndvi_means))
+  
+      data_df = data.frame(date = date_list, list_)
+      print (data_df)
+      
+      #Parse data with Dates
+      start_ = input$dataDateRange[1]
+      end_   = input$dataDateRange[2]
+  
+      parsed_data = subset(data_df, date >= start_ & date <= end_)
+      
+      output$ndvi_pixels_plot <- renderPlot({
+        # Only plotting the first 250m pixel
+        p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
+          geom_line()
+        p
+      })
+      print ('Plotting Completed')
     }
-    
-    # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
-    #   to build the necessary dataframe lists.
-    list_ = list()
-    cols  = c()
-    for (i in c(1:polys_len)){
-      col = paste0('pixel_', as.character(i))
-      cols = c(cols, col)
-      a = c(1:(length(ndvis_)))
-      b = a[seq((1 + (i-1)), length(a), polys_len)]
-      print (col)
-      print (b)
-      list_[[col]] = ndvis_[b]
-    }
-
-    data_df = data.frame(date = date_list, list_)
-    print (data_df)
-    
-    #Parse data with Dates
-    start_ = as.character(site_data$date_start)
-    end_   = as.character(site_data$date_end)
-    print (start_)
-    print (end_)
-    parsed_data = subset(data_df, date >= start_ & date <= end_)
-    
-    output$ndvi_pixels_plot <- renderPlot({
-      # Only plotting the first 250m pixel
-      p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
-        geom_line()
-      p
-    })
-    print ('Plotting Completed')
   })
   
   
@@ -796,7 +803,16 @@ server = function(input, output, session) {
     
     # Build grid
     build_raster_grid(data$r_ndvi_cropped)
-    shinyjs::show(id = 'plotPixelsNDVI')
+    shinyjs::show(id = 'plotRemoteData')
+    
+    start_site = as.character(site_data$date_start)
+    end_site   = as.character(site_data$date_end)
+    print (start_site)
+    print (end_site)
+    updateSliderInput(session, 'dataDateRange', 
+                      min = as.Date(start_site), 
+                      max = as.Date(end_site), 
+                      value = c(as.Date(start_site), as.Date(end_site)))
     
   })
 
@@ -1414,7 +1430,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'azm')
     shinyjs::hide(id = 'siteTitle')
     shinyjs::hide(id = 'plotPhenocamGCC')
-    shinyjs::hide(id = 'plotPixelsNDVI')
+    shinyjs::hide(id = 'plotRemoteData')
     shinyjs::hide(id = 'pftSelection')
     shinyjs::hide(id = 'showHidePlot')
     shinyjs::hide(id = 'modisLegend')
@@ -1448,7 +1464,6 @@ server = function(input, output, session) {
     shinyjs::show(id = 'pftSelection')
     shinyjs::show(id = 'getAPPEEARSpoints')
     shinyjs::show(id = 'highlightPixelMode')
-    shinyjs::show(id = 'plotPixelsNDVI')
     # Ids to hide:
     shinyjs::hide(id = 'explorerTitle')
     shinyjs::hide(id = 'usZoom')
@@ -1458,7 +1473,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'site')
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
-    shinyjs::hide(id = 'plotPixelsNDVI')
+    shinyjs::hide(id = 'plotRemoteData')
     
     updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
   }

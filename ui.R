@@ -1,7 +1,21 @@
 # UI file for Shiny App phenoRemote
 # Initiate the UI
-ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase", id="navbar",
-
+ui = fluidPage(shinyjs::useShinyjs(), 
+               mainPanel(
+                 bsModal("plotDataPopup", 
+                         "Select Plot Data", "plotRemoteData",
+                         tags$head(tags$style("#window .modal{backdrop: 'static'}")),
+                         size = "medium",
+                         selectInput('dataTypes', 'Data Types', c('NDVI', 'EVI', 'GCC')),
+                         selectInput('pixelTypes', 'Pixel Types', c('250m', '500m')),
+                         sliderInput('dataDateRange', 'Date start to end', 
+                                     min = as.Date('2000-01-01'), 
+                                     max = Sys.Date(), 
+                                     value = c(as.Date('2000-01-01'), Sys.Date())),
+                         actionButton('plotDataButton', 'Plot Data'))
+               ,
+               navbarPage("PhenoSynth-development phase", id="navbar",
+                                                 
                           tabPanel("Site explorer",
 
                                    div(class="outer",
@@ -39,7 +53,7 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
                                       actionButton('getAPPEEARSpoints', 'AppEEARS'),
                                       actionButton('plotPhenocamGCC', 'Plot Greenness Curves'),
-                                      actionButton('plotPixelsNDVI', 'Plot NDVI Curves')
+                                      actionButton('plotRemoteData', 'Plot Remote Data Curves')
                                                                             ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
@@ -104,5 +118,6 @@ ui = fluidPage(shinyjs::useShinyjs(), navbarPage("PhenoSynth-development phase",
 
 
            conditionalPanel("false", icon("crosshair"))
+      )
   )
 )
