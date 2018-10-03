@@ -613,9 +613,19 @@ server = function(input, output, session) {
   # Button that plots NDVI
   observeEvent(input$plotPixelsNDVI, {
     print ('Plotting NDVI')
+    site       = input$site
+    site_data  = get_site_info(site)
     
     nc_data = data$site_nc  # all netcdf
     dates   = ncvar_get(nc_data, 'time')
+    crs = CRS("+proj=longlat +datum=WGS84")
+    
+    start_date_str = nc_data[[11]]$time$units
+    start_date     = as.Date(strsplit(start_date_str, ' ')[[1]][3])
+    
+    # In date format
+    date_list = dates + start_date 
+    
     nc_ndvi = data$ndvi_nc  # only ndvi
     lat = ncvar_get(nc_data, "lat")
     lon = ncvar_get(nc_data, "lon")
@@ -635,7 +645,7 @@ server = function(input, output, session) {
       polys_len = length(pixels)
     }
     
-    for (x in c(200:len)){
+    for (x in c(1:len)){
       # for (x in c(1:2)){
       r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
       values_under_polygon = extract(r_ndvi, pixels)
@@ -654,29 +664,45 @@ server = function(input, output, session) {
       for (i in c(1:polys_len)){
         ndvi_ = values_under_polygon[[i]]
         ndvis_ = c(ndvis_, ndvi_)
-        ndvi_means = c(ndvi_means, mean(ndvi_))
+        # ndvi_means = c(ndvi_means, mean(ndvi_))
       }
-      final_ndvi_list = c(final_ndvi_list, mean(ndvi_means))
+      # final_ndvi_list = c(final_ndvi_list, mean(ndvi_means))
     }
     
     # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
     #   to build the necessary dataframe lists.
-    # count = 0
-    # for (ii in c(1:length(ndvis_))){
-    #   count = count + 1
-    #   if 
-    # }
+    list_ = list()
+    cols  = c()
+    for (i in c(1:polys_len)){
+      col = paste0('pixel_', as.character(i))
+      cols = c(cols, col)
+      a = c(1:(length(ndvis_)))
+      b = a[seq((1 + (i-1)), length(a), polys_len)]
+      print (col)
+      print (b)
+      list_[[col]] = ndvis_[b]
+    }
 
-    data_df = data.frame(date = dates[200:len], ndvi = final_ndvi_list)
-
+    data_df = data.frame(date = date_list, list_)
+    print (data_df)
+    
+    #Parse data with Dates
+    start_ = as.character(site_data$date_start)
+    end_   = as.character(site_data$date_end)
+    print (start_)
+    print (end_)
+    parsed_data = subset(data_df, date >= start_ & date <= end_)
+    
     output$ndvi_pixels_plot <- renderPlot({
-      p = ggplot(data = data_df, aes(x= date, y= ndvi)) +
+      # Only plotting the first 250m pixel
+      p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
         geom_line()
       p
     })
     print ('Plotting Completed')
-    
   })
+  
+  
 
   # Button that hides GCC Plot
   observeEvent(input$hidePlot, {
@@ -726,7 +752,6 @@ server = function(input, output, session) {
       showGroup('Open Topo Map')
     # load in netcdf for NDVI layer
     #------------------------------------------------------------------------
-    
     file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
     file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
     ndvi_output  = nc_open(file_ndvi)
@@ -839,7 +864,7 @@ server = function(input, output, session) {
       }
       sp_lines
     }else{print ('already a sp object')}
-    leafletProxy('map') %>% addTiles() %>% addPolylines(data = sp_lines, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid') %>%
+    leafletProxy('map') %>% addPolylines(data = sp_lines, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid') %>%
       addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                        overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels', '250m Highlighted Pixels', '250m MODIS Grid'),
                        position = c("topleft"),
