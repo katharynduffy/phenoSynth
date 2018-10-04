@@ -291,7 +291,7 @@ server = function(input, output, session) {
         variables$sites_df = subset(cams_, group == 'NEON')
       }
     }
-    variables$sites = variables$sites_df$site
+    variables$sites = variables$sites_df$Sitename
     updateSelectInput(session, 'site', choices = variables$sites)
     show_all_sites()
   })
@@ -386,18 +386,18 @@ server = function(input, output, session) {
 
       site_data = get_site_info(site)
 
-      lat             = site_data$lat
-      lon             = site_data$lon
+      lat             = site_data$Lat
+      lon             = site_data$Lon
       description     = site_data$site_description
-      elevation       = site_data$elev
-      camera          = site_data$site
+      elevation       = site_data$Elev
+      camera          = site_data$Sitename
       site_type       = site_data$site_type
-      nimage          = site_data$nimage
+      #nimage          = site_data$nimage
       cam_orientation = as.character(site_data$camera_orientation)
       degrees         = as.numeric(orientation_key[cam_orientation])
       active          = site_data$active
-      date_end        = site_data$date_end
-      date_start      = site_data$date_start
+      date_end        = site_data$date_last
+      date_start      = site_data$date_first
 
       get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees , nimage,
                      active, date_end, date_start)
@@ -449,8 +449,8 @@ server = function(input, output, session) {
       output$currentPlot <- renderPlot({ modis$cached_ndvi[site_] })
     } else{
 
-      lat_       = site_data$lat[1]
-      lon_       = site_data$lon[1]
+      lat_       = site_data$Lat[1]
+      lon_       = site_data$Lon[1]
       date_end   = as.Date(site_data$date_end[1])
       date_start = as.Date(site_data$date_start[1])
       subset     <- mt_subset(product = "MOD13Q1",lat = lat_,lon = lon_,band = "250m_16_days_NDVI",
@@ -537,7 +537,7 @@ server = function(input, output, session) {
       data$veg_types = veg_types
       
       # Building Landcover layer and color pallette for specific pft composition in clipped raster
-      r  = crop_raster(site_data$lat, site_data$lon, global_r, reclassify=FALSE)
+      r  = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=FALSE)
       c3 = build_pft_palette(r)
       data$r_landcover = r
 
@@ -550,7 +550,7 @@ server = function(input, output, session) {
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
       print (as.numeric(pft_key))
       
-      rc   = crop_raster(site_data$lat, site_data$lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+      rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
@@ -581,7 +581,7 @@ server = function(input, output, session) {
         c3 = build_pft_palette(data$r_landcover)
         pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
-        rc   = crop_raster(site_data$lat, site_data$lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+        rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
         
         leafletProxy('map') %>%
           clearImages() %>%
@@ -793,7 +793,7 @@ server = function(input, output, session) {
     #------------------------------------------------------------------------
     YlGn = brewer.pal(9, "YlGn")
     
-    data$r_ndvi_cropped = crop_raster(site_data$lat, site_data$lon, v6_NDVI)
+    data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
     
     # extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps_250, snap = 'in')
     # print (extracted_ndvi)
@@ -1271,8 +1271,8 @@ server = function(input, output, session) {
     site_data          = get_site_info(site_)
     description        = site_data$site_description
     camera_orientation = site_data$camera_orientation
-    lat                = site_data$lat
-    lon                = site_data$lon
+    lat                = site_data$Lat
+    lon                = site_data$Lon
     cam_orientation    = as.character(site_data$camera_orientation)
 
     degrees   = as.numeric(orientation_key[cam_orientation])

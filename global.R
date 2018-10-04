@@ -38,11 +38,17 @@ library(shinycssloaders)
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
 df <- read.csv(url(table_url))
 colnames(df)
-#layers_ = providers[0:-1]
+
+c      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=2000')
+c = c$results
+c_m=c$sitemetadata
+c$sitemetadata=NULL
+cams_=cbind(c, c_m)
+
 # Data for all the sites
-cams_ = df
+#cams_ = df
 # All site names from table
-site_names = df$site
+site_names = cams_$Sitename
 
 # Changing blank values in the camera orientation field to 'N' as a default
 cams_$camera_orientation[cams_$camera_orientation == ''] = 'N'
