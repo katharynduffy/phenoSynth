@@ -805,8 +805,8 @@ server = function(input, output, session) {
     build_raster_grid(data$r_ndvi_cropped)
     shinyjs::show(id = 'plotRemoteData')
     
-    start_site = as.character(site_data$date_start)
-    end_site   = as.character(site_data$date_end)
+    start_site = as.character(site_data$date_first)
+    end_site   = as.character(site_data$date_last)
     print (start_site)
     print (end_site)
     updateSliderInput(session, 'dataDateRange', 
@@ -1203,7 +1203,7 @@ server = function(input, output, session) {
   show_all_sites = function(){
     leafletProxy("map", data = variables$sites_df) %>%
       clearMarkers() %>%
-      addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, labelOptions = labelOptions(noHide = F, direction = "bottom",
+      addCircleMarkers(~Lon, ~Lat, label=~Sitename, layerId=~Sitename, labelOptions = labelOptions(noHide = F, direction = "bottom",
                        style = get_marker_style()), opacity = .80, fillColor = getColor(variables$sites_df), color = getColor(variables$sites_df),
                        radius = 10, fillOpacity = .20, weight=3.5)
   }
@@ -1342,7 +1342,7 @@ server = function(input, output, session) {
 
   # Get specific site data and returns lon/lat/camera/description/elevation
   get_site_info = function(site_name){
-    site_data = subset(cams_, site == site_name)
+    site_data = subset(cams_, Sitename == site_name)
     return (site_data)
   }
 
@@ -1397,9 +1397,9 @@ server = function(input, output, session) {
   # custom markers created for Active/nonActive
   getColor <- function(cams) {
     sapply(cams$active, function(active) {
-      if(active == 'True') {
+      if(active == 'TRUE') {
         "blue"
-      } else if(active == 'False') {
+      } else if(active == 'FALSE') {
         "red"
       } else {
         "orange"
