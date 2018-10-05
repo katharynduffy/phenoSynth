@@ -5,14 +5,15 @@ ui = fluidPage(shinyjs::useShinyjs(),
                  bsModal("plotDataPopup", 
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
-                         size = "medium",
+                         size = "small",
                          selectInput('dataTypes', 'Data Types', c('NDVI', 'EVI', 'GCC')),
                          selectInput('pixelTypes', 'Pixel Types', c('250m', '500m')),
                          sliderInput('dataDateRange', 'Date start to end', 
                                      min = as.Date('2000-01-01'), 
                                      max = Sys.Date(), 
                                      value = c(as.Date('2000-01-01'), Sys.Date())),
-                         actionButton('plotDataButton', 'Plot Data'))
+                         actionButton('plotDataButton', 'Plot Data'),
+                         helpText(id = 'noPixelWarning', 'No Pixels selected'))
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
                                                  

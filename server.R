@@ -345,11 +345,12 @@ server = function(input, output, session) {
     })
   })
 
-
+  
   # Draws fov polyline for a site location
   observeEvent(input$drawROI, {
     roi_bool = input$drawROI
     if (roi_bool == TRUE){
+      print ('Drawing fov for phenocam site')
       site            = isolate(input$site)
       site_data       = get_site_info(site)
       cam_orientation = as.character(site_data$camera_orientation)
@@ -361,6 +362,7 @@ server = function(input, output, session) {
     else if (roi_bool == FALSE){
       shinyjs::hide(id = 'azm')
       leafletProxy('map') %>% removeShape(layerId = 'azm_')
+      print ('Removing fov for phenocam site')
         }
   })
 
@@ -649,8 +651,10 @@ server = function(input, output, session) {
       polys_len = length(pixels)
     }
     
-    if (is.null(pixels)){
+    if (is.null(pixels@polygons[1][[1]])){
       print ('No pixels selected')
+      shinyjs::show(id = 'noPixelWarning')
+      
     }else{
       for (x in c(1:len)){
         # for (x in c(1:2)){
@@ -750,6 +754,12 @@ server = function(input, output, session) {
       }}
   })
 
+  # Observer for the popup
+  observeEvent(input$plotRemoteData, {
+    shinyjs::hide(id = 'noPixelWarning')
+  })
+  
+
   # Add netcdf from AppEEARS of netcdf
   observeEvent(input$getAPPEEARSpoints, {
     site       = input$site
@@ -804,6 +814,7 @@ server = function(input, output, session) {
     # Build grid
     build_raster_grid(data$r_ndvi_cropped)
     shinyjs::show(id = 'plotRemoteData')
+    shinyjs::hide(id = 'noPixelWarning')
     
     start_site = as.character(site_data$date_first)
     end_site   = as.character(site_data$date_last)
@@ -1216,8 +1227,8 @@ server = function(input, output, session) {
   #   far distance of the FOV.
   run_add_polyline = function(site_data_, azm_){
     los = .01
-    lat =  site_data_$lat
-    lon =  site_data_$lon
+    lat =  site_data_$Lat
+    lon =  site_data_$Lon
     dst = sqrt(los**2 + los**2)
     c   = rotate_pt(lon, lat, (azm_-25), dst)
     b   = rotate_pt(lon, lat, (azm_+25), dst)
@@ -1228,9 +1239,9 @@ server = function(input, output, session) {
 
     datalon = c(lon,cx,bx,lon)
     datalat = c(lat,cy,by,lat)
-    camera  = site_data_$site
+    camera  = site_data_$Sitename
     id_     = paste('fov',camera, sep='')
-    add_polyline(datalon, datalat, id_ = 'azm_', .45, 'red', group_ = 'azm_')
+    add_polyline(datalon, datalat, id_ = 'azm_', .45, 'red', group = 'azm_')
   }
 
 
