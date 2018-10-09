@@ -608,8 +608,11 @@ server = function(input, output, session) {
 
   # Button that plots GCC
   observeEvent(input$plotPhenocamGCC, {
-    print ('Plotting GCC')
-    phenoCamData=get_site_roi_3day_csvs(site)
+    #print (input$plotPhenocamGCC)
+    #name=input$plotPhenocamGCC
+    #print(name$Sitename)
+    #print(site_name)
+    phenoCamData=get_site_roi_3day_csvs(input$site)
     
   })
   
@@ -619,7 +622,8 @@ server = function(input, output, session) {
     # Inputs from popup
     data_type_selected  = input$dataTypes
     pixel_type_selected = input$pixelTypes
-    
+    #=input$site
+    phenoCamData=get_site_roi_3day_csvs(input$site)
     site       = input$site
     site_data  = get_site_info(site)
     
@@ -703,7 +707,9 @@ server = function(input, output, session) {
       end_   = input$dataDateRange[2]
   
       parsed_data = subset(data_df, date >= start_ & date <= end_)
-      
+      parsed_data$date=as.Date(parsed_data$date)
+      phenoCamData$date=as.Date(phenoCamData$date)
+      p=left_join(parsed_data, phenoCamData)#pick up here
       output$ndvi_pixels_plot <- renderPlot({
         # Only plotting the first 250m pixel
         p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
@@ -1510,8 +1516,17 @@ server = function(input, output, session) {
   # Grabs the list of 3_day csv data from phenocam website
   get_site_roi_3day_csvs = function(name){
     idx=is.element(roi_files$site, name)
-    df=fread(roi_files$one_day_summary[idx])
-    csv=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)
+    num_rois=length(idx[idx==TRUE])
+    loc_rois=which(idx==TRUE)
+    csv=data.frame()
+    if(num_rois==1) {
+      df=data.table::fread(roi_files$one_day_summary[idx])
+      csv=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)} else {
+        for(i in loc_rois){
+          df=data.table::fread(roi_files$one_day_summary[i])
+          c=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)
+          csv=rbind(csv, c)}}
+      
     return(csv)
     # url  = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', sep = '')
     # page = read_html(url)
