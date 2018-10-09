@@ -28,3 +28,34 @@ smoothed=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90","rcc_me
   geom_point(aes(x=smoothed$date, y=smoothed$gcc_mean), colour='green', alpha=.2)
 p
 ```
+
+```{r}
+  get_site_roi_3day_csvs = function(name){
+    idx=is.element(roi_files$site, name)
+    if(sum(idx==1)){
+    df=data.table::fread(roi_files$one_day_summary[idx])
+    csv=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)}
+    else{
+      for(i in 1:length(idx[idx==TRUE])){
+        df=data.table::fread(roi_files$one_day_summary[idx[i]])
+        csv=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)}}
+      
+    return(csv)
+  }
+```
+
+
+```{r}
+idx=is.element(roi_files$site, name)
+num_rois=length(idx[idx==TRUE])
+loc_rois=which(idx==TRUE)
+csv=data.frame()
+    if(num_rois==1) {
+    df=data.table::fread(roi_files$one_day_summary[idx])
+    csv=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)} else {
+      for(i in loc_rois){
+        df=data.table::fread(roi_files$one_day_summary[i])
+        c=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)
+        csv=rbind(csv, c)}}
+    
+```
