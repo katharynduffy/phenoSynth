@@ -609,7 +609,8 @@ server = function(input, output, session) {
   # Button that plots GCC
   observeEvent(input$plotPhenocamGCC, {
     print ('Plotting GCC')
-    get_site_roi_3day_csvs(input$site)
+    phenoCamData=get_site_roi_3day_csvs(site)
+    
   })
   
   # Button that plots NDVI
@@ -1508,18 +1509,22 @@ server = function(input, output, session) {
 
   # Grabs the list of 3_day csv data from phenocam website
   get_site_roi_3day_csvs = function(name){
-    url  = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', sep = '')
-    page = read_html(url)
-
-    site_hrefs = page %>% html_nodes("a") %>% html_attr("href")
-    # csvs_    = site_hrefs[grep('3day.csv|1day.csv', site_hrefs)]  #How to grab both 1 and 3 day csvs
-    csvs_      = site_hrefs[grep('3day.csv|gcc90', site_hrefs)]
-    csvs_      = csvs_[grep('XX|.png', csvs_, invert=TRUE)]  #invert will take all strings without this
-    csv        = csvs_[grep('gcc90_3day', csvs_)]
-    csv        = csv[1]
-
-    csv_url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', csv, sep = '')
-    print (csv_url)
+    idx=is.element(roi_files$site, name)
+    df=fread(roi_files$one_day_summary[idx])
+    csv=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)
+    return(csv)
+    # url  = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', sep = '')
+    # page = read_html(url)
+    # 
+    # site_hrefs = page %>% html_nodes("a") %>% html_attr("href")
+    # # csvs_    = site_hrefs[grep('3day.csv|1day.csv', site_hrefs)]  #How to grab both 1 and 3 day csvs
+    # csvs_      = site_hrefs[grep('3day.csv|gcc90', site_hrefs)]
+    # csvs_      = csvs_[grep('XX|.png', csvs_, invert=TRUE)]  #invert will take all strings without this
+    # csv        = csvs_[grep('gcc90_3day', csvs_)]
+    # csv        = csv[1]
+    # 
+    # csv_url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', csv, sep = '')
+    # print (csv_url)
   }
 
 
