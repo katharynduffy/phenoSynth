@@ -401,7 +401,7 @@ server = function(input, output, session) {
       date_end        = site_data$date_last
       date_start      = site_data$date_first
 
-      get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees , nimage,
+      get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees,
                      active, date_end, date_start)
     })
   })
@@ -710,6 +710,7 @@ server = function(input, output, session) {
         p
       })
       print ('Plotting Completed')
+      updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
     }
   })
   
@@ -1320,7 +1321,7 @@ server = function(input, output, session) {
 
   #displays the site info when a site is clicked
   get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_,
-                             camera_orientation_, degrees_, nimage_,
+                             camera_orientation_, degrees_,
                              active_, date_end_, date_start_) {
     website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera_)
     print('Running show a popup box for Site')
@@ -1334,7 +1335,6 @@ server = function(input, output, session) {
 
                  '<strong>','Site type: ','</strong>', site_type_ ,'</br>',
                  '<strong>','Orientation (direction): ','</strong>', camera_orientation_ ,'</br>',
-                 '<strong>','Number of Images: ','</strong>', nimage_ ,'</br>',
                  '<strong>','Active: ','</strong>', active_ ,'</br>',
                  '<strong>','Start date: ','</strong>', date_start_ ,'</br>',
                  '<strong>','End date: ','</strong>', date_end_ ,'</br>',

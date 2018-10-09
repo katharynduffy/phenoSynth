@@ -13,6 +13,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                      max = Sys.Date(), 
                                      value = c(as.Date('2000-01-01'), Sys.Date())),
                          actionButton('plotDataButton', 'Plot Data'),
+                         actionButton('downloadDataButton', 'Download Data'),
                          helpText(id = 'noPixelWarning', 'No Pixels selected'))
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
@@ -113,7 +114,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                     DTOutput('x1')
                    ),
            
-           tabPanel('Plot NDVI',
+           tabPanel('Plot NDVI', value = 'PlotPanel',
                     plotOutput("ndvi_pixels_plot")
            ),
 
