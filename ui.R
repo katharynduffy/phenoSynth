@@ -2,10 +2,19 @@
 # Initiate the UI
 ui = fluidPage(shinyjs::useShinyjs(), 
                mainPanel(
+                 bsModal("getDataPopup", 
+                         "Get Data for Analysis", "getData",
+                         tags$head(tags$style("#window .modal{backdrop: 'static'}")),
+                         size = "medium",
+                         selectInput('dataTypes', 'Data Types', c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
+                         actionButton('getDataButton', 'Get Data'),
+                         tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
+                         helpText(id = 'doneGetData', 'Data Acquired'))
+                 ,
                  bsModal("plotDataPopup", 
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
-                         size = "small",
+                         size = "medium",
                          selectInput('dataTypes', 'Data Types', c('NDVI', 'EVI', 'GCC')),
                          selectInput('pixelTypes', 'Pixel Types', c('250m', '500m')),
                          sliderInput('dataDateRange', 'Date start to end', 
@@ -13,8 +22,11 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                      max = Sys.Date(), 
                                      value = c(as.Date('2000-01-01'), Sys.Date())),
                          actionButton('plotDataButton', 'Plot Data'),
-                         actionButton('downloadDataButton', 'Download Data'),
-                         helpText(id = 'noPixelWarning', 'No Pixels selected'))
+                         # actionButton('downloadDataButton', 'Download Data'),
+                         helpText(id = 'noPixelWarning', 'No Pixels selected'),
+                         helpText(id = 'buildingPlot', 'Building plot'),
+                         helpText(id = 'doneBuildingPlot', 'Plot Finished'),
+                         tags$head(tags$style("#plotDataPopup .modal-footer{ display:none}")))
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
                                                  
@@ -53,9 +65,9 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                       #actionButton('showModisSubset', 'Plot MODIS subset'),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
-                                      actionButton('getAPPEEARSpoints', 'AppEEARS'),
-                                      actionButton('plotPhenocamGCC', 'Plot Greenness Curves'),
-                                      actionButton('plotRemoteData', 'Plot Remote Data Curves')
+                                      # actionButton('plotPhenocamGCC', 'Plot Greenness Curves'),
+                                      actionButton('getData', 'Get API Data'),
+                                      actionButton('plotRemoteData', 'Plot Data')
                                                                             ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
@@ -91,30 +103,32 @@ ui = fluidPage(shinyjs::useShinyjs(),
                         ), # close tab panel
 
 
-           tabPanel('pAOI Management',
-
-                    tags$div(id='pAOItab'),
-                    selectInput('shapefiles', "Select Shapefile", c('None')),
-                    actionButton('saveshp', 'Save Shapefile'),
-                    br(),
-                    br(), br(),
-
-
-                    # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
-                    #   some point......
-                    DTOutput("pAOIchart")
-
-                   ),
+           # tabPanel('pAOI Management',
+           # 
+           #          tags$div(id='pAOItab'),
+           #          selectInput('shapefiles', "Select Shapefile", c('None')),
+           #          actionButton('saveshp', 'Save Shapefile'),
+           #          br(),
+           #          br(), br(),
+           # 
+           # 
+           #          # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
+           #          #   some point......
+           #          DTOutput("pAOIchart")
+           # 
+           #         ),
+           
            # tabPanel('User Guide',
            #          includeMarkdown('UserGuide.Rmd')
            #          ),
 
 
-           tabPanel('Phenocam Table',
-                    DTOutput('x1')
-                   ),
+           # tabPanel('Phenocam Table',
+           #          DTOutput('x1')
+           #         ),
            
            tabPanel('Plot NDVI', value = 'PlotPanel',
+                    actionButton('clearPlot', 'Clear Plot'),
                     plotOutput("ndvi_pixels_plot")
            ),
 

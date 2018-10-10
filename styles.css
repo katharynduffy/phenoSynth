@@ -38,6 +38,12 @@
   left: 20px;
   padding:0px 10px;
 }
+
+#doneBuildingPlot, #buildingPlot{
+  font-size:14px;
+  color:red;
+}
+
 .leaflet-right .leaflet-control {
   margin-right: 130px;
 }
