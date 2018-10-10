@@ -719,15 +719,13 @@ server = function(input, output, session) {
       end_   = input$dataDateRange[2]
   ##pick up here for plotting
       parsed_data = subset(data_df, date >= start_ & date <= end_)
-<<<<<<< HEAD
       
-      output$ndvi_pixels_plot = renderPlot({
-=======
+
       parsed_data$date=as.Date(parsed_data$date)
       phenoCamData$date=as.Date(phenoCamData$date)
       p=left_join(parsed_data, phenoCamData)#pick up here
-      output$ndvi_pixels_plot <- renderPlot({
->>>>>>> upstream/master
+
+      output$ndvi_pixels_plot = renderPlot({
         # Only plotting the first 250m pixel
         p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
           geom_line()

@@ -14,29 +14,16 @@ ui = fluidPage(shinyjs::useShinyjs(),
                  bsModal("plotDataPopup", 
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
-<<<<<<< HEAD
-                         size = "medium",
-                         selectInput('dataTypes', 'Data Types', c('NDVI', 'EVI', 'GCC')),
-=======
                          size = "small",
                          selectInput('dataTypes', 'Data Types', c('MODIS NDVI', 'MODIS EVI', 'PhenoCam GCC')),
->>>>>>> upstream/master
                          selectInput('pixelTypes', 'Pixel Types', c('250m', '500m')),
                          sliderInput('dataDateRange', 'Date start to end', 
                                      min = as.Date('2000-01-01'), 
                                      max = Sys.Date(), 
                                      value = c(as.Date('2000-01-01'), Sys.Date())),
                          actionButton('plotDataButton', 'Plot Data'),
-<<<<<<< HEAD
-                         # actionButton('downloadDataButton', 'Download Data'),
-                         helpText(id = 'noPixelWarning', 'No Pixels selected'),
-                         helpText(id = 'buildingPlot', 'Building plot'),
-                         helpText(id = 'doneBuildingPlot', 'Plot Finished'),
-                         tags$head(tags$style("#plotDataPopup .modal-footer{ display:none}")))
-=======
                          helpText(id = 'noPixelWarning', 'No Pixels selected'),
                          actionButton('genDF', 'Download Data'))
->>>>>>> upstream/master
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
                                                  
@@ -75,15 +62,9 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                       #actionButton('showModisSubset', 'Plot MODIS subset'),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
-<<<<<<< HEAD
-                                      # actionButton('plotPhenocamGCC', 'Plot Greenness Curves'),
-                                      actionButton('getData', 'Get API Data'),
-                                      actionButton('plotRemoteData', 'Plot Data')
-=======
-                                      actionButton('getAPPEEARSpoints', 'Pull AppEEARS & PhenoCam Data'),
-                                      #actionButton('plotPhenocamGCC', 'Plot Greenness Curves'),
+
+                                      actionButton('getData', 'Pull AppEEARS & PhenoCam Data'),
                                       actionButton('plotRemoteData', 'Explore, Plot & Download Selected Data')
->>>>>>> upstream/master
                                                                             ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
@@ -139,15 +120,9 @@ ui = fluidPage(shinyjs::useShinyjs(),
            #          ),
 
 
-<<<<<<< HEAD
-           # tabPanel('Phenocam Table',
-           #          DTOutput('x1')
-           #         ),
-=======
            tabPanel('Phenocam Metadata',
                     DTOutput('x1')
                    ),
->>>>>>> upstream/master
            
            tabPanel('Plot NDVI', value = 'PlotPanel',
                     actionButton('clearPlot', 'Clear Plot'),
