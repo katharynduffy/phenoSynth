@@ -705,7 +705,7 @@ server = function(input, output, session) {
       #Parse data with Dates
       start_ = input$dataDateRange[1]
       end_   = input$dataDateRange[2]
-  
+  ##pick up here for plotting
       parsed_data = subset(data_df, date >= start_ & date <= end_)
       parsed_data$date=as.Date(parsed_data$date)
       phenoCamData$date=as.Date(phenoCamData$date)
