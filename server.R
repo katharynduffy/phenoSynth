@@ -528,7 +528,8 @@ server = function(input, output, session) {
     switch_to_analyzer_panel()
 
     print (sprintf('grabbing task row from appeears for site: %s', site))
-    appeears$ndvi = get_appeears_task(site)
+    appeears$ndvi = get_appeears_task(site, type = 'ndvi')
+    appeears$tds  = get_appeears_task(site, type = 'tds')
 
 
     veg_idx       = is.element(roi_files$site, site)
@@ -805,13 +806,19 @@ server = function(input, output, session) {
       #------------------------------------------------------------------------
       file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
       incProgress(.2)
-      
       file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
       ndvi_output    = nc_open(file_ndvi)
       incProgress(.1)
       v6_QA_lut      = read.csv(file_ndvi_qa)
       delete_file(file_ndvi)
       delete_file(file_ndvi_qa)
+      incProgress(.1)
+      
+      # load in netcdf for Transition Dates layer
+      #------------------------------------------------------------------------
+      file_tds    = download_bundle_file(appeears$tds$task_id, 'nc')
+      data$tds_nc = nc_open(file_tds)
+      delete_file(file_tds)
       incProgress(.1)
   
       # netcdf manipulation
@@ -1922,14 +1929,15 @@ server = function(input, output, session) {
   }
 
   # Returns site name from a cached task
-  get_site_from_task = function(task_name_){
+  # name_length :  the length of most task names submitted.  kelloggswitchgrass_09_06_18_0839 would be name_length = 5
+  get_site_from_task = function(task_name_, name_length){
     elements = strsplit(task_name_, split = '_', fixed=TRUE)
     element_length = length(elements[[1]])
-    if (element_length == 5){
+    if (element_length == name_length){
       site_name_ = elements[[1]][1]
       return (site_name_)
-    }else if(element_length > 5){
-      num = element_length - 5
+    }else if(element_length > name_length){
+      num = element_length - name_length
       elem = elements[[1]][1]
       for (x in c(1:num)){
         elem = paste(elem, elements[[1]][x+1], sep='_')
@@ -1940,22 +1948,33 @@ server = function(input, output, session) {
       return(FALSE)
     }
   }
-
   # Given a site name, function returns the appeears task record
-  get_appeears_task = function(name){
-    task_pos = grep(name ,appeears_tasks$task_name)
-    for (i in c(1:length(task_pos))){
-      row = get_site_from_task(appeears_tasks[task_pos[i],]$task_name)
-      if (row == name){
-        task_ = appeears_tasks[task_pos[i],]$task_name
+  get_appeears_task = function(name, type){
+    if (type == 'ndvi'){
+      task_pos = grep(name ,appeears_tasks$task_name)
+      for (i in c(1:length(task_pos))){
+        row = get_site_from_task(appeears_tasks[task_pos[i],]$task_name, 5)
+        if (row == name){
+          task_ = appeears_tasks[task_pos[i],]$task_name
+          return (subset(appeears_tasks, appeears_tasks$task_name == task_))
+        }
       }
-    }
-    return (subset(appeears_tasks, appeears_tasks$task_name == task_))
+    }else if (type == 'tds'){
+      task_pos = grep(name, appeears_tasks_tds$task_name)
+      for (i in c(1:length(task_pos))){
+        row = get_site_from_task(appeears_tasks_tds[task_pos[i],]$task_name, 3)
+        if (row == name){
+          task_ = appeears_tasks_tds[task_pos[i],]$task_name
+          return (subset(appeears_tasks_tds, appeears_tasks_tds$task_name == task_))
+        }
+      }
+    }else {print ('failed to ')}
   }
 
 
   # Downloads file from bundle (whichever ft is set to (only nc and qa_csv))
   download_bundle_file = function(site_task_id_, ft){
+    print (site_task_id_)
     response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
     bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
     document = jsonlite::fromJSON(txt=bundle_response)
@@ -1973,6 +1992,7 @@ server = function(input, output, session) {
     }
     dest_dir = './www/'
     filepath = paste(dest_dir, file_name, sep = '')
+    print (filepath)
     response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, '/', download_this_file, sep = ""),
                    write_disk(filepath, overwrite = TRUE), progress())
     return (filepath)

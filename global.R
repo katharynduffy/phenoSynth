@@ -95,3 +95,5 @@ cams_=cams_[idx,]
 
 # Load in dataframe with cached AppEEARS tasks
 appeears_tasks = readRDS(file = './www/cache_df.df')
+# Load in df with cached AppEEARS Transition Dates (dts)
+appeears_tasks_tds = readRDS(file = './www/cache_df_tds.df')
