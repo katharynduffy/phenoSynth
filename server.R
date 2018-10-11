@@ -718,16 +718,18 @@ server = function(input, output, session) {
       #Parse data with Dates
       start_ = input$dataDateRange[1]
       end_   = input$dataDateRange[2]
+      
   ##pick up here for plotting
       parsed_data = subset(data_df, date >= start_ & date <= end_)
       parsed_data$date=as.Date(parsed_data$date)
       source=rep('MODIS', nrow(parsed_data))
+      
       parsed_data=cbind(parsed_data, source)
       phenoCamData$date=as.Date(phenoCamData$date) ##pickup here
+      
       source=rep('PhenoCam', nrow(phenoCamData))
       sDF=left_join(parsed_data, phenoCamData)#pick up here
-      output$ndvi_pixels_plot <- renderPlot({
-
+      
       phenoCamData$date=as.Date(phenoCamData$date)
       p=left_join(parsed_data, phenoCamData)#pick up here
 
@@ -738,17 +740,15 @@ server = function(input, output, session) {
           geom_line()
         p
       })
-      
       print ('Plotting Completed')
       updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
       shinyjs::hide(id = 'buildingPlot')
       shinyjs::show(id = 'doneBuildingPlot')
-      })
-      }
+    })
+    }
+  })
  
   
-  
-
   # Button that hides GCC Plot
   observeEvent(input$hidePlot, {
     print ('Hiding Plot')
@@ -825,6 +825,14 @@ server = function(input, output, session) {
       file_tds    = download_bundle_file(appeears$tds$task_id, 'nc')
       data$tds_nc = nc_open(file_tds)
       delete_file(file_tds)
+      # Loading in the Transition Date layers
+      NBAR_EVI_Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Maximum")
+      NBAR_EVI_Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Minimum")
+      Onset_Greenness_Decrease = ncvar_get(data$tds_nc, "Onset_Greenness_Decrease")
+      Onset_Greenness_Increase = ncvar_get(data$tds_nc, "Onset_Greenness_Increase")
+      Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "Onset_Greenness_Maximum")
+      Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "Onset_Greenness_Minimum")
+      
       incProgress(.1)
   
       # netcdf manipulation
@@ -883,9 +891,8 @@ server = function(input, output, session) {
                         value = c(as.Date(start_site), as.Date(end_site)))
     })
     shinyjs::show(id = 'doneGetData')
-    
-    
   })
+
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #--------------------------------------------------------------------------------------------------------------------------------------
