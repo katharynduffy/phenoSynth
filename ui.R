@@ -2,6 +2,15 @@
 # Initiate the UI
 ui = fluidPage(shinyjs::useShinyjs(), 
                mainPanel(
+                 bsModal("getDataPopup", 
+                         "Get Data for Analysis", "getData",
+                         tags$head(tags$style("#window .modal{backdrop: 'static'}")),
+                         size = "medium",
+                         selectInput('dataTypes', 'Data Types', c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
+                         actionButton('getDataButton', 'Get Data'),
+                         tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
+                         helpText(id = 'doneGetData', 'Data Acquired'))
+                 ,
                  bsModal("plotDataPopup", 
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
@@ -53,8 +62,8 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                       #actionButton('showModisSubset', 'Plot MODIS subset'),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
-                                      actionButton('getAPPEEARSpoints', 'Pull AppEEARS & PhenoCam Data'),
-                                      #actionButton('plotPhenocamGCC', 'Plot Greenness Curves'),
+
+                                      actionButton('getData', 'Pull AppEEARS & PhenoCam Data'),
                                       actionButton('plotRemoteData', 'Explore, Plot & Download Selected Data')
                                                                             ),
 
@@ -91,20 +100,21 @@ ui = fluidPage(shinyjs::useShinyjs(),
                         ), # close tab panel
 
 
-           tabPanel('pAOI Management',
-
-                    tags$div(id='pAOItab'),
-                    selectInput('shapefiles', "Select Shapefile", c('None')),
-                    actionButton('saveshp', 'Save Shapefile'),
-                    br(),
-                    br(), br(),
-
-
-                    # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
-                    #   some point......
-                    DTOutput("pAOIchart")
-
-                   ),
+           # tabPanel('pAOI Management',
+           # 
+           #          tags$div(id='pAOItab'),
+           #          selectInput('shapefiles', "Select Shapefile", c('None')),
+           #          actionButton('saveshp', 'Save Shapefile'),
+           #          br(),
+           #          br(), br(),
+           # 
+           # 
+           #          # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
+           #          #   some point......
+           #          DTOutput("pAOIchart")
+           # 
+           #         ),
+           
            # tabPanel('User Guide',
            #          includeMarkdown('UserGuide.Rmd')
            #          ),
@@ -114,7 +124,8 @@ ui = fluidPage(shinyjs::useShinyjs(),
                     DTOutput('x1')
                    ),
            
-           tabPanel('Plot NDVI',
+           tabPanel('Plot NDVI', value = 'PlotPanel',
+                    actionButton('clearPlot', 'Clear Plot'),
                     plotOutput("ndvi_pixels_plot")
            ),
 

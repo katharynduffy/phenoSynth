@@ -139,6 +139,15 @@ server = function(input, output, session) {
     print ('Starting Draw Mode')
   })
   
+  observeEvent(input$clearPlot, {
+    output$ndvi_pixels_plot = renderPlot({
+      # Only plotting the first 250m pixel
+      df = data.frame()
+      p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1)
+      p
+    })
+  })
+  
   # Turn off 500m highlighted pixels if 250m highlighted pixels
   observe({
     a = input$highlightPixelMode
@@ -385,9 +394,9 @@ server = function(input, output, session) {
     isolate({
       leafletProxy("map", data = variables$sites_df) %>% clearPopups()
       site = event$id
-
+      
       site_data = get_site_info(site)
-
+      
       lat             = site_data$Lat
       lon             = site_data$Lon
       description     = site_data$site_description
@@ -400,8 +409,7 @@ server = function(input, output, session) {
       active          = site_data$active
       date_end        = site_data$date_last
       date_start      = site_data$date_first
-
-      get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees , nimage,
+      get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees,
                      active, date_end, date_start)
     })
   })
@@ -619,6 +627,7 @@ server = function(input, output, session) {
   # Button that plots NDVI
   observeEvent(input$plotDataButton, {
     print ('Plotting NDVI')
+    
     # Inputs from popup
     data_type_selected  = input$dataTypes
     pixel_type_selected = input$pixelTypes
@@ -661,11 +670,14 @@ server = function(input, output, session) {
       shinyjs::show(id = 'noPixelWarning')
       
     }else{
+      shinyjs::show(id = 'buildingPlot')
+      withProgress(message = 'Buliding Plot: ', detail = paste0('Site: ', site), value = 0, {
       for (x in c(1:len)){
         # for (x in c(1:2)){
+        incProgress(1/len)
         r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
         values_under_polygon = extract(r_ndvi, pixels)
-  
+        
         # Setting length of pixels in each polygon
         if (length(int_pixels) == 0){
           for (xx in c(1:polys_len)){
@@ -707,20 +719,34 @@ server = function(input, output, session) {
       end_   = input$dataDateRange[2]
   ##pick up here for plotting
       parsed_data = subset(data_df, date >= start_ & date <= end_)
+      
+
       parsed_data$date=as.Date(parsed_data$date)
+<<<<<<< HEAD
       source=rep('MODIS', nrow(parsed_data))
       parsed_data=cbind(parsed_data, source)
       phenoCamData$date=as.Date(phenoCamData$date) ##pickup here
       source=rep('PhenoCam', nrow(phenoCamData))
       sDF=left_join(parsed_data, phenoCamData)#pick up here
       output$ndvi_pixels_plot <- renderPlot({
+=======
+      phenoCamData$date=as.Date(phenoCamData$date)
+      p=left_join(parsed_data, phenoCamData)#pick up here
+
+      output$ndvi_pixels_plot = renderPlot({
+>>>>>>> 660ece17d18f72f88a1b06c9e9341021576f13e6
         # Only plotting the first 250m pixel
         p = ggplot(data = sDF, aes(x= date, y= pixel_1)) +
           geom_line()
         p
       })
+      
       print ('Plotting Completed')
-    }
+      updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+      shinyjs::hide(id = 'buildingPlot')
+      shinyjs::show(id = 'doneBuildingPlot')
+      })
+      }
   })
   
   
@@ -767,73 +793,93 @@ server = function(input, output, session) {
   # Observer for the popup
   observeEvent(input$plotRemoteData, {
     shinyjs::hide(id = 'noPixelWarning')
+    shinyjs::hide(id = 'buildingPlot')
+    shinyjs::hide(id = 'doneBuildingPlot')
   })
   
 
   # Add netcdf from AppEEARS of netcdf
-  observeEvent(input$getAPPEEARSpoints, {
+  observeEvent(input$getDataButton, {
+    shinyjs::hide(id = 'doneGetData')
     site       = input$site
     site_data  = get_site_info(site)
     
-    leafletProxy('map') %>%
-      showGroup('Open Topo Map')
-    # load in netcdf for NDVI layer
-    #------------------------------------------------------------------------
-    file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
-    file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
-    ndvi_output  = nc_open(file_ndvi)
-    v6_QA_lut      = read.csv(file_ndvi_qa)
-    delete_file(file_ndvi)
-    delete_file(file_ndvi_qa)
-
-    # netcdf manipulation
-    #------------------------------------------------------------------------
-    v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
-    v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
+    # leafletProxy('map') %>%
+    #   showGroup('Open Topo Map')
     
-    data$site_nc = ndvi_output
-
-    # Set lat and lon arrays for NDVI data
-    lat_NDVI = ncvar_get(ndvi_output, "lat")
-    lon_NDVI = ncvar_get(ndvi_output, "lon")
-
-    # Grab the fill value and set to NA
-    fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
-    v6_NDVI[v6_NDVI == fillvalue$value] = NA
+    withProgress(message = 'Grabbing AppEEARS Data. ', detail = paste0('Site: ', site, ', NDVI'), value = 0, {
+      
+      incProgress(.1)
+      # load in netcdf for NDVI layer
+      #------------------------------------------------------------------------
+      file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
+      incProgress(.2)
+      
+      file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
+      ndvi_output    = nc_open(file_ndvi)
+      incProgress(.1)
+      v6_QA_lut      = read.csv(file_ndvi_qa)
+      delete_file(file_ndvi)
+      delete_file(file_ndvi_qa)
+      incProgress(.1)
+  
+      # netcdf manipulation
+      #------------------------------------------------------------------------
+      v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
+      incProgress(.1)
+      v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
+      incProgress(.1)
+      
+      data$site_nc = ndvi_output
+  
+      # Set lat and lon arrays for NDVI data
+      lat_NDVI = ncvar_get(ndvi_output, "lat")
+      lon_NDVI = ncvar_get(ndvi_output, "lon")
+  
+      # Grab the fill value and set to NA
+      incProgress(.1)
+      fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
+      incProgress(.1)
+      v6_NDVI[v6_NDVI == fillvalue$value] = NA
+      
+      data$ndvi_nc = v6_NDVI
+  
+      # Define the coordinate referense system proj.4 string
+      crs = CRS("+proj=longlat +datum=WGS84")
+  
+      # Grab first observation of NDVI and Quality datasets
+      v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
+      v6_NDVI_original = v6_NDVI
+      v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
+      #------------------------------------------------------------------------
+      YlGn = brewer.pal(9, "YlGn")
+      
+      data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
+      
+      # extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps_250, snap = 'in')
+      # print (extracted_ndvi)
+  
+      # leafletProxy('map') %>% addRasterImage(data$r_ndvi_cropped, opacity = .7, group = 'test1', col = YlGn)
+      shinyjs::show(id = 'highlightPixelModeNDVI')
+      
+      # Build grid
+      build_raster_grid(data$r_ndvi_cropped)
+      incProgress(.1)
+      
+      shinyjs::show(id = 'plotRemoteData')
+      shinyjs::hide(id = 'noPixelWarning')
+      
+      start_site = as.character(site_data$date_first)
+      end_site   = as.character(site_data$date_last)
+      print (start_site)
+      print (end_site)
+      updateSliderInput(session, 'dataDateRange', 
+                        min = as.Date(start_site), 
+                        max = as.Date(end_site), 
+                        value = c(as.Date(start_site), as.Date(end_site)))
+    })
+    shinyjs::show(id = 'doneGetData')
     
-    data$ndvi_nc = v6_NDVI
-
-    # Define the coordinate referense system proj.4 string
-    crs = CRS("+proj=longlat +datum=WGS84")
-
-    # Grab first observation of NDVI and Quality datasets
-    v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-    v6_NDVI_original = v6_NDVI
-    v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-    #------------------------------------------------------------------------
-    YlGn = brewer.pal(9, "YlGn")
-    
-    data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
-    
-    # extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps_250, snap = 'in')
-    # print (extracted_ndvi)
-
-    # leafletProxy('map') %>% addRasterImage(data$r_ndvi_cropped, opacity = .7, group = 'test1', col = YlGn)
-    shinyjs::show(id = 'highlightPixelModeNDVI')
-    
-    # Build grid
-    build_raster_grid(data$r_ndvi_cropped)
-    shinyjs::show(id = 'plotRemoteData')
-    shinyjs::hide(id = 'noPixelWarning')
-    
-    start_site = as.character(site_data$date_first)
-    end_site   = as.character(site_data$date_last)
-    print (start_site)
-    print (end_site)
-    updateSliderInput(session, 'dataDateRange', 
-                      min = as.Date(start_site), 
-                      max = as.Date(end_site), 
-                      value = c(as.Date(start_site), as.Date(end_site)))
     
   })
 
@@ -1716,7 +1762,7 @@ server = function(input, output, session) {
 
   #displays the site info when a site is clicked
   get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_,
-                             camera_orientation_, degrees_, nimage_,
+                             camera_orientation_, degrees_,
                              active_, date_end_, date_start_) {
     website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera_)
     print('Running show a popup box for Site')
@@ -1730,7 +1776,6 @@ server = function(input, output, session) {
 
                  '<strong>','Site type: ','</strong>', site_type_ ,'</br>',
                  '<strong>','Orientation (direction): ','</strong>', camera_orientation_ ,'</br>',
-                 '<strong>','Number of Images: ','</strong>', nimage_ ,'</br>',
                  '<strong>','Active: ','</strong>', active_ ,'</br>',
                  '<strong>','Start date: ','</strong>', date_start_ ,'</br>',
                  '<strong>','End date: ','</strong>', date_end_ ,'</br>',
@@ -1844,8 +1889,8 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'plotpanel')
     shinyjs::hide(id = 'highlightPixelMode')
     shinyjs::hide(id = 'highlightPixelModeNDVI')
-    shinyjs::hide(id = 'getAPPEEARSpoints')
     shinyjs::hide(id = 'plotPixelsNDVI')
+    shinyjs::hide(id = 'getData')
     leafletProxy('map') %>%
       clearControls() %>%
       clearShapes() %>%
@@ -1869,8 +1914,8 @@ server = function(input, output, session) {
     shinyjs::show(id = 'siteTitle')
     shinyjs::show(id = 'plotPhenocamGCC')
     shinyjs::show(id = 'pftSelection')
-    shinyjs::show(id = 'getAPPEEARSpoints')
     shinyjs::show(id = 'highlightPixelMode')
+    shinyjs::show(id = 'getData')
     # Ids to hide:
     shinyjs::hide(id = 'explorerTitle')
     shinyjs::hide(id = 'usZoom')
@@ -1924,6 +1969,7 @@ server = function(input, output, session) {
     bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
     document = jsonlite::fromJSON(txt=bundle_response)
     files = document$files
+    
     if (ft == 'nc'){
       netcdf    = subset(files, file_type == 'nc')
       download_this_file = netcdf$file_id

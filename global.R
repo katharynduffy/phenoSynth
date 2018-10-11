@@ -45,6 +45,7 @@ c = c$results
 c_m=c$sitemetadata
 c$sitemetadata=NULL
 cams_=cbind(c, c_m)
+cams_[is.na(cams_)] = 'N'
 
 # Data for all the sites
 #cams_ = df
