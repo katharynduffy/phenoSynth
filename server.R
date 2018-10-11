@@ -719,24 +719,21 @@ server = function(input, output, session) {
       end_   = input$dataDateRange[2]
   ##pick up here for plotting
       parsed_data = subset(data_df, date >= start_ & date <= end_)
-      
-
       parsed_data$date=as.Date(parsed_data$date)
-<<<<<<< HEAD
       source=rep('MODIS', nrow(parsed_data))
       parsed_data=cbind(parsed_data, source)
       phenoCamData$date=as.Date(phenoCamData$date) ##pickup here
       source=rep('PhenoCam', nrow(phenoCamData))
       sDF=left_join(parsed_data, phenoCamData)#pick up here
       output$ndvi_pixels_plot <- renderPlot({
-=======
+
       phenoCamData$date=as.Date(phenoCamData$date)
       p=left_join(parsed_data, phenoCamData)#pick up here
 
       output$ndvi_pixels_plot = renderPlot({
->>>>>>> 660ece17d18f72f88a1b06c9e9341021576f13e6
+
         # Only plotting the first 250m pixel
-        p = ggplot(data = sDF, aes(x= date, y= pixel_1)) +
+        p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
           geom_line()
         p
       })
@@ -747,7 +744,7 @@ server = function(input, output, session) {
       shinyjs::show(id = 'doneBuildingPlot')
       })
       }
-  })
+ 
   
   
 
