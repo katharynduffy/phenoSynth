@@ -725,13 +725,13 @@ server = function(input, output, session) {
       source=rep('MODIS', nrow(parsed_data))
       
       parsed_data=cbind(parsed_data, source)
-      phenoCamData$date=as.Date(phenoCamData$date) ##pickup here
-      
-      source=rep('PhenoCam', nrow(phenoCamData))
-      sDF=left_join(parsed_data, phenoCamData)#pick up here
-      
+       ##pickup here
       phenoCamData$date=as.Date(phenoCamData$date)
-      p=left_join(parsed_data, phenoCamData)#pick up here
+      source=rep('PhenoCam', nrow(phenoCamData))
+      #pvars=c('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+      pData=phenoCamData%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+      pData=cbind(pData, source)
+      sDF=left_join(parsed_data, pData)#pick up here
 
       output$ndvi_pixels_plot = renderPlot({
 
