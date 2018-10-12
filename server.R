@@ -628,126 +628,134 @@ server = function(input, output, session) {
   # Button that plots NDVI
   observeEvent(input$plotDataButton, {
     print ('Plotting NDVI')
-    
+
     # Inputs from popup
-    data_type_selected  = input$dataTypes
-    pixel_type_selected = input$pixelTypes
-    #=input$site
-    phenoCamData=get_site_roi_3day_csvs(input$site)
-    site       = input$site
-    site_data  = get_site_info(site)
+    data_type_selected  = input$dataTypes_plot
+    pixel_size_selected = input$pixelTypes
     
-    nc_data = data$site_nc  # all netcdf
-    dates   = ncvar_get(nc_data, 'time')
-    crs = CRS("+proj=longlat +datum=WGS84")
+    site        = input$site
+    site_data   = get_site_info(site)
     
-    start_date_str = nc_data[[11]]$time$units
-    start_date     = as.Date(strsplit(start_date_str, ' ')[[1]][3])
-    
-    # In date format
-    date_list = dates + start_date 
-    
-    nc_ndvi = data$ndvi_nc  # only ndvi
-    lat = ncvar_get(nc_data, "lat")
-    lon = ncvar_get(nc_data, "lon")
-    
-    data_plot  = c()
-    polys_len  = c()
-    pixel_len  = c()
-    ndvis_     = c()
-    int_pixels = list()
-    final_ndvi_list = c()
-    len = length(dates)
-    pixels = data$pixel_sps_250m
-    
-    # Setting length of polygons to select with 
-    if (is.null(polys_len)){
-      # Number of polygons (aka highlighted pixels) selected
-      polys_len = length(pixels)
-    }
-    
-    if (is.null(pixels@polygons[1][[1]])){
-      print ('No pixels selected')
-      shinyjs::show(id = 'noPixelWarning')
+    #----NDVI------------------------------------------------------------------------------------------------------------------------
+    if (data_type_selected == 'MODIS NDVI'){
+      nc_data = data$site_nc
+      dates   = ncvar_get(nc_data, 'time')
+      crs = CRS("+proj=longlat +datum=WGS84")
       
-    }else{
-      shinyjs::show(id = 'buildingPlot')
-      withProgress(message = 'Buliding Plot: ', detail = paste0('Site: ', site), value = 0, {
-      for (x in c(1:len)){
-        # for (x in c(1:2)){
-        incProgress(1/len)
-        r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
-        values_under_polygon = extract(r_ndvi, pixels)
+      start_date_str = nc_data[[11]]$time$units
+      start_date     = as.Date(strsplit(start_date_str, ' ')[[1]][3])
+      
+      # In date format
+      date_list = dates + start_date 
+      
+      nc_ndvi = data$ndvi_nc  # only ndvi
+      lat = ncvar_get(nc_data, "lat")
+      lon = ncvar_get(nc_data, "lon")
+      
+      data_plot  = c()
+      polys_len  = c()
+      pixel_len  = c()
+      ndvis_     = c()
+      int_pixels = list()
+      final_ndvi_list = c()
+      len = length(dates)
+      pixels = data$pixel_sps_250m
+      
+      # Setting length of polygons to select with 
+      if (is.null(polys_len)){
+        # Number of polygons (aka highlighted pixels) selected
+        polys_len = length(pixels)
+      }
+      
+      if (is.null(pixels@polygons[1][[1]])){
+        print ('No pixels selected')
+        shinyjs::show(id = 'noPixelWarning')
         
-        # Setting length of pixels in each polygon
-        if (length(int_pixels) == 0){
-          for (xx in c(1:polys_len)){
-            # Number of pixels picked up by the highlighted pixel
-            pixel_len  = length(values_under_polygon[[xx]])
-            int_pixels[[xx]] = pixel_len
+      }else{
+        shinyjs::show(id = 'buildingPlot')
+        
+        withProgress(message = 'Buliding NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
+          for (x in c(1:len)){
+            incProgress(1/len)
+            r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
+            values_under_polygon = extract(r_ndvi, pixels)
+            
+            # Setting length of pixels in each polygon
+            if (length(int_pixels) == 0){
+              for (xx in c(1:polys_len)){
+                # Number of pixels picked up by the highlighted pixel
+                pixel_len  = length(values_under_polygon[[xx]])
+                int_pixels[[xx]] = pixel_len
+              }
+            }
+            ndvi_means = c()
+            # Loop through the different polygons to extract ndvi values and save to dataframe
+            for (i in c(1:polys_len)){
+              ndvi_ = values_under_polygon[[i]]
+              ndvis_ = c(ndvis_, ndvi_)
+            }
           }
-        }
-        
-        ndvi_means = c()
-        # Loop through the different polygons to extract ndvi values and save to dataframe
-        for (i in c(1:polys_len)){
-          ndvi_ = values_under_polygon[[i]]
-          ndvis_ = c(ndvis_, ndvi_)
-          # ndvi_means = c(ndvi_means, mean(ndvi_))
-        }
-        # final_ndvi_list = c(final_ndvi_list, mean(ndvi_means))
-      }
-      
-      # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
-      #   to build the necessary dataframe lists.
-      list_ = list()
-      cols  = c()
-      for (i in c(1:polys_len)){
-        col = paste0('pixel_', as.character(i))
-        cols = c(cols, col)
-        a = c(1:(length(ndvis_)))
-        b = a[seq((1 + (i-1)), length(a), polys_len)]
-        print (col)
-        print (b)
-        list_[[col]] = ndvis_[b]
-      }
-  
-      data_df = data.frame(date = date_list, list_)
-      print (data_df)
-      
-      #Parse data with Dates
-      start_ = input$dataDateRange[1]
-      end_   = input$dataDateRange[2]
-      
-  ##pick up here for plotting
-      parsed_data = subset(data_df, date >= start_ & date <= end_)
-      parsed_data$date=as.Date(parsed_data$date)
-      source=rep('MODIS', nrow(parsed_data))
-      
-      parsed_data=cbind(parsed_data, source)
-      phenoCamData$date=as.Date(phenoCamData$date) ##pickup here
-      
-      source=rep('PhenoCam', nrow(phenoCamData))
-      sDF=left_join(parsed_data, phenoCamData)#pick up here
-      
-      phenoCamData$date=as.Date(phenoCamData$date)
-      p=left_join(parsed_data, phenoCamData)#pick up here
+          # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
+          #   to build the necessary dataframe lists.
+          list_ = list()
+          cols  = c()
+          for (i in c(1:polys_len)){
+            col = paste0('pixel_', as.character(i))
+            cols = c(cols, col)
+            a = c(1:(length(ndvis_)))
+            b = a[seq((1 + (i-1)), length(a), polys_len)]
+            print (col)
+            print (b)
+            list_[[col]] = ndvis_[b]
+          }
+          
+          #Parse data with Dates
+          data_df = data.frame(date = date_list, list_)
+          start_ = input$dataDateRange[1]
+          end_   = input$dataDateRange[2]
+          
+          parsed_data = subset(data_df, date >= start_ & date <= end_)
 
-      output$ndvi_pixels_plot = renderPlot({
-
-        # Only plotting the first 250m pixel
-        p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
-          geom_line()
-        p
-      })
-      print ('Plotting Completed')
-      updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
-      shinyjs::hide(id = 'buildingPlot')
-      shinyjs::show(id = 'doneBuildingPlot')
-    })
+          p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
+            geom_line()
+        })
+      }
+    #----PHENOCAM------------------------------------------------------------------------------------------------------------------------
+    }else if(data_type_selected == 'PhenoCam GCC'){
+      # withProgress(message = 'Buliding Phenocam GCC Plot: ', detail = paste0('Site: ', site), value = 0, {
+        # incProgress(.2)
+        phenoCamData = get_site_roi_3day_csvs(site)
+        # incProgress(.2)
+        ##pick up here for plotting
+        parsed_data$date = as.Date(parsed_data$date)
+        source           = rep('MODIS', nrow(parsed_data))
+        # incProgress(.1)
+        parsed_data       = cbind(parsed_data, source)
+        phenoCamData$date = as.Date(phenoCamData$date) ##pickup here
+        # incProgress(.1)
+        source = rep('PhenoCam', nrow(phenoCamData))
+        sDF    = left_join(parsed_data, phenoCamData)#pick up here
+        # incProgress(.1)
+        phenoCamData$date = as.Date(phenoCamData$date)
+        p                 = left_join(parsed_data, phenoCamData)#pick up here
+      # })
+    }else{      
+      df = data.frame()
+      p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1)
     }
+    
+    # Plot p
+    output$ndvi_pixels_plot = renderPlot({
+      p
+    })
+    
+    print (paste0(data_type_selected, ' Plotting Completed'))
+    updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+    shinyjs::hide(id = 'buildingPlot')
+    shinyjs::show(id = 'doneBuildingPlot')
   })
  
+  
   
   # Button that hides GCC Plot
   observeEvent(input$hidePlot, {
@@ -784,28 +792,26 @@ server = function(input, output, session) {
                 showpos(x = lon_ , y = lat_, site, data$r_landcover, '500m')
               }else if(input$highlightPixelModeNDVI == TRUE){
                 showpos(x = lon_ , y = lat_, site, data$r_ndvi_cropped, '250m')
-              }
-      }}
-  })
-
+              }}}
+    })
+  
   # Observer for the popup
   observeEvent(input$plotRemoteData, {
-    shinyjs::hide(id = 'noPixelWarning')
-    shinyjs::hide(id = 'buildingPlot')
-    shinyjs::hide(id = 'doneBuildingPlot')
+      shinyjs::hide(id = 'noPixelWarning')
+      shinyjs::hide(id = 'buildingPlot')
+      shinyjs::hide(id = 'doneBuildingPlot')
   })
   
 
   # Add netcdf from AppEEARS of netcdf
   observeEvent(input$getDataButton, {
-    shinyjs::hide(id = 'doneGetData')
     site       = input$site
     site_data  = get_site_info(site)
     
     # leafletProxy('map') %>%
     #   showGroup('Open Topo Map')
     
-    withProgress(message = 'Grabbing AppEEARS Data. ', detail = paste0('Site: ', site, ', NDVI'), value = 0, {
+    withProgress(message = 'Grabbing AppEEARS Data. ', detail = paste0('   Site: ', site, ', NDVI'), value = 0, {
       
       incProgress(.1)
       # load in netcdf for NDVI layer
@@ -1937,6 +1943,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'siteZoom')
     shinyjs::hide(id = 'showHidePlot')
     shinyjs::hide(id = 'plotRemoteData')
+    shinyjs::hide(id = 'doneGetData')
     
     updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
   }
