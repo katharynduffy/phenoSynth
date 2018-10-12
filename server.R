@@ -614,16 +614,6 @@ server = function(input, output, session) {
     panel$mode = 'explorer'
     switch_to_explorer_panel()
   })
-
-  # Button that plots GCC
-  observeEvent(input$plotPhenocamGCC, {
-    #print (input$plotPhenocamGCC)
-    #name=input$plotPhenocamGCC
-    #print(name$Sitename)
-    #print(site_name)
-    phenoCamData=get_site_roi_3day_csvs(input$site)
-    
-  })
   
   # Button that plots NDVI
   observeEvent(input$plotDataButton, {
@@ -651,7 +641,7 @@ server = function(input, output, session) {
       nc_ndvi = data$ndvi_nc  # only ndvi
       lat = ncvar_get(nc_data, "lat")
       lon = ncvar_get(nc_data, "lon")
-      
+
       data_plot  = c()
       polys_len  = c()
       pixel_len  = c()
@@ -722,23 +712,32 @@ server = function(input, output, session) {
       }
     #----PHENOCAM------------------------------------------------------------------------------------------------------------------------
     }else if(data_type_selected == 'PhenoCam GCC'){
-      # withProgress(message = 'Buliding Phenocam GCC Plot: ', detail = paste0('Site: ', site), value = 0, {
-        # incProgress(.2)
+      # # withProgress(message = 'Buliding Phenocam GCC Plot: ', detail = paste0('Site: ', site), value = 0, {
+      
+      #   phenoCamData = get_site_roi_3day_csvs(site)
+      #   ##pick up here for plotting
+      #   parsed_data$date = as.Date(parsed_data$date)
+      #   source           = rep('MODIS', nrow(parsed_data))
+      #   parsed_data       = cbind(parsed_data, source)
+      #   phenoCamData$date = as.Date(phenoCamData$date) ##pickup here
+      #   source = rep('PhenoCam', nrow(phenoCamData))
+      #   sDF    = left_join(parsed_data, phenoCamData)#pick up here
+      #   phenoCamData$date = as.Date(phenoCamData$date)
+      #   p                 = left_join(parsed_data, phenoCamData)#pick up here
+      
         phenoCamData = get_site_roi_3day_csvs(site)
-        # incProgress(.2)
-        ##pick up here for plotting
-        parsed_data$date = as.Date(parsed_data$date)
-        source           = rep('MODIS', nrow(parsed_data))
-        # incProgress(.1)
-        parsed_data       = cbind(parsed_data, source)
-        phenoCamData$date = as.Date(phenoCamData$date) ##pickup here
-        # incProgress(.1)
-        source = rep('PhenoCam', nrow(phenoCamData))
-        sDF    = left_join(parsed_data, phenoCamData)#pick up here
-        # incProgress(.1)
+        parsed_data  = cbind(parsed_data, source)
+         ##pickup here
         phenoCamData$date = as.Date(phenoCamData$date)
-        p                 = left_join(parsed_data, phenoCamData)#pick up here
+        source = rep('PhenoCam', nrow(phenoCamData))
+        #pvars=c('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+        pData=phenoCamData%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+        pData=cbind(pData, source)
+        sDF=left_join(parsed_data, pData)#pick up here
       # })
+        
+    }else if(data_type_selected == 'MODIS EVI'){
+      print ('Pretending to plot modis EVI')
     }else{      
       df = data.frame()
       p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1)
@@ -1592,20 +1591,7 @@ server = function(input, output, session) {
           df=data.table::fread(roi_files$one_day_summary[i])
           c=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)
           csv=rbind(csv, c)}}
-      
     return(csv)
-    # url  = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', sep = '')
-    # page = read_html(url)
-    # 
-    # site_hrefs = page %>% html_nodes("a") %>% html_attr("href")
-    # # csvs_    = site_hrefs[grep('3day.csv|1day.csv', site_hrefs)]  #How to grab both 1 and 3 day csvs
-    # csvs_      = site_hrefs[grep('3day.csv|gcc90', site_hrefs)]
-    # csvs_      = csvs_[grep('XX|.png', csvs_, invert=TRUE)]  #invert will take all strings without this
-    # csv        = csvs_[grep('gcc90_3day', csvs_)]
-    # csv        = csv[1]
-    # 
-    # csv_url = paste('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/', csv, sep = '')
-    # print (csv_url)
   }
 
 
@@ -1746,8 +1732,8 @@ server = function(input, output, session) {
     cam_orientation    = as.character(site_data$camera_orientation)
 
     degrees   = as.numeric(orientation_key[cam_orientation])
-    elevation = site_data$elev
-    camera    = site_data$site
+    elevation = site_data$Elev
+    camera    = site_data$Sitename
     drawROI   = FALSE
 
     if (zoom == TRUE){
@@ -1898,7 +1884,6 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'drawROI')
     shinyjs::hide(id = 'azm')
     shinyjs::hide(id = 'siteTitle')
-    shinyjs::hide(id = 'plotPhenocamGCC')
     shinyjs::hide(id = 'plotRemoteData')
     shinyjs::hide(id = 'pftSelection')
     shinyjs::hide(id = 'showHidePlot')
@@ -1929,7 +1914,6 @@ server = function(input, output, session) {
     shinyjs::show(id = 'drawImageROI')
     shinyjs::show(id = 'mouse')
     shinyjs::show(id = 'siteTitle')
-    shinyjs::show(id = 'plotPhenocamGCC')
     shinyjs::show(id = 'pftSelection')
     shinyjs::show(id = 'highlightPixelMode')
     shinyjs::show(id = 'getData')
