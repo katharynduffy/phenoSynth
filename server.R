@@ -1952,6 +1952,7 @@ server = function(input, output, session) {
       return(FALSE)
     }
   }
+  
   # Given a site name, function returns the appeears task record
   get_appeears_task = function(name, type){
     if (type == 'ndvi'){

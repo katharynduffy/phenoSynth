@@ -22,8 +22,9 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                      max = Sys.Date(), 
                                      value = c(as.Date('2000-01-01'), Sys.Date())),
                          actionButton('plotDataButton', 'Plot Data'),
-                         helpText(id = 'noPixelWarning', 'No Pixels selected'),
-                         actionButton('genDF', 'Download Data'))
+                         helpText(id = 'noPixelWarning', 'No Pixels selected')
+                         # actionButton('genDF', 'Download Data')
+                         )
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
                                                  
@@ -62,7 +63,6 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                       #actionButton('showModisSubset', 'Plot MODIS subset'),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
-
                                       actionButton('getData', 'Pull AppEEARS & PhenoCam Data'),
                                       actionButton('plotRemoteData', 'Explore, Plot & Download Selected Data')
                                                                             ),
