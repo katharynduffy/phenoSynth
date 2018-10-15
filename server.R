@@ -132,7 +132,16 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
-
+  
+  # Turns ROI off if drawImage is off
+  observe({
+    checked = input$drawImage
+    if (checked == FALSE){
+      updateCheckboxInput(session, inputId = 'drawImageROI', value = FALSE)
+    }
+  })
+  
+  
   # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
     data$draw_mode = TRUE
@@ -543,8 +552,10 @@ server = function(input, output, session) {
         veg.idx   = is.element(pft_df$pft_abbreviated, veg_match$roitype[i])
         veg       = pft_df$pft_expanded[veg.idx]
         add_veg   = as.character(veg[1])
-        veg_types = c(veg_types, paste0(add_veg, '_', i))
+        # veg_types = c(veg_types, paste0(add_veg, '_', i))
+        veg_types = c(veg_types, add_veg)
       }
+      veg_types = unique(veg_types)
       data$veg_types = veg_types
       
       # Building Landcover layer and color pallette for specific pft composition in clipped raster
@@ -569,7 +580,9 @@ server = function(input, output, session) {
         addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
         addRasterImage(rc, opacity = .2, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
 
-        addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95) %>%
+        addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover') %>%
+        addLegend(values = c(1,2), position = 'bottomright', title = 'Vegetation Cover Agreement', 
+                  colors = c('green', 'grey'), labels = c('ROI-Match', 'No-Match')) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                          overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels'),
                          position = c("topleft"),
@@ -1897,7 +1910,7 @@ server = function(input, output, session) {
       clearControls() %>%
       clearShapes() %>%
       clearImages() %>%
-      addLegend(values = c(1,2), group = "site_markers", position = "bottomright",
+      addLegend(values = c(1,2), group = "site_markers", position = "bottomright", title = 'Phenocam Activity',
                 labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
       addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                      position = c("topleft"),
