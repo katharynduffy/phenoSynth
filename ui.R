@@ -119,9 +119,9 @@ ui = fluidPage(shinyjs::useShinyjs(),
            #          ),
 
 
-           tabPanel('Phenocam Metadata',
-                    DT::dataTableOutput("x1")
-                   ),
+           # tabPanel('Phenocam Metadata',
+           #          DT::dataTableOutput("x1")
+           #         ),
            
            tabPanel('Plot NDVI', value = 'PlotPanel',
                     actionButton('clearPlot', 'Clear Plot'),

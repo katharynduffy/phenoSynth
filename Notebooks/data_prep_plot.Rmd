@@ -54,6 +54,9 @@ p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
             scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
 p + theme_minimal()
 
+
+# dfdf = readRDS(file = '../www/GCC_acadia')
+# dfdf = readRDS(file = '../www/ndvi_acadia')
 ```
 
 ```{r}
