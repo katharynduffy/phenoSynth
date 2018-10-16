@@ -10,6 +10,7 @@ output: html_document
 # Path to the test file that is in the app www directory
 parsed_data_melt = readRDS(file = '/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/parsed_data_melt')
 pData = readRDS(file = '/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/pData')
+all_data = readRDS(file = '/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/all_data')
 ```
 
 ```{r}
@@ -18,6 +19,7 @@ variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
 pData=cbind(pData, variable) #this is new
 parsed_data_melt$source=as.character(parsed_data_melt$source)
 idx=is.element(parsed_data_melt$date, pData$date)
+
 all_data=full_join(pData,parsed_data_melt) 
 all_data$source=as.factor(all_data$source)
 p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
