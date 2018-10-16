@@ -9,7 +9,6 @@ output: html_document
 ```{r}
 # Path to the test file that is in the app www directory
 dfdf = readRDS(file = '../www/test_ndvi_pixel_df.df')
-dfdf
 ```
 
 
