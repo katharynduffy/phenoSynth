@@ -40,8 +40,8 @@ csv
 ```
 
 ```{r}
-pData=phenoCamData%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
-          source= rep('PhenoCam GCC', nrow(parsed_data))
+pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+          source= rep('PhenoCam GCC', nrow(pData))
           pData=cbind(pData, source)
 ```
 
