@@ -40,6 +40,28 @@ csv
 
 ```
 
+```{r}
+pData=phenoCamData%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+          source= rep('PhenoCam GCC', nrow(parsed_data))
+          pData=cbind(pData, source)
+```
+
+```{r}
+sparse_df=melt(data.table(dfdf), measure.vars = c('pixel_1', 'pixel_2', 'pixel_3', 'pixel_4'))
+source= rep('MODIS NDVI', nrow(sparse_df))
+sparse_df=cbind(sparse_df, source)
+
+```
+
+```{r}
+
+p = ggplot(data = sparse_df, aes(x= date, y=value, color=variable)) +
+            geom_line()+
+            scale_colour_brewer(palette="Set1")
+          p + facet_grid( ~ source) 
+p + theme_minimal()
+         
+```
 #### Grab Phenocam Site information
 ```{r}
 c      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=2000')
