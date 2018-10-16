@@ -44,6 +44,7 @@ csv
 pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
           source= rep('PhenoCam GCC', nrow(pData))
           pData=cbind(pData, source)
+colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source')
 pData$date=as.Date(pData$date)
 ```
 
@@ -55,15 +56,15 @@ sparse_df=cbind(sparse_df, source)
 ```
 Here's the code for the left bind:
 ```{r}
-all_data=left_join(sparse_df, pData, by=c('date', 'source'))
+all_data=left_join(sparse_df, pData, by=c('date', 'source', 'value'))
 ```
 
 ```{r}
 
-p = ggplot(data = sparse_df, aes(x= date, y=value, color=variable)) +
+p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
             geom_line()+
             scale_colour_brewer(palette="Set1")
-          p + facet_grid( ~ source) 
+          p + facet_wrap( ~ source) 
 p + theme_minimal()
          
 ```
