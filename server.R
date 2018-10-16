@@ -679,7 +679,7 @@ server = function(input, output, session) {
         
         withProgress(message = 'Buliding NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
           for (x in c(1:len)){
-            incProgress(1/len)
+            incProgress((1/len)/2)
             r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
             values_under_polygon = extract(r_ndvi, pixels)
             
@@ -702,6 +702,7 @@ server = function(input, output, session) {
           #   to build the necessary dataframe lists.
           list_ = list()
           cols  = c()
+          variables_ = c()
           for (i in c(1:polys_len)){
             col = paste0('pixel_', as.character(i))
             cols = c(cols, col)
@@ -710,33 +711,48 @@ server = function(input, output, session) {
             print (col)
             print (b)
             list_[[col]] = ndvis_[b]
+            var_ = paste0('pixel_', i)
+            variables_ = c(variables_, var_)
           }
+          print (polys_len)
           
+          # Grab GCC
+          csv = get_site_roi_3day_csvs(name = 'acadia')
+          incProgress(.1)
+          pData_=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+          source= rep('PhenoCam GCC', nrow(pData_))
+          pData_=cbind(pData_, source)
+          incProgress(.1)
+          colnames(pData_)=c('date', 'year', 'doy', 'gcc_mean','value', 'source')
+          pData_$date=as.Date(pData_$date)
+          incProgress(.1)
+
           #Parse data with Dates
           data_df = data.frame(date = date_list, list_)
           start_ = input$dataDateRange[1]
           end_   = input$dataDateRange[2]
           
           parsed_data = subset(data_df, date >= start_ & date <= end_)
-
-          p = ggplot(data = parsed_data, aes(x= date, y= pixel_1)) +
-            geom_line()
+          parsed_data$date=as.Date(parsed_data$date)
+          source      = rep('MODIS NDVI', nrow(parsed_data))
+          parsed_data   = cbind(parsed_data, source)
+          parsed_data_melt = melt(data.table(parsed_data), measure.vars = variables_)
+          
+          incProgress(.1)
+          # combine GCC and NDVI dfs
+          all_data=left_join(parsed_data_melt, pData_, by=c('date', 'source', 'value'))
+          
+          p = ggplot(data = all_data, aes(x=date, y=value, color=variable)) +
+            geom_line()+
+            scale_colour_brewer(palette="Set1")
+          p + facet_grid( ~ source) 
+          p + theme_minimal()
+          incProgress(.1)
+          
         })
       }
     #----PHENOCAM------------------------------------------------------------------------------------------------------------------------
     }else if(data_type_selected == 'PhenoCam GCC'){
-      # # withProgress(message = 'Buliding Phenocam GCC Plot: ', detail = paste0('Site: ', site), value = 0, {
-      
-      #   phenoCamData = get_site_roi_3day_csvs(site)
-      #   ##pick up here for plotting
-      #   parsed_data$date = as.Date(parsed_data$date)
-      #   source           = rep('MODIS', nrow(parsed_data))
-      #   parsed_data       = cbind(parsed_data, source)
-      #   phenoCamData$date = as.Date(phenoCamData$date) ##pickup here
-      #   source = rep('PhenoCam', nrow(phenoCamData))
-      #   sDF    = left_join(parsed_data, phenoCamData)#pick up here
-      #   phenoCamData$date = as.Date(phenoCamData$date)
-      #   p                 = left_join(parsed_data, phenoCamData)#pick up here
       
         phenoCamData = get_site_roi_3day_csvs(site)
         parsed_data  = cbind(parsed_data, source)
@@ -755,6 +771,7 @@ server = function(input, output, session) {
       df = data.frame()
       p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1)
     }
+    
     
     # Plot p
     output$ndvi_pixels_plot = renderPlot({
