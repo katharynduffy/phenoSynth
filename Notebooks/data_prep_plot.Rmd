@@ -41,9 +41,10 @@ csv
 ```
 
 ```{r}
-pData=phenoCamData%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
-          source= rep('PhenoCam GCC', nrow(parsed_data))
+pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+          source= rep('PhenoCam GCC', nrow(pData))
           pData=cbind(pData, source)
+pData$date=as.Date(pData$date)
 ```
 
 ```{r}
@@ -51,6 +52,10 @@ sparse_df=melt(data.table(dfdf), measure.vars = c('pixel_1', 'pixel_2', 'pixel_3
 source= rep('MODIS NDVI', nrow(sparse_df))
 sparse_df=cbind(sparse_df, source)
 
+```
+Here's the code for the left bind:
+```{r}
+all_data=left_join(sparse_df, pData, by=c('date', 'source'))
 ```
 
 ```{r}
