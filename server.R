@@ -12,7 +12,7 @@ server = function(input, output, session) {
                       sites    = site_names)
   appeears = reactiveValues(
                       none = '')
-  
+
   highlighted = reactiveValues(
                       group = '')
 
@@ -45,24 +45,19 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
 
   ## Create the Phenocam Datatable with basic info (Tab named phenocam Table)
-  
-  output$x1 = DT::renderDataTable({
-    data.frame(cams_)
+  x = cams_
+  x$Date = Sys.time() + seq_len(nrow(x))
+  output$x1 = renderDT(x, selection = 'none', editable = FALSE)
+  proxy = dataTableProxy('x1')
+  observeEvent(input$x1_cell_edit, {
+    info = input$x1_cell_edit
+    # str(info)
+    i   = info$row
+    j   = info$col
+    v   = info$value
+    x[i, j] <<- DT::coerceValue(v, x[i, j])
+    replaceData(proxy, x, resetPaging = FALSE)  # important
   })
-  
-  # x = cams_
-  # # x$Date = Sys.time() + seq_len(nrow(x))
-  # output$x1 = renderDT(x, selection = 'none', editable = FALSE)
-  # proxy = dataTableProxy('x1')
-  # observeEvent(input$x1_cell_edit, {
-  #   info = input$x1_cell_edit
-  #   # str(info)
-  #   i   = info$row
-  #   j   = info$col
-  #   v   = info$value
-  #   x[i, j] <<- DT::coerceValue(v, x[i, j])
-  #   replaceData(proxy, x, resetPaging = FALSE)  # important
-  # })
 
   ## Create the map
   output$map = renderLeaflet({
@@ -137,7 +132,7 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
-  
+
   # Turns ROI off if drawImage is off
   observe({
     checked = input$drawImage
@@ -145,14 +140,14 @@ server = function(input, output, session) {
       updateCheckboxInput(session, inputId = 'drawImageROI', value = FALSE)
     }
   })
-  
-  
+
+
   # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
     data$draw_mode = TRUE
     print ('Starting Draw Mode')
   })
-  
+
   observeEvent(input$clearPlot, {
     output$ndvi_pixels_plot = renderPlot({
       # Only plotting the first 250m pixel
@@ -161,7 +156,7 @@ server = function(input, output, session) {
       p
     })
   })
-  
+
   # Turn off 500m highlighted pixels if 250m highlighted pixels
   observe({
     a = input$highlightPixelMode
@@ -170,7 +165,7 @@ server = function(input, output, session) {
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = FALSE)
     }
   })
-  
+
   # Turn off 250m highlighted pixels if 500m highlighted pixels
   observe({
     b = input$highlightPixelModeNDVI
@@ -368,7 +363,7 @@ server = function(input, output, session) {
     })
   })
 
-  
+
   # Draws fov polyline for a site location
   observeEvent(input$drawROI, {
     roi_bool = input$drawROI
@@ -408,9 +403,9 @@ server = function(input, output, session) {
     isolate({
       leafletProxy("map", data = variables$sites_df) %>% clearPopups()
       site = event$id
-      
+
       site_data = get_site_info(site)
-      
+
       lat             = site_data$Lat
       lon             = site_data$Lon
       description     = site_data$site_description
@@ -529,7 +524,7 @@ server = function(input, output, session) {
     panel$mode = 'analyzer'
     site       = input$site
     site_data  = get_site_info(site)
-    
+
     data$global_pth = './www/global_landcover_2016.tif'
     global_r   = raster::raster(data$global_pth)
 
@@ -548,7 +543,7 @@ server = function(input, output, session) {
 
     veg_idx       = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
-    
+
     if (nrow(veg_match) == 0){
       updateSelectInput(session, 'pftSelection', choices = 'No ROI Vegetation Available')
     }else{
@@ -562,13 +557,13 @@ server = function(input, output, session) {
       }
       veg_types = unique(veg_types)
       data$veg_types = veg_types
-      
+
       # Building Landcover layer and color pallette for specific pft composition in clipped raster
       r  = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=FALSE)
       c3 = build_pft_palette(r)
       data$r_landcover = r
 
-      
+
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       print (veg_types)
 
@@ -576,22 +571,23 @@ server = function(input, output, session) {
       print (pft)
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
       print (as.numeric(pft_key))
-      
+
       rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
+
         addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
         addRasterImage(rc, opacity = .2, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
 
         addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover') %>%
-        addLegend(values = c(1,2), position = 'bottomright', title = 'Vegetation Cover Agreement', 
+        addLegend(values = c(1,2), position = 'bottomright', title = 'Vegetation Cover Agreement',
                   colors = c('green', 'grey'), labels = c('ROI-Match', 'No-Match')) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                          overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels'),
                          position = c("topleft"),
                          options = layersControlOptions(collapsed = FALSE))
-      
+
       print ('Attempting to run pft selection observer')
     }
   })
@@ -605,12 +601,12 @@ server = function(input, output, session) {
         site       = input$site
         site_data  = get_site_info(site)
         pft        = input$pftSelection
-        
+
         c3 = build_pft_palette(data$r_landcover)
         pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
         rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
-        
+
         leafletProxy('map') %>%
           clearImages() %>%
 
@@ -631,7 +627,7 @@ server = function(input, output, session) {
     panel$mode = 'explorer'
     switch_to_explorer_panel()
   })
-  
+
   # Button that plots NDVI
   observeEvent(input$plotDataButton, {
     print ('Plotting NDVI')
@@ -639,25 +635,25 @@ server = function(input, output, session) {
     # Inputs from popup
     data_type_selected  = input$dataTypes_plot
     pixel_size_selected = input$pixelTypes
-    
+
     site        = input$site
     site_data   = get_site_info(site)
-    
+
     #----NDVI------------------------------------------------------------------------------------------------------------------------
     if (data_type_selected == 'MODIS NDVI'){
-      
+
       nc_data = data$site_nc
       dates   = ncvar_get(nc_data, 'time')
       crs = CRS("+proj=longlat +datum=WGS84")
-      
+
       start_date_str = nc_data[[11]]$time$units
       start_date     = as.Date(strsplit(start_date_str, ' ')[[1]][3])
-      
+
       # In date format
-      date_list = dates + start_date 
-      
+      date_list = dates + start_date
+
       nc_ndvi = data$ndvi_nc
-      
+
       lat = ncvar_get(nc_data, "lat")
       lon = ncvar_get(nc_data, "lon")
 
@@ -669,26 +665,26 @@ server = function(input, output, session) {
       final_ndvi_list = c()
       len = length(dates)
       pixels = data$pixel_sps_250m
-      
-      # Setting length of polygons to select with 
+
+      # Setting length of polygons to select with
       if (is.null(polys_len)){
         # Number of polygons (aka highlighted pixels) selected
         polys_len = length(pixels)
       }
-      
+
       if (is.null(pixels@polygons[1][[1]])){
         print ('No pixels selected')
         shinyjs::show(id = 'noPixelWarning')
-        
+
       }else{
         shinyjs::show(id = 'buildingPlot')
-        
+
         withProgress(message = 'Buliding NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
           for (x in c(1:len)){
             incProgress((1/len)/1.1)
             r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
             values_under_polygon = extract(r_ndvi, pixels)
-            
+
             # Setting length of pixels in each polygon
             if (length(int_pixels) == 0){
               for (xx in c(1:polys_len)){
@@ -721,13 +717,13 @@ server = function(input, output, session) {
             variables_ = c(variables_, var_)
           }
           print (polys_len)
-          
+
           # Grab GCC
 
           csv = get_site_roi_3day_csvs(name = site)
-          
-          
-          
+
+
+
           pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
           source= rep('PhenoCam GCC', nrow(pData))
           variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
@@ -735,33 +731,34 @@ server = function(input, output, session) {
           colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
           pData$date=as.Date(pData$date)
 
+
           #Parse data with Dates
           data_df = data.frame(date = date_list, list_)
           start_ = input$dataDateRange[1]
           end_   = input$dataDateRange[2]
-          
+
           parsed_data = subset(data_df, date >= start_ & date <= end_)
           parsed_data$date=as.Date(parsed_data$date)
           source      = rep('MODIS NDVI', nrow(parsed_data))
           parsed_data   = cbind(parsed_data, source)
           parsed_data_melt = melt(data.table(parsed_data), measure.vars = variables_)
-          
+
           incProgress(.1)
           # combine GCC and NDVI dfs
-          all_data=full_join(parsed_data_melt, pData)
-          
-          p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
+          all_data=left_join(parsed_data_melt, pData_, by=c('date', 'source', 'value'))
+
+          p = ggplot(data = all_data, aes(x=date, y=value, color=variable)) +
             geom_line()+
-            scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
+            scale_colour_brewer(palette="Set1")
+          p + facet_grid( ~ source)
           p + theme_minimal()
-          
           incProgress(.1)
-          
+
         })
       }
     #----PHENOCAM------------------------------------------------------------------------------------------------------------------------
     }else if(data_type_selected == 'PhenoCam GCC'){
-      
+
         phenoCamData = get_site_roi_3day_csvs(site)
         parsed_data  = cbind(parsed_data, source)
          ##pickup here
@@ -772,28 +769,28 @@ server = function(input, output, session) {
         pData=cbind(pData, source)
         sDF=left_join(parsed_data, pData)#pick up here
       # })
-        
+
     }else if(data_type_selected == 'MODIS EVI'){
       print ('Pretending to plot modis EVI')
-    }else{      
+    }else{
       df = data.frame()
       p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1)
     }
-    
-    
+
+
     # Plot p
     output$ndvi_pixels_plot = renderPlot({
       p
     })
-    
+
     print (paste0(data_type_selected, ' Plotting Completed'))
     updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
     shinyjs::hide(id = 'buildingPlot')
     shinyjs::show(id = 'doneBuildingPlot')
   })
- 
-  
-  
+
+
+
   # Button that hides GCC Plot
   observeEvent(input$hidePlot, {
     print ('Hiding Plot')
@@ -824,34 +821,34 @@ server = function(input, output, session) {
             if (!is.null(click)) {
               lon_ = click$lng
               lat_ = click$lat
-              
+
               if (input$highlightPixelMode == TRUE){
                 showpos(x = lon_ , y = lat_, site, data$r_landcover, '500m')
               }else if(input$highlightPixelModeNDVI == TRUE){
                 showpos(x = lon_ , y = lat_, site, data$r_ndvi_cropped, '250m')
               }}}
     })
-  
+
   # Observer for the popup
   observeEvent(input$plotRemoteData, {
       shinyjs::hide(id = 'noPixelWarning')
       shinyjs::hide(id = 'buildingPlot')
       shinyjs::hide(id = 'doneBuildingPlot')
   })
-  
+
 
   # Add netcdf from AppEEARS of netcdf
   observeEvent(input$getDataButton, {
     site       = input$site
     site_data  = get_site_info(site)
-    
+
     # leafletProxy('map') %>%
     #   showGroup('Open Topo Map')
-    
+
     withProgress(message = 'Grabbing AppEEARS Data. ', detail = paste0('   Site: ', site, ', NDVI'), value = 0, {
-      
+
       incProgress(.1)
-      
+
       # load in netcdf for NDVI layer
       #------------------------------------------------------------------------
       file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
@@ -863,7 +860,7 @@ server = function(input, output, session) {
       delete_file(file_ndvi)
       delete_file(file_ndvi_qa)
       incProgress(.1)
-      
+
       # load in netcdf for Transition Dates layer
       #------------------------------------------------------------------------
       file_tds    = download_bundle_file(appeears$tds$task_id, 'nc')
@@ -876,61 +873,61 @@ server = function(input, output, session) {
       Onset_Greenness_Increase = ncvar_get(data$tds_nc, "Onset_Greenness_Increase")
       Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "Onset_Greenness_Maximum")
       Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "Onset_Greenness_Minimum")
-      
+
       incProgress(.1)
-  
+
       # netcdf manipulation
       #------------------------------------------------------------------------
       v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
       v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-      
+
       data$site_nc = ndvi_output
-  
+
       # Set lat and lon arrays for NDVI data
       lat_NDVI = ncvar_get(ndvi_output, "lat")
       lon_NDVI = ncvar_get(ndvi_output, "lon")
-  
+
       # Grab the fill value and set to NA
       # incProgress(.1)
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
       # incProgress(.1)
       v6_NDVI[v6_NDVI == fillvalue$value] = NA
-      
-      
+
+
       data$ndvi_nc = v6_NDVI
-  
+
       # Define the coordinate referense system proj.4 string
       crs = CRS("+proj=longlat +datum=WGS84")
-  
+
       # Grab first observation of NDVI and Quality datasets
       v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
       v6_NDVI_original = v6_NDVI
       # v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
       #------------------------------------------------------------------------
       YlGn = brewer.pal(9, "YlGn")
-      
+
       data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
-      
+
       # extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps_250, snap = 'in')
       # print (extracted_ndvi)
-  
+
       # leafletProxy('map') %>% addRasterImage(data$r_ndvi_cropped, opacity = .7, group = 'test1', col = YlGn)
       shinyjs::show(id = 'highlightPixelModeNDVI')
-      
+
       # Build grid
       build_raster_grid(data$r_ndvi_cropped)
       # incProgress(.1)
-      
+
       shinyjs::show(id = 'plotRemoteData')
       shinyjs::hide(id = 'noPixelWarning')
-      
+
       start_site = as.character(site_data$date_first)
       end_site   = as.character(site_data$date_last)
       print (start_site)
       print (end_site)
-      updateSliderInput(session, 'dataDateRange', 
-                        min = as.Date(start_site), 
-                        max = as.Date(end_site), 
+      updateSliderInput(session, 'dataDateRange',
+                        min = as.Date(start_site),
+                        max = as.Date(end_site),
                         value = c(as.Date(start_site), as.Date(end_site)))
     })
     shinyjs::show(id = 'doneGetData')
@@ -949,14 +946,14 @@ server = function(input, output, session) {
                           step = 0.01,
                           label = NULL,
                           plot = FALSE){
-    
+
     # custom AIC function which accepts loess regressions
     myAIC = function(x){
-      
+
       if (!(inherits(x, "loess"))){
         stop("Error: argument must be a loess object")
       }
-      
+
       # extract loess object parameters
       n = x$n
       traceL = x$trace.hat
@@ -964,23 +961,23 @@ server = function(input, output, session) {
       delta1 = x$one.delta
       delta2 = x$two.delta
       enp = x$enp
-      
+
       # calculate AICc1
       # as formulated by Clifford M. Hurvich; Jeffrey S. Simonoff; Chih-Ling Tsai (1998)
       AICc1 = n*log(sigma2) + n* ( (delta1/delta2)*(n+enp) / ((delta1^2/delta2)-2))
-      
+
       if(is.na(AICc1) | is.infinite(AICc1)){
         return(NA)
       }else{
         return(AICc1)
       }
     }
-    
+
     # create numerator if there is none
     if (is.null(x)){
       x = 1:length(y)
     }
-    
+
     # return AIC for a loess function with a given span
     loessAIC = function(span){
       # check if there are weights, if so use them
@@ -990,11 +987,11 @@ server = function(input, output, session) {
                                    silent = TRUE))
       } else {
         fit = suppressWarnings(try(stats::loess(y ~ as.numeric(x),
-                                                span = span, 
+                                                span = span,
                                                 weights = weights),
                                    silent = TRUE))
       }
-      
+
       # check if the fit failed if so return NA
       if (inherits(fit, "try-error")){
         return(NA)
@@ -1002,21 +999,21 @@ server = function(input, output, session) {
         return(myAIC(fit))
       }
     }
-    
+
     # parameter range
     span = seq(0.01, 1, by = step)
-    
+
     # temporary AIC matrix, lapply loop
     # (instead of for loop) cleaner syntax
     tmp = unlist(lapply(span, loessAIC))
-    
+
     # find the optimal span as the minimal AICc1 value
     # in the calculated range (span variable)
     opt_span = span[which(tmp == min(tmp, na.rm = TRUE))][1]
-    
+
     # plot the optimization if requested
     if (plot == TRUE){
-      
+
       graphics::par(mfrow = c(2,1))
       plot(as.numeric(x),y,
            xlab = 'value',
@@ -1024,9 +1021,9 @@ server = function(input, output, session) {
            type = 'p',
            pch = 19,
            main = label)
-      
+
       col = grDevices::rainbow(length(span),alpha = 0.5)
-      
+
       for (i in 1:length(span)){
         fit = stats::loess(y ~ as.numeric(x),
                            span = span[i])
@@ -1035,27 +1032,27 @@ server = function(input, output, session) {
                         lwd = 1,
                         col = col[i])
       }
-      
+
       fit = stats::loess(y ~ as.numeric(x),
                          span = opt_span)
-      
+
       graphics::lines(fit$x,
                       fit$fitted,
                       lwd = 3,
                       col = 'black',
                       lty = 1)
-      
+
       plot(span,
            tmp,
            pch = 19,
            type = 'p',
            ylab = 'AICc1',
            col = col)
-      
+
       graphics::abline(v = opt_span,col = 'black')
-      
+
     }
-    
+
     # trap error and return optimal span
     if (is.na(opt_span)) {
       return(NULL)
@@ -1074,20 +1071,20 @@ server = function(input, output, session) {
                                    "rcc_75",
                                    "rcc_90"),
                        force = TRUE, frequency) {
-    
-    
-    
+
+
+
     # split out data from read in or provided data
     df = data
-    
+
     # maximum allowed gap before the whole stretch is
     # flagged as too long to be reliably interpolated
     maxgap = 14
-    
+
     # create convenient date vector
     # (static for all data)
     dates = as.Date(df$date)
-    
+
     # create output matrix
     output = matrix(NA, length(dates), length(metrics) * 2 + 1)
     output = as.data.frame(output)
@@ -1095,66 +1092,66 @@ server = function(input, output, session) {
                      sprintf("smooth_ci_%s", metrics),
                      "int_flag")
     colnames(output) = column_names
-    
+
     # loop over all metrics that need smoothing
     for (i in metrics) {
-      
+
       # get the values to use for smoothing
       v=is.element(colnames(df), i)
       values = df[, ..v]
-      
+
       # flag all outliers as NA
       # if the metric is gcc based
       if (grepl("gcc", i)) {
         outliers = df[, which(colnames(df) == sprintf("outlierflag_%s", i))]
         values[outliers == 1] = NA
       }
-      
+
       # create yearly mean values and fill in time series
       # with those, keep track of which values are filled
       # using the int_flag data
       nr_years = length(unique(df$year))
-      
+
       # find the location of the original NA values
       # to use to fill these gaps later
       na_orig = which(is.na(values))
-      
+
       # na locations (default locations for 3-day product)
       # this to prevent inflation of the number of true
       # values in the 3-day product
       loc = seq(2,366,3)
       loc = (df$doy %in% loc)
-      
+
       # Calculate the locations of long NA gaps.
       # (find remaining NA values after interpolation,
       # limited to 2 weeks in time)
       long_na = which(is.na(zoo::na.approx(
         values, maxgap = maxgap, na.rm = FALSE
       )))
-      
+
       # also find the short gaps (inverse long gaps)
       # to smooth spikes
       short_na = which(!is.na(zoo::na.approx(
         values, maxgap = maxgap, na.rm = FALSE
       )))
       short_na = which(short_na %in% is.na(values))
-      
+
       # this routine takes care of gap filling large gaps
       # using priors derived from averaging values across
       # years or linearly interpolating. The averaging over
       # years is needed to limit artifacts at the beginning
       # and end of cycles in subsequent phenophase extraction
       if (nr_years >= 2) {
-        
+
         # used to be 3, fill values using those of the remaining year
-        
+
         # calculate the mean values for locations
         # where there are no values across years
         fill_values = by(values,INDICES = df$doy, mean, na.rm = TRUE)
         doy_fill_values = as.numeric(names(fill_values))
         #doy_na = df$doy[na_orig]
         doy_na = df$doy[long_na]
-        
+
         # calculate the interpolated data based on
         # the whole dataset
         int_data = unlist(lapply(doy_na,
@@ -1166,21 +1163,21 @@ server = function(input, output, session) {
                                      return(fv)
                                    }
                                  }))
-        
+
         # gap fill the original dataset using
         # the interpolated values
         gap_filled_prior = values
         #gap_filled_prior[na_orig] = int_data
         gap_filled_prior[long_na] = int_data
-        
+
         # reset NA short sections to NA and interpolate these linearly
         # only long NA periods merit using priors
         gap_filled_prior[short_na] = NA
         gap_filled_linear = zoo::na.approx(gap_filled_prior, na.rm = FALSE)
-        
+
         # the above value should be independent of the ones used in the carry
         # forward / backward exercise
-        
+
         # traps values stuck at the end in NA mode, use carry
         # forward and backward to fill these in! These errors
         # don't pop up when using a fitting model (see above)
@@ -1189,134 +1186,134 @@ server = function(input, output, session) {
         gap_filled_backward = zoo::na.locf(gap_filled_linear,
                                            na.rm = FALSE,
                                            fromLast = TRUE)
-        
+
         # drop in values at remaining NA places
         gap_filled_forward[is.na(gap_filled_forward)] = gap_filled_backward[is.na(gap_filled_forward)]
         gap_filled_backward[is.na(gap_filled_backward)] = gap_filled_forward[is.na(gap_filled_backward)]
-        
+
         # take the mean of the carry forward and backward run
         # this should counter some high or low biases by using the
         # average of last or first value before or after an NA stretch
         gap_filled_linear = ( gap_filled_forward + gap_filled_backward ) / 2
         gap_filled = apply(cbind(gap_filled_prior,gap_filled_linear),1,max,na.rm=TRUE)
-        
+
       }else{
-        
+
         # for short series, where averaging over years isn't possible
         # linearly interpolate the data for gap filling
         # it's not ideal (no priors) but the best you have
         gap_filled = zoo::na.approx(values, na.rm = FALSE)
-        
+
         # traps values stuck at the end in NA mode, use carry
         # forward and backward to fill these in! These errors
         # don't pop up when using a fitting model (see above)
         gap_filled = zoo::na.locf(gap_filled, na.rm = FALSE)
         gap_filled = zoo::na.locf(gap_filled, na.rm = FALSE, fromLast = TRUE)
       }
-      
+
       # the gap_filled object is used in the subsequent analysis
       # to calculate the ideal fit, down weighing those areas
       # which were interpolated
-      
+
       # create weight vector for original NA
       # values and snow flag data
       weights = rep(1,nrow(values))
       weights[na_orig] = 0.001
       #weights[df$snow_flag == 1] = 0.001
-      
+
       # smooth input series for plotting
       # set locations to NA which would otherwise not exist in the
       # 3-day product, as not to inflate the number of measurements
       if (frequency == 3){
-        
+
         optim_span = suppressWarnings(
           optimal_span(x = as.numeric(dates[loc]),
                        y = gap_filled[loc],
                        plot = FALSE))
-        
+
         fit = suppressWarnings(
           stats::loess(gap_filled[loc] ~ as.numeric(dates[loc]),
                        span = optim_span,
                        weights = weights[loc]))
-        
+
       } else { # 1-day product
-        
+
         optim_span = suppressWarnings(
           optimal_span(x = as.numeric(dates),
                        y = gap_filled,
                        plot = FALSE))
-        
+
         fit = suppressWarnings(
           stats::loess(gap_filled ~ as.numeric(dates),
                        span = optim_span,
                        weights = weights))
-        
+
       }
-      
+
       # make projections based upon the optimal fit
       fit = suppressWarnings(stats::predict(fit, as.numeric(dates), se = TRUE))
-      
+
       # grab the smoothed series and the CI (from SE)
       # set to 0 if no SE is provided
       values_smooth = fit$fit
-      
+
       # calculate the CI (from SE)
       values_ci = 1.96 * fit$se
-      
+
       # cap CI values to 0.02
       values_ci[values_ci > 0.02] = 0.02
-      
+
       # trap trailing and starting NA values
       values_smooth = zoo::na.locf(values_smooth,
                                    na.rm=FALSE)
       values_smooth = zoo::na.locf(values_smooth,
                                    fromLast = TRUE,
                                    na.rm=FALSE)
-      
+
       # set values for long interpolated values to 0
       # these are effectively missing or inaccurate
       # (consider setting those to NA, although this
       # might mess up plotting routines)
       values_ci[long_na] = 0.02
-      
+
       # trap values where no CI was calculated and
       # assign the fixed value
       values_ci[is.nan(fit$se)] = 0.02
       values_ci[is.na(fit$se)] = 0.02
       values_ci[is.infinite(fit$se)] = 0.02
-      
+
       # set values to NA if interpolated
       # max gap is 'maxgap' days, to avoid flagging periods where
       # you only lack some data
       # this is redundant should only do this once (fix)
       int = zoo::na.approx(values, maxgap = maxgap, na.rm = FALSE)
-      
+
       # put everything in the output matrix
       output$int_flag[which(is.na(int))] = 1
       output[, which(colnames(output) == sprintf("smooth_%s", i))] = round(values_smooth,5)
       output[, which(colnames(output) == sprintf("smooth_ci_%s", i))] = round(values_ci,5)
-      
+
       cols = rep("red",length(gap_filled))
       cols[long_na] = "green"
     }
-    
+
     # drop previously smoothed data from
     # a data frame
     # dropvar = is.element(names(df), column_names)  #maybe break here
     # df = df[,!dropvar]
     df = cbind(df, output)
-    
+
     # put data back into the data structure
     data= df
-    
+
     # write the data to the original data frame or the
     # original file (overwrites the data!!!)
-    
-    return(data) #data, 
-    
+
+    return(data) #data,
+
   }
-  
-  
+
+
   # Build grid for any input raster
   build_raster_grid = function(raster_){
     r_         = raster_
@@ -1327,7 +1324,7 @@ server = function(input, output, session) {
     nrows      = nrow(r_)
     ncols      = ncol(r_)
     resolution = res(r_)[1]
-    
+
     lats = c()
     lons = c()
     ids  = c()
@@ -1335,23 +1332,23 @@ server = function(input, output, session) {
       id = x
       lat1 = ymax
       lat2 = ymin
-      
+
       lon1 = xmin + (x * resolution)
       lon2 = xmin + (x * resolution)
-      
+
       lats = c(lats, lat1, lat2)
       lons = c(lons, lon1, lon2)
       ids  = c(ids, id, id)
     }
-    
+
     for (xx in c(0:nrows)){
       id = xx + x
       lat1 = ymax - (xx * resolution)
       lat2 = ymax - (xx * resolution)
-      
+
       lon1 = xmax
       lon2 = xmin
-      
+
       lats = c(lats, lat1, lat2)
       lons = c(lons, lon1, lon2)
       ids  = c(ids, id, id)
@@ -1385,8 +1382,8 @@ server = function(input, output, session) {
       showGroup('250m Highlighted Pixels')
     updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
   }
-  
-  
+
+
   # Creates a reprojection of a lat/lon WGS84 point into sinusoidal Modis projection
   get_x_y_sinu_from_wgs_pt = function(lon_,lat_){
     xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
@@ -1454,7 +1451,7 @@ server = function(input, output, session) {
        if (col == 0){
          col = ncols
        }
-       
+
        xclose = ((col - 1) * resolution) + xmin
        xfar   = (col * resolution) + xmin
        yclose = -((row - 1) * resolution) + ymax
@@ -1472,7 +1469,7 @@ server = function(input, output, session) {
        if (id_ %in% data$pixel_df$Id){
          remove_polyline(id = id_, all = FALSE)
          data$pixel_df = subset(data$pixel_df, Id!=id_)
-         
+
          if (type_ == '500m'){
            # Remove polygon from data$pixel_sps_500m
            ids_500m = unique(ggplot2::fortify(data$pixel_sps_500m)$id)
@@ -1492,7 +1489,7 @@ server = function(input, output, session) {
          }
          print ('Dataframe of all highlighted pixels (250m + 500m)')
          print (data$pixel_df)
-         
+
        }else{
          # Draw the pixel polygon on the leaflet map
          if (input$highlightPixelMode){
@@ -1509,44 +1506,44 @@ server = function(input, output, session) {
          print (ps)
 
          # Build Dataframe   reactive value = data$pixel_df
-         data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Type = type_, Lat = midcelly, Lon = midcellx, pft = vegindex, 
+         data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Type = type_, Lat = midcelly, Lon = midcellx, pft = vegindex,
                                                          pt1_lat = datalat[1], pt1_lon = datalon[1],
                                                          pt2_lat = datalat[2], pt2_lon = datalon[2],
                                                          pt3_lat = datalat[3], pt3_lon = datalon[3],
                                                          pt4_lat = datalat[4], pt4_lon = datalon[4],
                                                          pt5_lat = datalat[5], pt5_lon = datalon[5]))
-         
+
          pixel  = matrix_to_polygon(rbind(c(datalon[1], datalat[1]),
-                                          c(datalon[2], datalat[2]), 
+                                          c(datalon[2], datalat[2]),
                                           c(datalon[3], datalat[3]),
                                           c(datalon[4], datalat[4]),
                                           c(datalon[5], datalat[5])), id_, as.character(type_))
-         
+
          if (type_ == '500m'){
              if (length(data$pixel_sps_500m) == 0){
                data$pixel_sps_500m = pixel
              }else{
                data$pixel_sps_500m = rbind(data$pixel_sps_500m, pixel)
-               
+
            }}else if(type_ == '250m'){
              if (length(data$pixel_sps_250m) == 0){
                data$pixel_sps_250m = pixel
              }else{
                data$pixel_sps_250m = rbind(data$pixel_sps_250m, pixel)
              }}
-         
+
          print ('500m Grid Sp Object info:')
          print ((data$pixel_sps_500m))
          print ('250m Grid Sp Object info:')
          print ((data$pixel_sps_250m))
-   
+
          print ('Dataframe of all highlighted pixels (250m + 500m)')
          print (data$pixel_df)
        }
      }
   }
 
-  
+
   # Creates boundary box for clipping rasters using lat/lon from phenocam site
   crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL){
     height = .03
@@ -1556,7 +1553,7 @@ server = function(input, output, session) {
     crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
 
     r      = raster::crop(r_, e, snap='near')
-    
+
     if (reclassify == FALSE){
       return (r)
 
@@ -1904,7 +1901,7 @@ server = function(input, output, session) {
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
-    
+
     shinyjs::show(id = 'explorerTitle')
     shinyjs::show(id = 'usZoom')
     shinyjs::show(id = 'showSites')
@@ -1966,7 +1963,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'showHidePlot')
     shinyjs::hide(id = 'plotRemoteData')
     shinyjs::hide(id = 'doneGetData')
-    
+
     updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
   }
 
@@ -1990,7 +1987,7 @@ server = function(input, output, session) {
       return(FALSE)
     }
   }
-  
+
   # Given a site name, function returns the appeears task record
   get_appeears_task = function(name, type){
     if (type == 'ndvi'){
@@ -2022,7 +2019,7 @@ server = function(input, output, session) {
     bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
     document = jsonlite::fromJSON(txt=bundle_response)
     files = document$files
-    
+
     if (ft == 'nc'){
       netcdf    = subset(files, file_type == 'nc')
       download_this_file = netcdf$file_id

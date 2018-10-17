@@ -1,8 +1,8 @@
 # UI file for Shiny App phenoRemote
 # Initiate the UI
-ui = fluidPage(shinyjs::useShinyjs(), 
+ui = fluidPage(shinyjs::useShinyjs(),
                mainPanel(
-                 bsModal("getDataPopup", 
+                 bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
@@ -11,15 +11,15 @@ ui = fluidPage(shinyjs::useShinyjs(),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
                          helpText(id = 'doneGetData', 'Data Acquired'))
                  ,
-                 bsModal("plotDataPopup", 
+                 bsModal("plotDataPopup",
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
                          selectInput('dataTypes_plot', 'Data', c('MODIS NDVI', 'MODIS EVI', 'PhenoCam GCC')),
                          selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
-                         sliderInput('dataDateRange', 'Date start to end', 
-                                     min = as.Date('2000-01-01'), 
-                                     max = Sys.Date(), 
+                         sliderInput('dataDateRange', 'Date start to end',
+                                     min = as.Date('2000-01-01'),
+                                     max = Sys.Date(),
                                      value = c(as.Date('2000-01-01'), Sys.Date())),
                          actionButton('plotDataButton', 'Plot Data'),
                          helpText(id = 'noPixelWarning', 'No Pixels selected')
@@ -27,7 +27,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                          )
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
-                                                 
+
                           tabPanel("Site explorer",
 
                                    div(class="outer",
@@ -60,6 +60,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                       checkboxInput('drawImage', "Show site PhenoCam Image", value = TRUE),
                                       checkboxInput("drawImageROI", "Show ROI on PhenoCam Image", value = FALSE),
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
+                                      #actionButton('showModisSubset', 'Plot MODIS subset'),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
                                       actionButton('getData', 'Pull AppEEARS & PhenoCam Data'),
@@ -100,29 +101,30 @@ ui = fluidPage(shinyjs::useShinyjs(),
 
 
            # tabPanel('pAOI Management',
-           # 
+           #
            #          tags$div(id='pAOItab'),
            #          selectInput('shapefiles', "Select Shapefile", c('None')),
            #          actionButton('saveshp', 'Save Shapefile'),
            #          br(),
            #          br(), br(),
-           # 
-           # 
+           #
+           #
            #          # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
            #          #   some point......
            #          DTOutput("pAOIchart")
-           # 
+           #
            #         ),
-           
+
            # tabPanel('User Guide',
            #          includeMarkdown('UserGuide.Rmd')
            #          ),
 
 
-           # tabPanel('Phenocam Metadata',
-           #          DT::dataTableOutput("x1")
-           #         ),
-           
+
+           tabPanel('Phenocam Metadata',
+                    DTOutput('x1')
+                   ),
+
            tabPanel('Plot NDVI', value = 'PlotPanel',
                     # actionButton('clearPlot', 'Clear Plot'),
                     plotOutput("ndvi_pixels_plot")
