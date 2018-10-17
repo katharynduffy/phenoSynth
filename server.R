@@ -892,8 +892,8 @@ server = function(input, output, session) {
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
       # incProgress(.1)
       v6_NDVI[v6_NDVI == fillvalue$value] = NA
-
-
+      idx=v6_QA!=0
+      v6_NDVI[idx]=NaN #filtering out poor VI quality values
       data$ndvi_nc = v6_NDVI
 
       # Define the coordinate referense system proj.4 string
