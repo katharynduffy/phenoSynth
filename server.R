@@ -889,6 +889,10 @@ server = function(input, output, session) {
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
       # incProgress(.1)
       v6_NDVI[v6_NDVI == fillvalue$value] = NA
+      
+      saveRDS(v6_NDVI, file = './www/v6_NDVI')
+      saveRDS(v6_QA, file = './www/v6_QA')
+      
       idx=v6_QA!=0
       v6_NDVI[idx]=NaN #filtering out poor VI quality values
       data$ndvi_nc = v6_NDVI
