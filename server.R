@@ -882,9 +882,7 @@ server = function(input, output, session) {
       # netcdf manipulation
       #------------------------------------------------------------------------
       v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
-      # incProgress(.1)
       v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-      # incProgress(.1)
       
       data$site_nc = ndvi_output
   
