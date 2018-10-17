@@ -8,11 +8,26 @@ output: html_document
 ##### Read in a dataframe from phenoapp Created from Acadia as an example
 ```{r}
 # Path to the test file that is in the app www directory
-parsed_data_melt = readRDS(file = '../www/parsed_data_melt')
-# pData = readRDS(file = '../www/pData')
-# all_data = readRDS(file = '../www/all_data')
+parsed_data_melt = readRDS(file = '/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/parsed_data_melt')
+pData = readRDS(file = '/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/pData')
+all_data = readRDS(file = '/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/all_data')
 ```
 
+```{r}
+pData$source=as.character(pData$source)
+variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
+pData=cbind(pData, variable) #this is new
+parsed_data_melt$source=as.character(parsed_data_melt$source)
+idx=is.element(parsed_data_melt$date, pData$date)
+
+all_data=full_join(pData,parsed_data_melt) 
+all_data$source=as.factor(all_data$source)
+p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
+            geom_line()+
+            scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
+p + theme_minimal()
+
+```
 ```{r}
 #data_melt=melt(data.table(all_data) , id.vars = c('date')) #, 'source', 'value'
 ```
@@ -39,20 +54,7 @@ get_site_roi_3day_csvs = function(name){
 }
 
 csv = get_site_roi_3day_csvs(name = 'acadia')
-
-pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
-source= rep('PhenoCam GCC', nrow(pData))
-variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
-pData=cbind(pData, source, variable)
-colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
-pData$date=as.Date(pData$date)
-
-all_data=full_join(parsed_data_melt, pData)
-
-p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
-            geom_line()+
-            scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
-p + theme_minimal()
+csv 
 
 
 # dfdf = readRDS(file = '../www/GCC_acadia')
@@ -61,22 +63,22 @@ p + theme_minimal()
 
 ```{r}
 pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
-source= rep('PhenoCam GCC', nrow(pData))
-variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
-pData=cbind(pData, source, variable)
-colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
+          source= rep('PhenoCam GCC', nrow(pData))
+          
+          pData=cbind(pData, source, variable)
+colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source')
 pData$date=as.Date(pData$date)
 ```
 
 ```{r}
-# sparse_df=melt(data.table(dfdf), measure.vars = c('pixel_1', 'pixel_2', 'pixel_3', 'pixel_4'))
-# source= rep('MODIS NDVI', nrow(sparse_df))
-# sparse_df=cbind(sparse_df, source)
+sparse_df=melt(data.table(dfdf), measure.vars = c('pixel_1', 'pixel_2', 'pixel_3', 'pixel_4'))
+source= rep('MODIS NDVI', nrow(sparse_df))
+sparse_df=cbind(sparse_df, source)
 
 ```
 Here's the code for the left bind:
 ```{r}
-all_data=full_join(parsed_data_melt, pData)
+all_data=left_join(sparse_df, pData, by=c('date', 'source', 'value'))
 ```
 
 ```{r}

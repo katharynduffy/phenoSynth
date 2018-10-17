@@ -45,24 +45,19 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
 
   ## Create the Phenocam Datatable with basic info (Tab named phenocam Table)
-  
-  output$x1 = DT::renderDataTable({
-    data.frame(cams_)
+  x = cams_
+  x$Date = Sys.time() + seq_len(nrow(x))
+  output$x1 = renderDT(x, selection = 'none', editable = FALSE)
+  proxy = dataTableProxy('x1')
+  observeEvent(input$x1_cell_edit, {
+    info = input$x1_cell_edit
+    # str(info)
+    i   = info$row
+    j   = info$col
+    v   = info$value
+    x[i, j] <<- DT::coerceValue(v, x[i, j])
+    replaceData(proxy, x, resetPaging = FALSE)  # important
   })
-  
-  # x = cams_
-  # # x$Date = Sys.time() + seq_len(nrow(x))
-  # output$x1 = renderDT(x, selection = 'none', editable = FALSE)
-  # proxy = dataTableProxy('x1')
-  # observeEvent(input$x1_cell_edit, {
-  #   info = input$x1_cell_edit
-  #   # str(info)
-  #   i   = info$row
-  #   j   = info$col
-  #   v   = info$value
-  #   x[i, j] <<- DT::coerceValue(v, x[i, j])
-  #   replaceData(proxy, x, resetPaging = FALSE)  # important
-  # })
 
   ## Create the map
   output$map = renderLeaflet({
@@ -581,6 +576,7 @@ server = function(input, output, session) {
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
+
         addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
         addRasterImage(rc, opacity = .2, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
 
@@ -723,6 +719,7 @@ server = function(input, output, session) {
           print (polys_len)
           
           # Grab GCC
+<<<<<<< HEAD
           
           if (site == 'acadia'){
             csv = readRDS(file = './www/GCC_acadia')
@@ -738,6 +735,17 @@ server = function(input, output, session) {
           pData=cbind(pData, source, variable)
           colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
           pData$date=as.Date(pData$date)
+=======
+          csv = get_site_roi_3day_csvs(name = 'acadia')
+          incProgress(.1)
+          pData_=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+          source= rep('PhenoCam GCC', nrow(pData_))
+          pData_=cbind(pData_, source)
+          incProgress(.1)
+          colnames(pData_)=c('date', 'year', 'doy', 'gcc_mean','value', 'source')
+          pData_$date=as.Date(pData_$date)
+          incProgress(.1)
+>>>>>>> parent of 4c4fe8c... added phenocam GCC to application (facet)
 
           #Parse data with Dates
           data_df = data.frame(date = date_list, list_)
@@ -752,13 +760,13 @@ server = function(input, output, session) {
           
           incProgress(.1)
           # combine GCC and NDVI dfs
-          all_data=full_join(parsed_data_melt, pData)
+          all_data=left_join(parsed_data_melt, pData_, by=c('date', 'source', 'value'))
           
-          p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
+          p = ggplot(data = all_data, aes(x=date, y=value, color=variable)) +
             geom_line()+
-            scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
+            scale_colour_brewer(palette="Set1")
+          p + facet_grid( ~ source) 
           p + theme_minimal()
-          
           incProgress(.1)
           
         })

@@ -60,6 +60,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                       checkboxInput('drawImage', "Show site PhenoCam Image", value = TRUE),
                                       checkboxInput("drawImageROI", "Show ROI on PhenoCam Image", value = FALSE),
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
+                                      #actionButton('showModisSubset', 'Plot MODIS subset'),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
                                       actionButton('getData', 'Pull AppEEARS & PhenoCam Data'),
@@ -119,9 +120,15 @@ ui = fluidPage(shinyjs::useShinyjs(),
            #          ),
 
 
+<<<<<<< HEAD
            # tabPanel('Phenocam Metadata',
            #          DT::dataTableOutput("x1")
            #         ),
+=======
+           tabPanel('Phenocam Metadata',
+                    DTOutput('x1')
+                   ),
+>>>>>>> parent of 4c4fe8c... added phenocam GCC to application (facet)
            
            tabPanel('Plot NDVI', value = 'PlotPanel',
                     # actionButton('clearPlot', 'Clear Plot'),
