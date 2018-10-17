@@ -721,9 +721,7 @@ server = function(input, output, session) {
           # Grab GCC
 
           csv = get_site_roi_3day_csvs(name = site)
-
-
-
+          
           pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
           source= rep('PhenoCam GCC', nrow(pData))
           variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
@@ -745,14 +743,13 @@ server = function(input, output, session) {
 
           incProgress(.1)
           # combine GCC and NDVI dfs
-          all_data=left_join(parsed_data_melt, pData_, by=c('date', 'source', 'value'))
-
-          p = ggplot(data = all_data, aes(x=date, y=value, color=variable)) +
+          
+          all_data=full_join(parsed_data_melt, pData)
+          
+          p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
             geom_line()+
-            scale_colour_brewer(palette="Set1")
-          p + facet_grid( ~ source)
+            scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
           p + theme_minimal()
-          incProgress(.1)
 
         })
       }
