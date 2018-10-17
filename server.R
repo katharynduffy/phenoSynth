@@ -857,7 +857,7 @@ server = function(input, output, session) {
       incProgress(.1)
     
       
-      if (site == 'acadia'){
+      if (site == 'acaasdfasdfdia'){
         v6_NDVI = readRDS(file = './www/ndvi_acadia')
         file_ndvi = readRDS(file = './www/netcdf_acadia')
         ndvi_output    = nc_open(file_ndvi)
@@ -896,9 +896,9 @@ server = function(input, output, session) {
         # netcdf manipulation
         #------------------------------------------------------------------------
         v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
-        incProgress(.1)
+        # incProgress(.1)
         v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-        incProgress(.1)
+        # incProgress(.1)
         
         data$site_nc = ndvi_output
     
@@ -907,9 +907,9 @@ server = function(input, output, session) {
         lon_NDVI = ncvar_get(ndvi_output, "lon")
     
         # Grab the fill value and set to NA
-        incProgress(.1)
+        # incProgress(.1)
         fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
-        incProgress(.1)
+        # incProgress(.1)
         v6_NDVI[v6_NDVI == fillvalue$value] = NA
         }
       
@@ -936,7 +936,7 @@ server = function(input, output, session) {
       
       # Build grid
       build_raster_grid(data$r_ndvi_cropped)
-      incProgress(.1)
+      # incProgress(.1)
       
       shinyjs::show(id = 'plotRemoteData')
       shinyjs::hide(id = 'noPixelWarning')
