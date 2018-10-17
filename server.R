@@ -685,7 +685,7 @@ server = function(input, output, session) {
         
         withProgress(message = 'Buliding NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
           for (x in c(1:len)){
-            incProgress((1/len)/2)
+            incProgress((1/len)/1.1)
             r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
             values_under_polygon = extract(r_ndvi, pixels)
             

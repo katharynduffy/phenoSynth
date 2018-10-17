@@ -124,7 +124,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
            #         ),
            
            tabPanel('Plot NDVI', value = 'PlotPanel',
-                    actionButton('clearPlot', 'Clear Plot'),
+                    # actionButton('clearPlot', 'Clear Plot'),
                     plotOutput("ndvi_pixels_plot")
            ),
 
