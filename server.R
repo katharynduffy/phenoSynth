@@ -723,12 +723,8 @@ server = function(input, output, session) {
           print (polys_len)
           
           # Grab GCC
-          
-          if (site == 'acadia'){
-            csv = readRDS(file = './www/GCC_acadia')
-          }else{
-            csv = get_site_roi_3day_csvs(name = site)
-          }
+
+          csv = get_site_roi_3day_csvs(name = site)
           
           
           
@@ -855,63 +851,52 @@ server = function(input, output, session) {
     withProgress(message = 'Grabbing AppEEARS Data. ', detail = paste0('   Site: ', site, ', NDVI'), value = 0, {
       
       incProgress(.1)
-    
       
-      if (site == 'acaasdfasdfdia'){
-        v6_NDVI = readRDS(file = './www/ndvi_acadia')
-        file_ndvi = readRDS(file = './www/netcdf_acadia')
-        ndvi_output    = nc_open(file_ndvi)
-        data$site_nc = ndvi_output
-        lat_NDVI = ncvar_get(ndvi_output, "lat")
-        lon_NDVI = ncvar_get(ndvi_output, "lon")
-      }else{
+      # load in netcdf for NDVI layer
+      #------------------------------------------------------------------------
+      file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
+      incProgress(.2)
+      file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
+      ndvi_output    = nc_open(file_ndvi)
+      incProgress(.1)
+      v6_QA_lut      = read.csv(file_ndvi_qa)
+      delete_file(file_ndvi)
+      delete_file(file_ndvi_qa)
+      incProgress(.1)
       
-        # load in netcdf for NDVI layer
-        #------------------------------------------------------------------------
-        file_ndvi    = download_bundle_file(appeears$ndvi$task_id, 'nc')
-        incProgress(.2)
-        file_ndvi_qa = download_bundle_file(appeears$ndvi$task_id, 'qa_csv')
-        ndvi_output    = nc_open(file_ndvi)
-        incProgress(.1)
-        v6_QA_lut      = read.csv(file_ndvi_qa)
-        delete_file(file_ndvi)
-        delete_file(file_ndvi_qa)
-        incProgress(.1)
-        
-        # load in netcdf for Transition Dates layer
-        #------------------------------------------------------------------------
-        file_tds    = download_bundle_file(appeears$tds$task_id, 'nc')
-        data$tds_nc = nc_open(file_tds)
-        delete_file(file_tds)
-        # Loading in the Transition Date layers
-        NBAR_EVI_Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Maximum")
-        NBAR_EVI_Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Minimum")
-        Onset_Greenness_Decrease = ncvar_get(data$tds_nc, "Onset_Greenness_Decrease")
-        Onset_Greenness_Increase = ncvar_get(data$tds_nc, "Onset_Greenness_Increase")
-        Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "Onset_Greenness_Maximum")
-        Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "Onset_Greenness_Minimum")
-        
-        incProgress(.1)
-    
-        # netcdf manipulation
-        #------------------------------------------------------------------------
-        v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
-        # incProgress(.1)
-        v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-        # incProgress(.1)
-        
-        data$site_nc = ndvi_output
-    
-        # Set lat and lon arrays for NDVI data
-        lat_NDVI = ncvar_get(ndvi_output, "lat")
-        lon_NDVI = ncvar_get(ndvi_output, "lon")
-    
-        # Grab the fill value and set to NA
-        # incProgress(.1)
-        fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
-        # incProgress(.1)
-        v6_NDVI[v6_NDVI == fillvalue$value] = NA
-        }
+      # load in netcdf for Transition Dates layer
+      #------------------------------------------------------------------------
+      file_tds    = download_bundle_file(appeears$tds$task_id, 'nc')
+      data$tds_nc = nc_open(file_tds)
+      delete_file(file_tds)
+      # Loading in the Transition Date layers
+      NBAR_EVI_Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Maximum")
+      NBAR_EVI_Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Minimum")
+      Onset_Greenness_Decrease = ncvar_get(data$tds_nc, "Onset_Greenness_Decrease")
+      Onset_Greenness_Increase = ncvar_get(data$tds_nc, "Onset_Greenness_Increase")
+      Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "Onset_Greenness_Maximum")
+      Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "Onset_Greenness_Minimum")
+      
+      incProgress(.1)
+  
+      # netcdf manipulation
+      #------------------------------------------------------------------------
+      v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
+      # incProgress(.1)
+      v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
+      # incProgress(.1)
+      
+      data$site_nc = ndvi_output
+  
+      # Set lat and lon arrays for NDVI data
+      lat_NDVI = ncvar_get(ndvi_output, "lat")
+      lon_NDVI = ncvar_get(ndvi_output, "lon")
+  
+      # Grab the fill value and set to NA
+      # incProgress(.1)
+      fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
+      # incProgress(.1)
+      v6_NDVI[v6_NDVI == fillvalue$value] = NA
       
       
       data$ndvi_nc = v6_NDVI
