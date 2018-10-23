@@ -1,5 +1,7 @@
 # Global file for Shiny App phenoRemote
 
+source('./functions/geospatial_.R')
+
 
 # Libraries
 library(shiny)          # Provides web framework for building web applications
