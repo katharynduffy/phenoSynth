@@ -115,9 +115,9 @@ ui = fluidPage(shinyjs::useShinyjs(),
            #
            #         ),
 
-           # tabPanel('User Guide',
-           #          includeMarkdown('UserGuide.Rmd')
-           #          ),
+           tabPanel('User Guide',
+                    includeMarkdown('UserGuide.Rmd')
+                    ),
 
 
 

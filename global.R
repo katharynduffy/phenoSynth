@@ -88,10 +88,6 @@ roi_files = rois$results
 
 idx=is.element(cams_$Sitename, roi_files$site)
 cams_=cams_[idx,]
-# cameras      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=2000')
-# camers_files = cameras$results
-# names(camers_files)
-# unique(camers_files$Sitename)
 
 # Load in dataframe with cached AppEEARS tasks
 appeears_tasks = readRDS(file = './www/cache_df.df')

@@ -564,6 +564,7 @@ server = function(input, output, session) {
       data$r_landcover = r
 
 
+
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       print (veg_types)
 
@@ -576,7 +577,6 @@ server = function(input, output, session) {
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
-
         addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
         addRasterImage(rc, opacity = .2, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
 
@@ -741,11 +741,11 @@ server = function(input, output, session) {
           parsed_data   = cbind(parsed_data, source)
           parsed_data_melt = melt(data.table(parsed_data), measure.vars = variables_)
 
-          incProgress(.1)
+          # incProgress(.1)
           # combine GCC and NDVI dfs
           
           all_data=full_join(parsed_data_melt, pData)
-          
+
           p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
             geom_line()+
             scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
@@ -883,18 +883,24 @@ server = function(input, output, session) {
       # Set lat and lon arrays for NDVI data
       lat_NDVI = ncvar_get(ndvi_output, "lat")
       lon_NDVI = ncvar_get(ndvi_output, "lon")
+      
+      ### Test section for Different PROJECTIONS
+      YlGn = brewer.pal(9, "YlGn")
+      newproj = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs'
+      test_raster = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
+      # test_raster = projectRaster(test_raster, crs = newproj, res = 257.5014113)
+      # leafletProxy('map') %>% addRasterImage(test_raster, opacity = .7, group = 'test1', col = YlGn)
+      ### End Test Section
 
+      
       # Grab the fill value and set to NA
       # incProgress(.1)
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
-      # incProgress(.1)
+      incProgress(.1)
       v6_NDVI[v6_NDVI == fillvalue$value] = NA
       
-      saveRDS(v6_NDVI, file = './www/v6_NDVI')
-      saveRDS(v6_QA, file = './www/v6_QA')
-      
-      idx=v6_QA!=0
-      v6_NDVI[idx]=NaN #filtering out poor VI quality values
+      # idx=v6_QA!=0
+      # v6_NDVI[idx]=NaN #filtering out poor VI quality values
       data$ndvi_nc = v6_NDVI
 
       # Define the coordinate referense system proj.4 string
@@ -905,19 +911,17 @@ server = function(input, output, session) {
       v6_NDVI_original = v6_NDVI
       # v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
       #------------------------------------------------------------------------
-      YlGn = brewer.pal(9, "YlGn")
 
       data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
 
       # extracted_ndvi = extract(v6_NDVI_original, data$pixel_sps_250, snap = 'in')
       # print (extracted_ndvi)
-
-      # leafletProxy('map') %>% addRasterImage(data$r_ndvi_cropped, opacity = .7, group = 'test1', col = YlGn)
+      
       shinyjs::show(id = 'highlightPixelModeNDVI')
 
       # Build grid
       build_raster_grid(data$r_ndvi_cropped)
-      # incProgress(.1)
+      incProgress(.1)
 
       shinyjs::show(id = 'plotRemoteData')
       shinyjs::hide(id = 'noPixelWarning')
@@ -1392,6 +1396,7 @@ server = function(input, output, session) {
     coordinates(xy) = ~ lon + lat
     proj4string(xy) = CRS("+proj=longlat +datum=WGS84")
     p               = spTransform(xy, CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"))
+    # p    = spTransform(xy, CRS('+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs'))
     return (p)
   }
 
@@ -1410,11 +1415,11 @@ server = function(input, output, session) {
   }
 
   # Converts the highlighted pixel coords into a spatialpolygon class
-  matrix_to_polygon = function(matrix, id, type_){
+  matrix_to_polygon = function(matrix, id, type_, crs = '+proj=longlat +datum=WGS84'){
     p   = Polygon(matrix)
     ps  = Polygons(list(p), ID = id)
     sps = SpatialPolygons(list(ps))
-    proj4string(sps) = CRS("+proj=longlat +datum=WGS84")
+    proj4string(sps) = CRS(crs)
     return (sps)
   }
 
@@ -1422,9 +1427,11 @@ server = function(input, output, session) {
   showpos = function(x=NULL, y=NULL, name, raster_, type_) { # type = '500m' or '250m'
     # If clicked within the Raster on the leaflet map
     r_ = raster_
+    # xy = get_x_y_sinu_from_wgs_pt(x,y)
+    # y = xy$lat
+    # x = xy$lon
     cell = cellFromXY(r_, c(x, y))
 
-    print (r_)
 
      if (!is.na(cell)) {
        # Variables we will use:
@@ -1519,7 +1526,10 @@ server = function(input, output, session) {
                                           c(datalon[3], datalat[3]),
                                           c(datalon[4], datalat[4]),
                                           c(datalon[5], datalat[5])), id_, as.character(type_))
-
+                                    # crs = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
+         
+         # pixel = spTransform(pixel , CRS("+proj=longlat +datum=WGS84"))
+         
          if (type_ == '500m'){
              if (length(data$pixel_sps_500m) == 0){
                data$pixel_sps_500m = pixel
@@ -1552,8 +1562,11 @@ server = function(input, output, session) {
     e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
 
     crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
-
-    r      = raster::crop(r_, e, snap='near')
+    # newproj  = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs'
+    
+    r        = raster::crop(r_, e, snap='near')
+    # r        = projectRaster(r, crs = newproj, method = 'ngb', res = 257.5014113)
+    # r        = projectRaster(r, crs = newproj, method = 'ngb', res = 515.0028)
 
     if (reclassify == FALSE){
       return (r)
@@ -1608,6 +1621,7 @@ server = function(input, output, session) {
               17,NA)
         rclmat = matrix(m, ncol=2, byrow=TRUE)
         rc     = raster::reclassify(r, rclmat)
+        # rc     = projectRaster(r, crs = newproj, method = 'ngb', res = 257.5014113)
       }
       return (rc)
     }
