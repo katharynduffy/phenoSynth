@@ -125,6 +125,9 @@ server = function(input, output, session) {
   #initiating with observer
   observe({
     switch_to_explorer_panel()
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_sps_500m = SpatialPolygons(list())
+    data$pixel_sps_250m = SpatialPolygons(list())
     panel$mode = 'explorer'
     data$df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
   })
@@ -210,7 +213,7 @@ server = function(input, output, session) {
       updateSelectInput(session, 'shapefiles', choices = unique(data$df$Name))
 
       # Building the polygon table from the data$df dataframe containing all of the leaflet polygon data
-      build_polygon_table()
+      build_polygon_table(data$df)
 
       # print (data$df)
       # sets highlight pixel to on
@@ -242,7 +245,7 @@ server = function(input, output, session) {
       data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
 
     # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
-    build_polygon_table()
+    build_polygon_table(data$df)
 
     print (data$df)
   })
@@ -261,7 +264,7 @@ server = function(input, output, session) {
     updateSelectInput(session, 'shapefiles', choices = unique(data$df$Name))
 
     # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
-    build_polygon_table()
+    build_polygon_table(data$df)
 
 
     # print (data$df)
@@ -319,8 +322,9 @@ server = function(input, output, session) {
   # Zooms to the selected site in the Sites dropdown option with BUTTON
   observeEvent(input$siteZoom, {
     print('Running BUTTON Zoom to Selected Site')
-    site      = isolate(input$site)
-    site_data = zoom_to_site(site, zoom=TRUE)
+    site       = isolate(input$site)
+    site_data  = get_site_info(site_)
+    zoom_to_site(site, site_data, zoom=TRUE, cams_, input$drawROI)
 
 
   })
@@ -356,7 +360,7 @@ server = function(input, output, session) {
       return()
     isolate({
       if (input$drawROI == TRUE){
-        site = input$site
+        site      = input$site
         site_data = get_site_info(site)
         run_add_polyline(site_data, azm)
       }
@@ -387,38 +391,38 @@ server = function(input, output, session) {
 
   # Show Popup box for site when clicked
   observeEvent(input$map_marker_click, {
-    event = isolate(input$map_marker_click)
+    event     = isolate(input$map_marker_click)
+    
+    updateSelectInput(session, 'site', selected = event$id )
     print (event$id)
+    site      = event$id
+    site_data = get_site_info(site)
 
     if (is_not_null(event$id)){
       if (isolate(input$map_zoom) < 5){
-        zoom_to_site(event$id, zoom=TRUE)
+        zoom_to_site(event$id, site_data, zoom=TRUE, cams_, input$drawROI)
       }
-      updateSelectInput(session, 'site', selected = event$id )
     }
-
     if(is.null(event))
       return()
 
     isolate({
       leafletProxy("map", data = variables$sites_df) %>% clearPopups()
+      
       site = event$id
-
-      site_data = get_site_info(site)
-
       lat             = site_data$Lat
       lon             = site_data$Lon
       description     = site_data$site_description
       elevation       = site_data$Elev
       camera          = site_data$Sitename
       site_type       = site_data$site_type
-      #nimage          = site_data$nimage
       cam_orientation = as.character(site_data$camera_orientation)
       degrees         = as.numeric(orientation_key[cam_orientation])
       active          = site_data$active
       date_end        = site_data$date_last
       date_start      = site_data$date_first
-      get_site_popup(camera, lat, lon, description, elevation, site_type, cam_orientation, degrees,
+      get_site_popup(camera, lat, lon, description, elevation, 
+                     site_type, cam_orientation, degrees,
                      active, date_end, date_start)
     })
   })
@@ -466,11 +470,12 @@ server = function(input, output, session) {
 
     veg_types  = c()
     print ('Switching to Analyze Mode')
-    zoom_to_site(site, TRUE)
+    zoom_to_site(site, site_data, TRUE, cams_, input$drawROI)
     highlighted$group = paste0(site, ' Highlighted Pixels')
 
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
+    updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
 
     print (sprintf('grabbing task row from appeears for site: %s', site))
     appeears$ndvi = get_appeears_task(site, type = 'ndvi')
@@ -562,6 +567,9 @@ server = function(input, output, session) {
     print ('Switching to Explorer Mode')
     panel$mode = 'explorer'
     switch_to_explorer_panel()
+    data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_sps_500m = SpatialPolygons(list())
+    data$pixel_sps_250m = SpatialPolygons(list())
   })
 
   # Button that plots NDVI
@@ -1006,69 +1014,6 @@ server = function(input, output, session) {
      }
   }
 
-  # Zoom to site
-  zoom_to_site = function(site_, zoom){
-    site_data          = get_site_info(site_)
-    description        = site_data$site_description
-    camera_orientation = site_data$camera_orientation
-    lat                = site_data$Lat
-    lon                = site_data$Lon
-    cam_orientation    = as.character(site_data$camera_orientation)
-
-    degrees   = as.numeric(orientation_key[cam_orientation])
-    elevation = site_data$Elev
-    camera    = site_data$Sitename
-    drawROI   = FALSE
-
-    if (zoom == TRUE){
-      drawROI = isolate(input$drawROI)
-      leafletProxy('map', data = variables$sites_df) %>%
-        clearPopups() %>%
-        clearMarkers() %>%
-        # Can add differen't markers when we zoom in at some point, but for now we will use these circle markers from above
-        addCircleMarkers(lng=lon,lat=lat,label=camera, layerId=camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
-                         style = get_marker_style()), opacity = .80, fillColor = get_color(cams=site_data), color = get_color(cams=site_data),
-                         radius = 10, fillOpacity = .20, weight=3.5) %>%
-        setView(lng = lon, lat = lat, zoom = 13)
-    }
-    if (drawROI){
-      run_add_polyline(site_data, degrees)
-    }
-    return (site_data)
-  }
-
-
-  #displays the site info when a site is clicked
-  get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_,
-                             camera_orientation_, degrees_,
-                             active_, date_end_, date_start_) {
-    website = sprintf('https://phenocam.sr.unh.edu/webcam/sites/%s/',camera_)
-    print('Running show a popup box for Site')
-    myurl = paste("https://phenocam.sr.unh.edu/data/latest/", isolate(input$site), '.jpg', sep = '')
-
-    pop = paste0('<div class="leaflet-popup-content">',
-                 '<h4>','Site name: ', camera_,'</br></h4>',
-                 '<strong>','lat, long: ','</strong>',lat_,', ', lng_,'</br>',
-                 '<strong>','Site Description: ','</strong>', description_ ,'</br>',
-                 '<strong>','Elevation: ','</strong>', elevation_ ,'</br>',
-
-                 '<strong>','Site type: ','</strong>', site_type_ ,'</br>',
-                 '<strong>','Orientation (direction): ','</strong>', camera_orientation_ ,'</br>',
-                 '<strong>','Active: ','</strong>', active_ ,'</br>',
-                 '<strong>','Start date: ','</strong>', date_start_ ,'</br>',
-                 '<strong>','End date: ','</strong>', date_end_ ,'</br>',
-
-                 '<a id="info" href=', website ,' style="text-indent: 0px;"
-                 class="action-button shiny-bound-input"
-                 onclick="{Shiny.onInputChange(\'info\', (Math.random() * 1000) + 1);}">',
-
-                 '<a type="submit" href=', website ,' class="button">Go to Phenocam website</a>'
-                 )
-
-
-    leafletProxy("map",data = variables$sites_df) %>% addPopups(lng_, lat_, popup = pop, layerId = camera_)
-  }
-
 
   # Get specific site data and returns lon/lat/camera/description/elevation
   get_site_info = function(site_name){
@@ -1076,104 +1021,12 @@ server = function(input, output, session) {
     return (site_data)
   }
 
+  # Add reactive counter to help control events at startup of script
   count = function(){
     isolate({
       counter$countervalue = counter$countervalue + 1
     })
   }
 
-  build_polygon_table = function(){
-    # Creating Dataframe with 1 record per shapefile
-    if (nrow(data$df) == 0){
-      df = setNames(data.frame(matrix(ncol = 3, nrow = 0)), c('Name', 'Longitude', 'Latitude'))
-    }else {
-      df = aggregate(data$df[,c(2,3)], list(data$df$Name), max)
-    }
-    x  = df
-    print (x)
-    # x$Date = Sys.time() + seq_len(nrow(x))
-    output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
-    proxy            = dataTableProxy('pAOIchart')
-    observeEvent(input$pAOIchart_cell_edit, {
-      info = input$pAOIchart_cell_edit
-      str(info)
-      i = info$row
-      j = info$col
-      v = info$value
-      x[i, j] <<- DT::coerceValue(v, x[i, j])
-      replaceData(proxy, x, resetPaging = FALSE)  # important
-    })
-  }
-
-  switch_to_explorer_panel = function(){
-    # Ids to show:
-    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
-    data$pixel_sps_500m = SpatialPolygons(list())
-    data$pixel_sps_250m = SpatialPolygons(list())
-
-    shinyjs::show(id = 'explorerTitle')
-    shinyjs::show(id = 'usZoom')
-    shinyjs::show(id = 'showSites')
-    shinyjs::show(id = 'filterSites')
-    shinyjs::show(id = 'site')
-    shinyjs::show(id = 'siteZoom')
-    shinyjs::show(id = 'drawImage')
-    shinyjs::show(id = 'drawImageROI')
-    shinyjs::show(id = 'analyzerMode')
-    shinyjs::show(id = 'mouse')
-    # Ids to hide:
-    shinyjs::hide(id = 'analyzerTitle')
-    shinyjs::hide(id = 'siteExplorerMode')
-    shinyjs::hide(id = 'showModisSubset')
-    shinyjs::hide(id = 'drawROI')
-    shinyjs::hide(id = 'azm')
-    shinyjs::hide(id = 'siteTitle')
-    shinyjs::hide(id = 'plotRemoteData')
-    shinyjs::hide(id = 'pftSelection')
-    shinyjs::hide(id = 'showHidePlot')
-    shinyjs::hide(id = 'modisLegend')
-    shinyjs::hide(id = 'plotpanel')
-    shinyjs::hide(id = 'highlightPixelMode')
-    shinyjs::hide(id = 'highlightPixelModeNDVI')
-    shinyjs::hide(id = 'plotPixelsNDVI')
-    shinyjs::hide(id = 'getData')
-    leafletProxy('map') %>%
-      clearControls() %>%
-      clearShapes() %>%
-      clearImages() %>%
-      addLegend(values = c(1,2), group = "site_markers", position = "bottomright", title = 'Phenocam Activity',
-                labels = c("Active sites", "Inactive sites"), colors= c("blue","red")) %>%
-      addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                     position = c("topleft"),
-                     options = layersControlOptions(collapsed = TRUE))
-
-  }
-  switch_to_analyzer_panel = function(){
-    # Ids to show:
-    shinyjs::show(id = 'analyzerTitle')
-    shinyjs::show(id = 'siteExplorerMode')
-    shinyjs::show(id = 'showModisSubset')
-    shinyjs::show(id = 'drawROI')
-    shinyjs::show(id = 'drawImage')
-    shinyjs::show(id = 'drawImageROI')
-    shinyjs::show(id = 'mouse')
-    shinyjs::show(id = 'siteTitle')
-    shinyjs::show(id = 'pftSelection')
-    shinyjs::show(id = 'highlightPixelMode')
-    shinyjs::show(id = 'getData')
-    # Ids to hide:
-    shinyjs::hide(id = 'explorerTitle')
-    shinyjs::hide(id = 'usZoom')
-    shinyjs::hide(id = 'showSites')
-    shinyjs::hide(id = 'analyzerMode')
-    shinyjs::hide(id = 'filterSites')
-    shinyjs::hide(id = 'site')
-    shinyjs::hide(id = 'siteZoom')
-    shinyjs::hide(id = 'showHidePlot')
-    shinyjs::hide(id = 'plotRemoteData')
-    shinyjs::hide(id = 'doneGetData')
-
-    updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
-  }
 
 }

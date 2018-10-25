@@ -100,18 +100,18 @@ ui = fluidPage(shinyjs::useShinyjs(),
 
 
            # tabPanel('pAOI Management',
-           #
+           # 
            #          tags$div(id='pAOItab'),
            #          selectInput('shapefiles', "Select Shapefile", c('None')),
            #          actionButton('saveshp', 'Save Shapefile'),
            #          br(),
            #          br(), br(),
-           #
-           #
+           # 
+           # 
            #          # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
            #          #   some point......
            #          DTOutput("pAOIchart")
-           #
+           # 
            #         ),
 
            tabPanel('User Guide',
