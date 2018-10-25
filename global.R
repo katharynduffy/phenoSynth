@@ -35,6 +35,7 @@ library(ggthemes)
 library(httr)
 library(shinycssloaders)
 library(data.table)
+library(grDevices)
 
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'

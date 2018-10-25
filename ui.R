@@ -119,7 +119,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                     ),
 
            tabPanel('Phenocam Metadata',
-                    DTOutput('x1')
+                    as.data.frame(cams_)
                    ),
 
            tabPanel('Plot NDVI', value = 'PlotPanel',

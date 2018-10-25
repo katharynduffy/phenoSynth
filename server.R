@@ -15,6 +15,8 @@ server = function(input, output, session) {
 
   highlighted = reactiveValues(
                       group = '')
+  
+  phenocam    = reactiveValues()
 
   # 'analyzer' or 'explorer'
   panel   = reactiveValues(mode = '')
@@ -43,21 +45,6 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OUTPUTS
   #--------------------------------------------------------------------------------------------------------------------------------------
-
-  ## Create the Phenocam Datatable with basic info (Tab named phenocam Table)
-  x = cams_
-  x$Date = Sys.time() + seq_len(nrow(x))
-  output$x1 = renderDT(x, selection = 'none', editable = FALSE)
-  proxy = dataTableProxy('x1')
-  observeEvent(input$x1_cell_edit, {
-    info = input$x1_cell_edit
-    # str(info)
-    i   = info$row
-    j   = info$col
-    v   = info$value
-    x[i, j] <<- DT::coerceValue(v, x[i, j])
-    replaceData(proxy, x, resetPaging = FALSE)  # important
-  })
 
   ## Create the map
   output$map = renderLeaflet({
@@ -663,10 +650,8 @@ server = function(input, output, session) {
           print (polys_len)
 
           # Grab GCC
-
-          csv = get_site_roi_3day_csvs(name       = site, 
-                                       roi_files_ = roi_files)
           
+          csv = phenocam$csv
           pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
           source= rep('PhenoCam GCC', nrow(pData))
           variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
@@ -688,13 +673,15 @@ server = function(input, output, session) {
 
           # incProgress(.1)
           # combine GCC and NDVI dfs
-          
           all_data=full_join(parsed_data_melt, pData)
+          print (all_data)
+          final_data=subset(all_data, date >= start_ & date <= end_)
+          print (final_data)
 
-          p = ggplot(data = all_data, aes(x= date, y=value, color=variable)) +
-            geom_line()+
+          p = ggplot(data = final_data, aes(x= date, y=value, color=variable)) +
+            geom_line() +
             scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
-          p + theme_minimal()
+          p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
 
         })
       }
@@ -831,9 +818,9 @@ server = function(input, output, session) {
       lon_NDVI = ncvar_get(ndvi_output, "lon")
       
       ### Test section for Different PROJECTIONS
-      YlGn = brewer.pal(9, "YlGn")
-      newproj = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs'
-      test_raster = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
+      # YlGn = brewer.pal(20, "YlGn")
+      # newproj = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs'
+      # test_raster = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
       # test_raster = projectRaster(test_raster, crs = newproj, res = 257.5014113)
       # leafletProxy('map') %>% addRasterImage(test_raster, opacity = .7, group = 'test1', col = YlGn)
       ### End Test Section
@@ -844,9 +831,7 @@ server = function(input, output, session) {
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
       incProgress(.1)
       v6_NDVI[v6_NDVI == fillvalue$value] = NA
-      
-      # idx=v6_QA!=0
-      # v6_NDVI[idx]=NaN #filtering out poor VI quality values
+    
       data$ndvi_nc = v6_NDVI
 
       # Define the coordinate referense system proj.4 string
@@ -864,6 +849,13 @@ server = function(input, output, session) {
       # print (extracted_ndvi)
       
       shinyjs::show(id = 'highlightPixelModeNDVI')
+      
+      
+      # Import GCC splined Data from phenocam
+      phenocam$csv = get_site_roi_3day_csvs(name       = site, 
+                                            roi_files_ = roi_files)
+      
+      
 
       # Build grid
       build_raster_grid(data$r_ndvi_cropped, map = 'map')
@@ -986,9 +978,6 @@ server = function(input, output, session) {
                                           c(datalon[3], datalat[3]),
                                           c(datalon[4], datalat[4]),
                                           c(datalon[5], datalat[5])), id_, as.character(type_))
-                                    # crs = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
-         
-         # pixel = spTransform(pixel , CRS("+proj=longlat +datum=WGS84"))
          
          if (type_ == '500m'){
              if (length(data$pixel_sps_500m) == 0){
@@ -1027,6 +1016,4 @@ server = function(input, output, session) {
       counter$countervalue = counter$countervalue + 1
     })
   }
-
-
 }
