@@ -1,5 +1,12 @@
 # Global file for Shiny App phenoRemote
 
+source('./functions/geospatial.R')
+source('./functions/test.R')
+source('./functions/basic.R')
+source('./functions/image.R')
+source('./functions/leaflet.R')
+source('./functions/appeears.R')
+source('./functions/data_processing.R')
 
 # Libraries
 library(shiny)          # Provides web framework for building web applications
@@ -28,12 +35,7 @@ library(ggthemes)
 library(httr)
 library(shinycssloaders)
 library(data.table)
-
-# library(devtools)
-# if(!require(devtools)){install.packages("devtools")}
-# devtools::install_github("khufkens/MODISTools", build_vignettes = FALSE)
-# library(MODISTools)
-# source('tokens.R')
+library(grDevices)
 
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
@@ -47,8 +49,6 @@ c$sitemetadata=NULL
 cams_=cbind(c, c_m)
 cams_[is.na(cams_)] = 'N'
 
-# Data for all the sites
-#cams_ = df
 # All site names from table
 site_names = cams_$Sitename
 
@@ -70,19 +70,6 @@ pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded)
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
-# Variables being used in code :
-#   site = Name of the phenocam site
-#   lat/lon = location of phenocam site
-#   elev = elevation of the site
-#   site_type = I, II, or III
-#   camera_orientation = direction the camera is pointing
-#   site_description = information about the phenocam site
-#   nimage = Number of images
-#   camera_description = Name of the camera / other
-#   active = bool (Active or Not)
-#   date_end = last date images collected on
-#   date_start = first date images collected on
-
 rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
 roi_files = rois$results
 
@@ -90,6 +77,6 @@ idx=is.element(cams_$Sitename, roi_files$site)
 cams_=cams_[idx,]
 
 # Load in dataframe with cached AppEEARS tasks
-appeears_tasks = readRDS(file = './www/cache_df.df')
+appeears_tasks     = readRDS(file = './www/cache_df.df')
 # Load in df with cached AppEEARS Transition Dates (dts)
 appeears_tasks_tds = readRDS(file = './www/cache_df_tds.df')

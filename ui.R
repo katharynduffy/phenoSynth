@@ -60,7 +60,6 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                       checkboxInput('drawImage', "Show site PhenoCam Image", value = TRUE),
                                       checkboxInput("drawImageROI", "Show ROI on PhenoCam Image", value = FALSE),
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
-                                      #actionButton('showModisSubset', 'Plot MODIS subset'),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
                                       actionButton('getData', 'Pull AppEEARS & PhenoCam Data'),
@@ -101,35 +100,32 @@ ui = fluidPage(shinyjs::useShinyjs(),
 
 
            # tabPanel('pAOI Management',
-           #
+           # 
            #          tags$div(id='pAOItab'),
            #          selectInput('shapefiles', "Select Shapefile", c('None')),
            #          actionButton('saveshp', 'Save Shapefile'),
            #          br(),
            #          br(), br(),
-           #
-           #
+           # 
+           # 
            #          # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
            #          #   some point......
            #          DTOutput("pAOIchart")
-           #
+           # 
            #         ),
 
            tabPanel('User Guide',
                     includeMarkdown('UserGuide.Rmd')
                     ),
 
-
-
            tabPanel('Phenocam Metadata',
-                    DTOutput('x1')
+                    as.data.frame(cams_)
                    ),
 
            tabPanel('Plot NDVI', value = 'PlotPanel',
                     # actionButton('clearPlot', 'Clear Plot'),
                     plotOutput("ndvi_pixels_plot")
            ),
-
 
            conditionalPanel("false", icon("crosshair"))
       )
