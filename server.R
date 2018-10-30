@@ -310,7 +310,7 @@ server = function(input, output, session) {
   observeEvent(input$siteZoom, {
     print('Running BUTTON Zoom to Selected Site')
     site       = isolate(input$site)
-    site_data  = get_site_info(site_)
+    site_data  = get_site_info(site)
     zoom_to_site(site, site_data, zoom=TRUE, cams_, input$drawROI)
 
 
@@ -659,7 +659,6 @@ server = function(input, output, session) {
           colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
           pData$date=as.Date(pData$date)
 
-
           #Parse data with Dates
           data_df = data.frame(date = date_list, list_)
           start_ = input$dataDateRange[1]
@@ -711,6 +710,24 @@ server = function(input, output, session) {
     # Plot p
     output$ndvi_pixels_plot = renderPlot({
       p
+    })
+    
+    pp = ggplotly(p) %>% config(displaylogo = FALSE,
+                                modeBarButtonsToRemove = list(
+                                  'sendDataToCloud',
+                                  'autoScale2d',
+                                  'resetScale2d',
+                                  'hoverClosestCartesian',
+                                  'hoverCompareCartesian'
+                                ))
+    
+    output$data_plot = renderPlotly({
+      pp
+    })
+    
+    output$event_plot = renderPrint({
+      d = event_data("plotly_hover")
+      if (is.null(d)) "Hover on a point!" else d
     })
 
     print (paste0(data_type_selected, ' Plotting Completed'))

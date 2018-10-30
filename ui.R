@@ -126,6 +126,10 @@ ui = fluidPage(shinyjs::useShinyjs(),
                     # actionButton('clearPlot', 'Clear Plot'),
                     plotOutput("ndvi_pixels_plot")
            ),
+           tabPanel('Plot Data', value = 'PlotPanel',
+                    plotlyOutput("data_plot"),
+                    verbatimTextOutput("event_plot")
+           ),
 
            conditionalPanel("false", icon("crosshair"))
       )

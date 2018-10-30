@@ -36,6 +36,7 @@ library(httr)
 library(shinycssloaders)
 library(data.table)
 library(grDevices)
+library(plotly)
 
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
