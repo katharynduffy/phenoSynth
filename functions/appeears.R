@@ -21,7 +21,7 @@ get_site_from_task = function(task_name_, name_length){
 
 
 # Downloads file from bundle (whichever ft is set to (only nc and qa_csv))
-download_bundle_file = function(site_task_id_, ft){
+download_bundle_file = function(site_task_id_, filepath_,  ft){
   print (site_task_id_)
   response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
   bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
@@ -31,19 +31,14 @@ download_bundle_file = function(site_task_id_, ft){
   if (ft == 'nc'){
     netcdf    = subset(files, file_type == 'nc')
     download_this_file = netcdf$file_id
-    file_name = netcdf$file_name
   }else if(ft == 'qa_csv'){
     csvs      = subset(files, file_type == 'csv')
-    qa_csv    = csvs[grep('Quality-lookup', csvs$file_name), ]$file_id
-    download_this_file = qa_csv
-    file_name = csvs[grep('Quality-lookup', csvs$file_name), ]$file_name
+    download_this_file = csvs[grep('Quality-lookup', csvs$file_name), ]$file_id
   }
-  dest_dir = './www/'
-  filepath = paste(dest_dir, file_name, sep = '')
-  print (filepath)
+  print (filepath_)
   response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, '/', download_this_file, sep = ""),
-                 write_disk(filepath, overwrite = TRUE), progress())
-  return (filepath)
+                 write_disk(filepath_, overwrite = TRUE), progress())
+  return (filepath_)
 }
 
 

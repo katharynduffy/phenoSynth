@@ -27,6 +27,7 @@ switch_to_explorer_panel = function(map_ = 'map'){
   shinyjs::hide(id = 'highlightPixelModeNDVI')
   shinyjs::hide(id = 'plotPixelsNDVI')
   shinyjs::hide(id = 'getData')
+  shinyjs::hide(id = 'getDataPopup')
   leafletProxy(map_) %>%
     clearControls() %>%
     clearShapes() %>%

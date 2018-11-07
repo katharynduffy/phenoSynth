@@ -2,11 +2,14 @@
 # Initiate the UI
 ui = fluidPage(shinyjs::useShinyjs(),
                mainPanel(
+                 
                  bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
-                         selectInput('dataTypes_get', 'Data Types', c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
+                         checkboxInput("localDownload", "Download Data Locally", value = FALSE),
+                         selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('NDVI', 'GCC'), c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
+                         tags$div(`id`='toDataList'),
                          actionButton('getDataButton', 'Get Data'),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
                          helpText(id = 'doneGetData', 'Data Acquired'))
@@ -15,7 +18,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
-                         selectInput('dataTypes_plot', 'Data', c('MODIS NDVI', 'MODIS EVI', 'PhenoCam GCC')),
+                         selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('NDVI', 'GCC'), c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
                          selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
                          sliderInput('dataDateRange', 'Date start to end',
                                      min = as.Date('2000-01-01'),
@@ -25,6 +28,15 @@ ui = fluidPage(shinyjs::useShinyjs(),
                          helpText(id = 'noPixelWarning', 'No Pixels selected')
                          # actionButton('genDF', 'Download Data')
                          )
+               ,
+               bsModal("downloadDataPopup",
+                       "Download Data from Plot", "downloadData",
+                       tags$head(tags$style("#window .modal{backdrop: 'static'}")),
+                       size = "medium",
+                       selectInput('dataTypes_download', 'Data Types', multiple = TRUE, c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
+                       actionButton('downloadDataButton', 'Download Dataframe'),
+                       tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
+                       helpText(id = 'selectedDataframe', 'Data Acquired'))
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
 
@@ -62,8 +74,8 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
-                                      actionButton('getData', 'Pull AppEEARS & PhenoCam Data'),
-                                      actionButton('plotRemoteData', 'Explore, Plot & Download Selected Data')
+                                      actionButton('getData', 'Import Data'),
+                                      actionButton('plotRemoteData', 'Plot Data')
                                                                             ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
@@ -122,13 +134,15 @@ ui = fluidPage(shinyjs::useShinyjs(),
                     as.data.frame(cams_)
                    ),
 
-           tabPanel('Plot NDVI', value = 'PlotPanel',
-                    # actionButton('clearPlot', 'Clear Plot'),
-                    plotOutput("ndvi_pixels_plot")
-           ),
+           # tabPanel('Plot NDVI', value = 'PlotPanel',
+           #          # actionButton('clearPlot', 'Clear Plot'),
+           #          plotOutput("ndvi_pixels_plot")
+           # ),
            tabPanel('Plot Data', value = 'PlotPanel',
                     plotlyOutput("data_plot"),
-                    verbatimTextOutput("event_plot")
+                    # verbatimTextOutput("event_plot")
+                    actionButton('downloadData', 'Download Dataframe')
+                    
            ),
 
            conditionalPanel("false", icon("crosshair"))
