@@ -1,0 +1,135 @@
+/*input[type="number"] {
+  max-width: 80%;
+}*/
+
+/*.leaflet-popup-content {
+  width:280px;
+}*/
+
+#currentImage, #modisLegend {
+  width:375px;
+  height:225px;
+  background-color: rgba(0, 0, 0, 0.0);
+  border-color:rgba(0, 0, 0, 0.0);
+  border-color: rgba(0, 0, 0, 0.0);
+}
+
+#plotpanel {
+  background-color: rgba(0, 0, 0, 0.0);
+  border-color:rgba(0, 0, 0, 0.0);
+  border-color: rgba(0, 0, 0, 0.0);
+  z-index: 11;
+}
+
+#showImage, #hidePlot {
+  z-index: 10;
+  position:absolute;
+  height:15px;
+  width:15px;
+  font-size: 8px;
+  padding: 0px 0px;
+}
+
+#showROIimage{
+  z-index:10;
+  position:absolute;
+  height:15px;
+  font-size:8px;
+  left: 20px;
+  padding:0px 10px;
+}
+
+#doneBuildingPlot, #buildingPlot{
+  font-size:14px;
+  color:red;
+}
+
+.leaflet-right .leaflet-control {
+  margin-right: 130px;
+}
+
+.navbar {
+  height:40;
+}
+
+.img {
+  width:375px;
+  height:225px;
+}
+
+.roi {
+  width:375px;
+  height:225px;
+}
+
+div.outer {
+  position: fixed;
+  top: 41px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Customize fonts */
+body, label, input, button, select { 
+  font-family: 'Helvetica Neue', Helvetica;
+  font-weight: 200;
+}
+h1, h2, h3, h4 { font-weight: 400;}
+
+
+#siteTitle {
+  /* Appearance */
+  padding: 0px 10px 0px 10px;
+  z-index: 5;
+  border-width: 3px;
+  border-color: rgba(155, 155, 155, 1);
+}
+
+#mouseBox, #mouse {
+  background-color: rgba(0, 0, 0, 0.0);
+  border-color: rgba(0, 0, 0, 0.0);
+  box-shadow: none;
+  z-index: 4;
+  color:white;
+}
+
+#controls {
+  /* Appearance */
+  background-color: 'white';
+  padding: 0 20px 20px 20px;
+  cursor: move;
+  /* Fade out while not hovering */
+  opacity: 0.90;
+  zoom: 0.9;
+  transition: opacity 500ms 1s;
+  z-index: 5;
+  border-width: 3px;
+  border-color: rgba(155, 155, 155, 1);
+}
+
+#controls:hover {
+  /* Fade in while hovering */
+  opacity: 0.90;
+  transition-delay: 0;
+}
+
+/* Position and style citation */
+#cite {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 12px;
+}
+
+/* If not using map tiles, show a white background */
+.leaflet-container {
+  background-color: white !important;
+}
+
+/* Get Data for Anlysis Data types selected */
+#toDataList {
+  margin: 10;
+}
