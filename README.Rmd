@@ -5,18 +5,6 @@ With over a decade of National Phenology Network and PhenoCam near-surface image
 
 PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.
 
-### Use binder buttons below to run/interact with Application
-RStudio: [![Binder](http://mybinder.org/badge.svg)](http://beta.mybinder.org/v2/gh/katharynduffy/phenoRemote/master?urlpath=rstudio)
-
-### To access AppEEARS data you must edit the following in RStudio
-First you must create or log into your earth data portal:https://earthdata.nasa.gov/
-In addition you must allow AppEEARS to connect via an API: https://lpdaacsvc.cr.usgs.gov/appeears/help
-```
-username = 'your.username'
-password = 'your.password'
-```
-This is a bug based on API access via AppEEARS that we are currently trying to
-navigate.  Our apologies in the meantime.
 
 ### Easiest way to directly interact with R code is via runGitHub
 The following command will check for all the required R packages, install them if needed and run the PhenoSynth app directly from GitHub. However, the latest version of RStudio should be already installed. The app requires pre-installed GDAL and basic image rendering libraries (png, jpeg, tif, etc.) on the operating system.
