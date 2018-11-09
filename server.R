@@ -44,7 +44,11 @@ server = function(input, output, session) {
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
                                                               data=data.frame()))
 
-
+  output$phenoTable <- function() {
+      cams_ %>%
+      kable() %>%
+      kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+  }
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OUTPUTS
   #--------------------------------------------------------------------------------------------------------------------------------------
