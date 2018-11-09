@@ -36,13 +36,12 @@ library(shinycssloaders)
 library(data.table)
 library(grDevices)
 library(plotly)
-<<<<<<< HEAD
+
 library(knitr)
 library(kableExtra)
 options(knitr.table.format = "html")
 print ('Importing Modules and Phenocam site data')
-=======
->>>>>>> a6539f0fb33b0baa9b9f5e9bd2966f76fe5542c9
+
 
 # Variables
 table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
