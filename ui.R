@@ -2,14 +2,12 @@
 # Initiate the UI
 ui = fluidPage(shinyjs::useShinyjs(),
                mainPanel(
-                 
                  bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
-                         checkboxInput("localDownload", "Download Data Locally", value = FALSE),
-                         selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('NDVI', 'GCC'), c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
-                         tags$div(`id`='toDataList'),
+                         checkboxInput("localDownload", "Download Data Locally", value = TRUE),
+                         selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('NDVI', 'GCC', 'EVI', 'Transition Dates'), c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
                          actionButton('getDataButton', 'Get Data'),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
                          helpText(id = 'doneGetData', 'Data Acquired'))
@@ -19,7 +17,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
                          selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('NDVI', 'GCC'), c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
-                         selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
+                         # selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
                          sliderInput('dataDateRange', 'Date start to end',
                                      min = as.Date('2000-01-01'),
                                      max = Sys.Date(),
@@ -36,7 +34,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                        selectInput('dataTypes_download', 'Data Types', multiple = TRUE, c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
                        actionButton('downloadDataButton', 'Download Dataframe'),
                        tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
-                       helpText(id = 'selectedDataframe', 'Data Acquired'))
+                       helpText(id = 'selectDataframe', 'Data Acquired'))
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
 
@@ -45,8 +43,8 @@ ui = fluidPage(shinyjs::useShinyjs(),
                                    div(class="outer",
 
                                        tags$head(# Include custom CSS
-                                                 includeCSS("styles.css"),
-                                                 includeScript("gomap.js")
+                                                 includeCSS("./Aesthetics/styles.css"),
+                                                 includeScript("./Aesthetics/gomap.js")
                                                  ),
 
                         # If not using custom CSS, set height of leafletOutput to a number instead of percent

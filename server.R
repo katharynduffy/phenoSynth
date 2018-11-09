@@ -5,7 +5,7 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  REACTIVE VALUES
   #--------------------------------------------------------------------------------------------------------------------------------------
-
+  print ('testtest')
   variables = reactiveValues(
                       filter   = 'All',
                       sites_df = cams_,
@@ -15,7 +15,7 @@ server = function(input, output, session) {
 
   highlighted = reactiveValues(
                       group = '')
-  
+
   phenocam    = reactiveValues()
 
   panel   = reactiveValues(mode = '')
@@ -25,6 +25,10 @@ server = function(input, output, session) {
   modis   = reactiveValues(data = data.frame(),
                            cached_ndvi = list())
 
+  layers  = reactiveValues(evi_MOD13Q1_v6  = FALSE,
+                           td_MCD12Q2_v5   = FALSE,
+                           ndvi_MOD13Q1_v6 = FALSE,
+                           gcc_Phenocam    = FALSE)
 
   data    = reactiveValues(
                       draw_mode = FALSE,
@@ -45,7 +49,7 @@ server = function(input, output, session) {
   #  OUTPUTS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
-  ## Create the map
+  # Create the map
   output$map = renderLeaflet({
     leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE, doubleClickZoom = FALSE)) %>%
       addTiles(
@@ -378,7 +382,7 @@ server = function(input, output, session) {
   # Show Popup box for site when clicked
   observeEvent(input$map_marker_click, {
     event     = isolate(input$map_marker_click)
-    
+
     updateSelectInput(session, 'site', selected = event$id )
     print (event$id)
     site      = event$id
@@ -393,7 +397,7 @@ server = function(input, output, session) {
       return()
 
     leafletProxy("map", data = variables$sites_df) %>% clearPopups()
-    
+
     site = event$id
     lat             = site_data$Lat
     lon             = site_data$Lon
@@ -406,7 +410,7 @@ server = function(input, output, session) {
     active          = site_data$active
     date_end        = site_data$date_last
     date_start      = site_data$date_first
-    get_site_popup(camera, lat, lon, description, elevation, 
+    get_site_popup(camera, lat, lon, description, elevation,
                    site_type, cam_orientation, degrees,
                    active, date_end, date_start)
   })
@@ -441,7 +445,7 @@ server = function(input, output, session) {
       shinyjs::hide(id = 'currentImage')
     }
   })
-  
+
 
   # Button switches to Analyzer Mode
   observeEvent(input$analyzerMode,{
@@ -460,11 +464,6 @@ server = function(input, output, session) {
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
     updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
-
-    print (sprintf('grabbing task row from appeears for site: %s', site))
-    appeears$ndvi = get_appeears_task(site, type = 'ndvi')
-    appeears$tds  = get_appeears_task(site, type = 'tds')
-
 
     veg_idx       = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
@@ -554,9 +553,13 @@ server = function(input, output, session) {
     data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
+    layers$evi_MOD13Q1_v6  = FALSE
+    layers$td_MCD12Q2_v5   = FALSE
+    layers$ndvi_MOD13Q1_v6 = FALSE
+    layers$gcc_Phenocam    = FALSE
   })
 
-  # Button that plots NDVI
+  # Button that plots selected Data Types
   observeEvent(input$plotDataButton, {
     print ('Plotting NDVI')
 
@@ -564,24 +567,25 @@ server = function(input, output, session) {
     data_type_selected  = input$dataTypes_plot
     pixel_size_selected = input$pixelTypes
 
-    site        = input$site
-    site_data   = get_site_info(site)
+    site          = input$site
+    site_data     = get_site_info(site)
+    selected_data = input$dataTypes_plot
 
     #----NDVI------------------------------------------------------------------------------------------------------------------------
-    if (data_type_selected == 'NDVI'){
+    if ('NDVI' %in% selected_data){
 
       nc_data = data$site_nc
       dates   = ncvar_get(nc_data, 'time')
       crs = CRS("+proj=longlat +datum=WGS84")
 
       start_date_str = nc_data[[11]]$time$units
-      print (start_date_str)
+      # print (start_date_str)
       start_date     = as.Date(strsplit(start_date_str, ' ')[[1]][3])
-      print (start_date)
+      # print (start_date)
 
       # In date format
       date_list = dates + start_date
-      print (date_list)
+      # print (date_list)
 
       nc_ndvi = data$ndvi_nc
 
@@ -647,10 +651,8 @@ server = function(input, output, session) {
             var_ = paste0('pixel_', i)
             variables_ = c(variables_, var_)
           }
-          print (polys_len)
 
           # Grab GCC
-          
           csv = phenocam$csv
           pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
           source= rep('PhenoCam GCC', nrow(pData))
@@ -681,39 +683,35 @@ server = function(input, output, session) {
 
           p = ggplot(data = final_data, aes(x= date, y=value, color=variable)) +
             geom_line() +
-            scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y') 
+            scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
           p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
 
         # })
       }
-    #----PHENOCAM------------------------------------------------------------------------------------------------------------------------
-    }else if(data_type_selected == 'PhenoCam GCC'){
-
-        phenoCamData = get_site_roi_3day_csvs(name       = site, 
-                                              roi_files_ = roi_files)
-        parsed_data  = cbind(parsed_data, source)
-         ##pickup here
-        phenoCamData$date = as.Date(phenoCamData$date)
-        source = rep('PhenoCam', nrow(phenoCamData))
-        #pvars=c('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
-        pData=phenoCamData%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
-        pData=cbind(pData, source)
-        sDF=left_join(parsed_data, pData)#pick up here
-      # })
-
-    }else if(data_type_selected == 'MODIS EVI'){
-      print ('Pretending to plot modis EVI')
-    }else{
-      df = data.frame()
-      p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1)
     }
 
+    if('EVI' %in% selected_data){
+      print ('Pretending to plot modis EVI')
+      print ('need to add data into the all_data df')
+    }
 
+    if('GCC' %in% selected_data){
+      print ('Pretending to plot modis GCC')
+      print ('need to add data into the all_data df')
+    }
+    print (pixels)
+    print (length(pixels))
+    if(is.null(selected_data) | length(pixels)==0){
+      df = data.frame()
+      p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1) + ggtitle('Select a Pixel!!')
+    }
+
+    
     # Plot p
     output$ndvi_pixels_plot = renderPlot({
       p
     })
-    
+
     pp = ggplotly(p) %>% config(displaylogo = FALSE,
                                 modeBarButtonsToRemove = list(
                                   'sendDataToCloud',
@@ -723,18 +721,18 @@ server = function(input, output, session) {
                                   'hoverCompareCartesian',
                                   'toggleSpikelines'
                                 ))
-    
+
     output$data_plot = renderPlotly({
       pp
     })
-    
+
     output$event_plot = renderPrint({
       d = event_data("plotly_hover")
       if (is.null(d)) "Hover on a point!" else d
     })
 
     print (paste0(data_type_selected, ' Plotting Completed'))
-    shinyBS::toggleModal(session, 'plotDataPopup')
+    shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
     updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
   })
 
@@ -793,40 +791,43 @@ server = function(input, output, session) {
     selected_data = input$dataTypes_get
     data_options  = c('NDVI', 'EVI', 'GCC', 'Transition Dates')
     file_path     = paste0('./www/site_data/', site, '/data_layers/')
-    
+
     print ('Importing data for:')
     print (selected_data)
-    
-    # Set up directories to store data if in 
+
+    # Set up directories to store data if in Download local data mode
     if (input$localDownload){
       main = './www/site_data'
-      if (!file.exists(main)){ 
+      if (!file.exists(main)){
         dir.create(file.path(main))
       }
       main_site = paste0(main, '/', site)
-      if (!file.exists(main_site)){ 
-        dir.create(file.path(main_site)) 
+      if (!file.exists(main_site)){
+        dir.create(file.path(main_site))
         dir.create(file.path(paste0(main_site, '/', 'data_layers')))
       }
     }
 
     # withProgress(message = 'Grabbing AppEEARS Data. ', detail = paste0('   Site: ', site, ', NDVI'), value = 0, {
     #   incProgress(.1)
-    
-    
-      # Import netcdf for [NDVI] layer
+
+
+      # Import [NDVI] netcdf(ndvi) and csv(qa)
       #------------------------------------------------------------------------
     if (data_options[1] %in% selected_data){
+      layers$ndvi_MOD13Q1_v6 = TRUE
+      appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
+      print ('Importing NDVI')
       ndvi_filepath    = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.nc')
       ndvi_qa_filepath = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.csv')
-      
+
       if (input$localDownload){
         if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$ndvi$task_id, ndvi_filepath, 'nc')}
         if (!file.exists(ndvi_qa_filepath)) {download_bundle_file(appeears$ndvi$task_id, ndvi_qa_filepath, 'qa_csv')}
-  
+
         ndvi_output    = nc_open(ndvi_filepath)
         v6_QA_lut      = read.csv(ndvi_qa_filepath)
-        
+
       }else{
         if (file.exists(ndvi_filepath))    {ndvi_output    = nc_open(ndvi_filepath)}
         else{
@@ -843,43 +844,46 @@ server = function(input, output, session) {
           delete_file(temp_qa)
         }
       }
-      
+
       # Add ndvi_nc file to memory
       data$site_nc = ndvi_output
-      
+
       # netcdf manipulation
       v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
       v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-      
+
       # Set lat and lon arrays for NDVI data
       lat_NDVI = ncvar_get(ndvi_output, "lat")
       lon_NDVI = ncvar_get(ndvi_output, "lon")
-      
+
       # Grab the fill value and set to NA
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
       v6_NDVI[v6_NDVI == fillvalue$value] = NA
-      
+
       data$ndvi_nc = v6_NDVI
-      
+
       # Define the coordinate referense system proj.4 string
       crs = CRS("+proj=longlat +datum=WGS84")
-      
+
       # Grab first observation of NDVI and Quality datasets
       v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
       data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
       shinyjs::show(id = 'highlightPixelModeNDVI')
     }
-    
-      
-      # Import netcdf for [Transition Dates] layer
+
+
+      # Import [Transition Dates] netcdfs
       #------------------------------------------------------------------------
     if (data_options[4] %in% selected_data){
+      appeears$tds  = get_appeears_task(site, type = 'tds')
+      layers$td_MCD12Q2_v5 = TRUE
+      print ('Importing Transition Dates')
       ndvi_filepath    = paste0(file_path, 'td', '_', 'ddmmyyyy', '.nc')
-      
+
       if (input$localDownload){
         if (!file.exists(ndvi_filepath)) {download_bundle_file(appeears$tds$task_id, ndvi_filepath, 'nc')}
         data$tds_nc = nc_open(ndvi_filepath)
-        
+
       }else{
         if (file.exists(ndvi_filepath)) {data$tds_nc = nc_open(ndvi_filepath)}
         else{
@@ -897,24 +901,53 @@ server = function(input, output, session) {
       Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "Onset_Greenness_Maximum")
       Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "Onset_Greenness_Minimum")
       }
-    
-      
-      # Import [EVI] netcdf (Needs)
+
+
+      # Import [EVI] netcdf(evi) and csv(qa)
       #------------------------------------------------------------------------
     if (data_options[2] %in% selected_data){
-      print ('No EVI data available to add at this time')
+      print ('Importing EVI')
+      layers$evi_MOD13Q1_v6 = TRUE
+      evi_filepath    = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.nc')
+      evi_qa_filepath = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.csv')
+
+      if (input$localDownload){
+        if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$evi$task_id, evi_filepath, 'nc')}
+        if (!file.exists(ndvi_qa_filepath)) {download_bundle_file(appeears$evi$task_id, evi_qa_filepath, 'qa_csv')}
+
+        ndvi_output    = nc_open(ndvi_filepath)
+        v6_QA_lut      = read.csv(ndvi_qa_filepath)
+
+      }else{
+        if (file.exists(ndvi_filepath))    {ndvi_output    = nc_open(ndvi_filepath)}
+        else{
+          temp_nc = './www/deleteme.nc'
+          download_bundle_file(appeears$ndvi$task_id, temp_nc, 'nc')
+          ndvi_output    = nc_open(temp_nc)
+          delete_file(temp_nc)
+        }
+        if (file.exists(ndvi_qa_filepath)) {v6_QA_lut      = read.csv(ndvi_qa_filepath)}
+        else {
+          temp_qa = './www/deletemetoo.nc'
+          download_bundle_file(appeears$ndvi$task_id, temp_qa, 'qa_csv')
+          v6_QA_lut      = read.csv(temp_qa)
+          delete_file(temp_qa)
+        }
+      }
     }
-    
-      
-      # Import [GCC] splined Data from phenocam
+
+
+      # Import [GCC] splined Data from phenocam (csv)
       #------------------------------------------------------------------------
     if (data_options[3] %in% selected_data){
+      print ('Importing Phenocam GCC')
+      layers$gcc_Phenocam = TRUE
       gcc_filepath    = paste0(file_path, 'gcc', '_', 'ddmmyyyy', '.csv')
       if (input$localDownload){
         if (file.exists(gcc_filepath)){
           phenocam$csv = read.csv(gcc_filepath, header = TRUE)
         }else{
-          phenocam$csv = get_site_roi_3day_csvs(name       = site, 
+          phenocam$csv = get_site_roi_3day_csvs(name       = site,
                                                 roi_files_ = roi_files)
           write.csv(phenocam$csv, file = gcc_filepath)
         }
@@ -922,18 +955,19 @@ server = function(input, output, session) {
         if (file.exists(gcc_filepath)){
           phenocam$csv = read.csv(gcc_filepath, header = TRUE)
         } else{
-          phenocam$csv = get_site_roi_3day_csvs(name       = site, 
+          phenocam$csv = get_site_roi_3day_csvs(name       = site,
                                                 roi_files_ = roi_files)
         }
       }
     }
-    
-      
+
+
+
       # Build [Raster Grid] with raster (NDVI, EVI, or etc.)
       #------------------------------------------------------------------------
       build_raster_grid(data$r_ndvi_cropped, map = 'map')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
-      
+
 
       shinyjs::show(id = 'plotRemoteData')
       shinyjs::hide(id = 'noPixelWarning')
@@ -941,20 +975,50 @@ server = function(input, output, session) {
       start_site = as.character(site_data$date_first)
       end_site   = as.character(site_data$date_last)
 
-      
+
       updateSliderInput(session, 'dataDateRange',
                         min = as.Date(start_site),
                         max = as.Date(end_site),
                         value = c(as.Date(start_site), as.Date(end_site)))
-  
+
     shinyjs::show(id = 'doneGetData')
-    shinyBS::toggleModal(session, 'getDataPopup')
-    
-    
+    shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
+  })
+
+  observeEvent(input$downloadDataButton, {
+    print ('add download function please')
+  })
+
+  observeEvent(input$plotRemoteData, {
+    shinyjs::hide(id = 'pixelTypes')
+    shinyjs::hide(id = 'dataDateRange')
+    shinyjs::hide(id = 'plotDataButton')
+    types = input$dataTypes_plot
+    if ('NDVI' %in% types || 'EVI' %in% types |'Transition Dates' %in% types){
+      shinyjs::show(id = 'pixelTypes')
+    }
+    if (!is.null(types)){
+      shinyjs::show(id = 'plotDataButton')
+      shinyjs::show(id = 'dataDateRange')
+    }
+  })
+  
+  observeEvent(input$dataTypes_plot, {
+    types = input$dataTypes_plot
+    print (types)
+    # if ('NDVI' %in% types || 'EVI' %in% types |'Transition Dates' %in% types){
+    #   shinyjs::show(id = 'pixelTypes')
+    # }else {
+    #   shinyjs::hide(id = 'pixelTypes')}
+    if (!is.null(types)){
+      shinyjs::show(id = 'plotDataButton')
+      shinyjs::show(id = 'dataDateRange')
+    }else {
+      shinyjs::hide(id = 'plotDataButton')
+      shinyjs::hide(id = 'dataDateRange')}
   })
 
 
-  
   #--------------------------------------------------------------------------------------------------------------------------------------
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  FUNCTIONS
@@ -1055,7 +1119,7 @@ server = function(input, output, session) {
                                           c(datalon[3], datalat[3]),
                                           c(datalon[4], datalat[4]),
                                           c(datalon[5], datalat[5])), id_, as.character(type_))
-         
+
          if (type_ == '500m'){
              if (length(data$pixel_sps_500m) == 0){
                data$pixel_sps_500m = pixel

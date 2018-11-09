@@ -1,7 +1,5 @@
 # Global file for Shiny App phenoRemote
-
 source('./functions/geospatial.R')
-source('./functions/test.R')
 source('./functions/basic.R')
 source('./functions/image.R')
 source('./functions/leaflet.R')
@@ -37,11 +35,12 @@ library(shinycssloaders)
 library(data.table)
 library(grDevices)
 library(plotly)
+print ('Importing Modules and Phenocam site data')
 
-# Variables
-table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
-df <- read.csv(url(table_url))
-colnames(df)
+# # Variables
+# table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
+# df <- read.csv(url(table_url))
+# colnames(df)
 
 c      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=2000')
 c = c$results
@@ -49,6 +48,7 @@ c_m=c$sitemetadata
 c$sitemetadata=NULL
 cams_=cbind(c, c_m)
 cams_[is.na(cams_)] = 'N'
+cams_[, 2:4] <- sapply(cams_[, 2:4], as.numeric) #changing lat/lon/elev from string values into numeric
 
 # All site names from table
 site_names = cams_$Sitename
@@ -59,9 +59,6 @@ cams_$camera_orientation[cams_$camera_orientation == ''] = 'N'
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
-image_sizes_h = list('Small' = 150, 'Medium' = 300, 'Large' = 600)
-image_sizes_w = list('Small' = 250, 'Medium' = 500, 'Large' = 1000)
-
 
 pft_key = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,254,255)
 pft_abbreviated = c('Water','EN','EB','DN','DB','MF','SH','SH','SV','SV','GR','WL','AG','UB','MX','TN','UN','NAN','NAN')
@@ -73,11 +70,14 @@ site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
 rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
 roi_files = rois$results
+roi_files = roi_files
 
 idx=is.element(cams_$Sitename, roi_files$site)
-cams_=cams_[idx,]
+cams_=as.data.frame(cams_[idx,])
 
 # Load in dataframe with cached AppEEARS tasks
 appeears_tasks     = readRDS(file = './www/cache_df.df')
 # Load in df with cached AppEEARS Transition Dates (dts)
 appeears_tasks_tds = readRDS(file = './www/cache_df_tds.df')
+print ('Spinning up Application')
+
