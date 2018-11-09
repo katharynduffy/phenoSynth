@@ -1,5 +1,5 @@
 
-## PhenoSynth: An interactive tool to evaluate phenology data across spatial and temporal scales
+## PhenoSynth: An interactive tool to evaluate phenology data across data sources, spatial, and temporal scales
 
 With over a decade of National Phenology Network and PhenoCam near-surface imagery records, point-based datasets have reached a critical mass with which to evaluate phenological change. However, these datasets often represent single species or vegetation types, making them challenging to scale spatially and extract regional-to-continental scale trends. PhenoCam imagery can record large landscapes and multiple vegetation types, creating opportunities to evaluate spatial overlap between these high-precision, point-based observations of single species or vegetation types and remotely-sensed, satellite-derived data products that have coarse spatial and temporal-extents and heterogeneous vegetation cover. Many challenges exist within points-to-pixels phenology extrapolation. In heterogeneously vegetated areas, Region of Interest (ROI) vegetation types extracted for PhenoCam analyses are sometimes underrepresented or absent in coarse satellite-derived vegetation cover classifications, which can create a mismatch in phenological signals. Further, PhenoCam field of view can span multiple remotely sensed pixels, yet observe a small portion of them, again creating potential mismatch between datasets and time series. Key factors for scaling phenological data are to evaluate ROI representativeness at landscape levels and the spatial fraction of remotely sensed pixels observed by PhenoCam.
 
@@ -17,7 +17,15 @@ runGitHub("phenoRemote", "katharynduffy")
 
 ```
 
+###  Notes to current users:
+We are currently in the process of
+1) Integrating NPN data
+2) Developing a stand-alone PhenoSynth package with the same functionality, simply without the graphical interface
+3) Building a cached data archive for users
 
-The R package has been developed and maintained by [Katharyn Duffy and Kyle Enns for APIS Case 2](https://github.com/katharynduffy) since June, 2018.
+Please hang in there with us while we get these off the ground and let us know if you have any requests or feedback.
+
+
+The R package has been developed and maintained by [Katharyn Duffy and Kyle Enns for APIS Case 2](https://esto.nasa.gov/files/solicitations/AIST_16/ROSES2016_AIST_A41_awards.html#Jeffrey) since June, 2018.
 
 Most recent release is available from: https://github.com/katharynduffy/phenoRemote
