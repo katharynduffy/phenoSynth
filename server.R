@@ -570,9 +570,7 @@ server = function(input, output, session) {
     site          = input$site
     site_data     = get_site_info(site)
     selected_data = input$dataTypes_plot
-    print (selected_data)
-    print (any(selected_data))
-    
+
 
     #----NDVI------------------------------------------------------------------------------------------------------------------------
     if ('NDVI' %in% selected_data | 'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
@@ -907,38 +905,38 @@ server = function(input, output, session) {
       }
 
 
-      # Import [EVI] netcdf(evi) and csv(qa)
-      #------------------------------------------------------------------------
-    if (data_options[2] %in% selected_data){
-      print ('Importing EVI')
-      layers$evi_MOD13Q1_v6 = TRUE
-      evi_filepath    = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.nc')
-      evi_qa_filepath = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.csv')
-
-      if (input$localDownload){
-        if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$evi$task_id, evi_filepath, 'nc')}
-        if (!file.exists(ndvi_qa_filepath)) {download_bundle_file(appeears$evi$task_id, evi_qa_filepath, 'qa_csv')}
-
-        ndvi_output    = nc_open(ndvi_filepath)
-        v6_QA_lut      = read.csv(ndvi_qa_filepath)
-
-      }else{
-        if (file.exists(ndvi_filepath))    {ndvi_output    = nc_open(ndvi_filepath)}
-        else{
-          temp_nc = './www/deleteme.nc'
-          download_bundle_file(appeears$ndvi$task_id, temp_nc, 'nc')
-          ndvi_output    = nc_open(temp_nc)
-          delete_file(temp_nc)
-        }
-        if (file.exists(ndvi_qa_filepath)) {v6_QA_lut      = read.csv(ndvi_qa_filepath)}
-        else {
-          temp_qa = './www/deletemetoo.nc'
-          download_bundle_file(appeears$ndvi$task_id, temp_qa, 'qa_csv')
-          v6_QA_lut      = read.csv(temp_qa)
-          delete_file(temp_qa)
-        }
-      }
-    }
+    #   # Import [EVI] netcdf(evi) and csv(qa)
+    #   #------------------------------------------------------------------------
+    # if (data_options[2] %in% selected_data){
+    #   print ('Importing EVI')
+    #   layers$evi_MOD13Q1_v6 = TRUE
+    #   evi_filepath    = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.nc')
+    #   evi_qa_filepath = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.csv')
+    # 
+    #   if (input$localDownload){
+    #     if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$evi$task_id, evi_filepath, 'nc')}
+    #     if (!file.exists(ndvi_qa_filepath)) {download_bundle_file(appeears$evi$task_id, evi_qa_filepath, 'qa_csv')}
+    # 
+    #     ndvi_output    = nc_open(ndvi_filepath)
+    #     v6_QA_lut      = read.csv(ndvi_qa_filepath)
+    # 
+    #   }else{
+    #     if (file.exists(ndvi_filepath))    {ndvi_output    = nc_open(ndvi_filepath)}
+    #     else{
+    #       temp_nc = './www/deleteme.nc'
+    #       download_bundle_file(appeears$ndvi$task_id, temp_nc, 'nc')
+    #       ndvi_output    = nc_open(temp_nc)
+    #       delete_file(temp_nc)
+    #     }
+    #     if (file.exists(ndvi_qa_filepath)) {v6_QA_lut      = read.csv(ndvi_qa_filepath)}
+    #     else {
+    #       temp_qa = './www/deletemetoo.nc'
+    #       download_bundle_file(appeears$ndvi$task_id, temp_qa, 'qa_csv')
+    #       v6_QA_lut      = read.csv(temp_qa)
+    #       delete_file(temp_qa)
+    #     }
+    #   }
+    # }
 
 
       # Import [GCC] splined Data from phenocam (csv)
