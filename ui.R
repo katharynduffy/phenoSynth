@@ -137,7 +137,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
            #          plotOutput("ndvi_pixels_plot")
            # ),
            tabPanel('Plot Data', value = 'PlotPanel',
-                    plotlyOutput("data_plot"),
+                    plotlyOutput("data_plot", height = 600, width = 1300, inline =TRUE),
                     # verbatimTextOutput("event_plot")
                     actionButton('downloadData', 'Download Dataframe')
                     

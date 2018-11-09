@@ -570,9 +570,12 @@ server = function(input, output, session) {
     site          = input$site
     site_data     = get_site_info(site)
     selected_data = input$dataTypes_plot
+    print (selected_data)
+    print (any(selected_data))
+    
 
     #----NDVI------------------------------------------------------------------------------------------------------------------------
-    if ('NDVI' %in% selected_data){
+    if ('NDVI' %in% selected_data | 'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
 
       nc_data = data$site_nc
       dates   = ncvar_get(nc_data, 'time')
@@ -690,17 +693,18 @@ server = function(input, output, session) {
       }
     }
 
-    if('EVI' %in% selected_data){
-      print ('Pretending to plot modis EVI')
-      print ('need to add data into the all_data df')
-    }
-
-    if('GCC' %in% selected_data){
-      print ('Pretending to plot modis GCC')
-      print ('need to add data into the all_data df')
-    }
-    print (pixels)
-    print (length(pixels))
+    # if('EVI' %in% selected_data){
+    #   print ('Pretending to plot modis EVI')
+    #   print ('need to add data into the all_data df')
+    # }
+    # 
+    # if('GCC' %in% selected_data){
+    #   print ('Pretending to plot modis GCC')
+    #   print ('need to add data into the all_data df')
+    # }
+    # print (pixels)
+    # print (length(pixels))
+    
     if(is.null(selected_data) | length(pixels)==0){
       df = data.frame()
       p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1) + ggtitle('Select a Pixel!!')

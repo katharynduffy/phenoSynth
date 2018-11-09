@@ -70,7 +70,6 @@ site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
 rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
 roi_files = rois$results
-roi_files = roi_files
 
 idx=is.element(cams_$Sitename, roi_files$site)
 cams_=as.data.frame(cams_[idx,])
