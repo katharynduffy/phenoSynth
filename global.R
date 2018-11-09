@@ -1,7 +1,6 @@
 # Global file for Shiny App phenoRemote
 
 source('./functions/geospatial.R')
-source('./functions/test.R')
 source('./functions/basic.R')
 source('./functions/image.R')
 source('./functions/leaflet.R')
