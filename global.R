@@ -1,4 +1,5 @@
 # Global file for Shiny App phenoRemote
+
 source('./functions/geospatial.R')
 source('./functions/basic.R')
 source('./functions/image.R')
@@ -35,15 +36,18 @@ library(shinycssloaders)
 library(data.table)
 library(grDevices)
 library(plotly)
+<<<<<<< HEAD
 library(knitr)
 library(kableExtra)
 options(knitr.table.format = "html")
 print ('Importing Modules and Phenocam site data')
+=======
+>>>>>>> a6539f0fb33b0baa9b9f5e9bd2966f76fe5542c9
 
-# # Variables
-# table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
-# df <- read.csv(url(table_url))
-# colnames(df)
+# Variables
+table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
+df <- read.csv(url(table_url))
+colnames(df)
 
 c      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=2000')
 c = c$results
@@ -62,6 +66,9 @@ cams_$camera_orientation[cams_$camera_orientation == ''] = 'N'
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
+image_sizes_h = list('Small' = 150, 'Medium' = 300, 'Large' = 600)
+image_sizes_w = list('Small' = 250, 'Medium' = 500, 'Large' = 1000)
+
 
 pft_key = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,254,255)
 pft_abbreviated = c('Water','EN','EB','DN','DB','MF','SH','SH','SV','SV','GR','WL','AG','UB','MX','TN','UN','NAN','NAN')
@@ -75,11 +82,9 @@ rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format
 roi_files = rois$results
 
 idx=is.element(cams_$Sitename, roi_files$site)
-cams_=as.data.frame(cams_[idx,])
+cams_=cams_[idx,]
 
 # Load in dataframe with cached AppEEARS tasks
 appeears_tasks     = readRDS(file = './www/cache_df.df')
 # Load in df with cached AppEEARS Transition Dates (dts)
 appeears_tasks_tds = readRDS(file = './www/cache_df_tds.df')
-print ('Spinning up Application')
-
