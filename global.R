@@ -6,6 +6,8 @@ source('./functions/image.R')
 source('./functions/leaflet.R')
 source('./functions/appeears.R')
 source('./functions/data_processing.R')
+source('./functions/transition_dates.R')
+source('./functions/normalize_ts.R')
 
 # Libraries
 library(shiny)          # Provides web framework for building web applications

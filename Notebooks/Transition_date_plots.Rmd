@@ -1,0 +1,359 @@
+---
+title: "transition dates plot aesthetics"
+author: "K. Duffy"
+date: "11/13/2018"
+output: html_document
+---
+```{r}
+my_dates <- transition_dates(smoothed,
+                            lower_thresh = 0.1,
+                             middle_thresh = 0.25,
+                             upper_thresh = 0.5,
+                            percentile = 90,
+                             reverse = FALSE,
+                             plot = FALSE)
+```
+```{r}
+# list all colours to be used in plotting
+# this allows for quick changes
+col_sos_10 = "#7FFF00"
+col_sos_25 = "#66CD00"
+col_sos_50 = "#458B00"
+
+col_eos_10 = "#8B6508"
+col_eos_25 = "#CD950C"
+col_eos_50 = "#FFB90F"
+
+col_ci = "#C8C8C8"
+col_line = "#787878"
+col_text = "#787878"
+
+p = plot_ly(
+            data = plot_data,
+            x = ~ date,
+            y = ~ gcc_smooth,
+            showlegend = FALSE
+          ) %>%
+            add_trace(
+              x = ~ date,
+              y = ~ gcc_smooth - ci,
+              mode = "lines",
+              type = "scatter",
+              line = list(width = 0, color = "rgb(200,200,200)"),
+              showlegend = FALSE,
+              name = "Gcc 95% CI"
+            ) %>%
+            add_trace(
+              y = ~ gcc_smooth + ci,
+              fill = "tonexty",
+              mode = "lines",
+              line = list(width = 0, color = "rgb(200,200,200)"),
+              showlegend = TRUE,
+              name = "Gcc 95% CI"
+            ) %>%
+            add_trace(
+              y = ~ gcc_smooth,
+              mode = "lines",
+              line = list(width = 2, color = "rgb(120,120,120)"),
+              name = "Gcc loess fit",
+              showlegend = TRUE
+            ) %>%
+            add_trace(
+              y = ~ gcc,
+              mode = "markers",
+              type = "scatter",
+              symbol = ~ I(outlier_symbols),
+              color = ~ I(rep(rgb(0.3, 0.3, 0.3),nrow(plot_data))),
+              name = "Gcc",
+              showlegend = TRUE
+            ) %>%
+            
+            # SOS spring
+            # 10%
+            add_trace(
+              data = spring,
+              x = ~ as.Date(transition_10),
+              y = ~ threshold_10,
+              mode = "markers",
+              type = "scatter",
+              marker = list(color = "#7FFF00", symbol = "circle"),
+              name = "SOS (10%)",
+              showlegend = TRUE
+            ) %>%
+            add_segments(x = ~ as.Date(transition_10_lower_ci),
+                         xend = ~ as.Date(transition_10_upper_ci),
+                         y = ~ threshold_10,
+                         yend = ~ threshold_10,
+                         line = list(color = "#7FFF00"),
+                         name = "SOS (10%) - CI"
+            ) %>%
+            # 25 %
+            add_trace(
+              x = ~ as.Date(transition_25),
+              y = ~ threshold_25,
+              mode = "markers",
+              type = "scatter",
+              marker = list(color = "#66CD00", symbol = "square"),
+              showlegend = TRUE,
+              name = "SOS (25%)"
+            ) %>%
+            add_segments(x = ~ as.Date(transition_25_lower_ci),
+                         xend = ~ as.Date(transition_25_upper_ci),
+                         y = ~ threshold_25,
+                         yend = ~ threshold_25,
+                         line = list(color = "#66CD00"),
+                         name = "SOS (25%) - CI"
+            ) %>%
+            # 50 %
+            add_trace(
+              x = ~ as.Date(transition_50),
+              y = ~ threshold_50,
+              mode = "markers",
+              type = "scatter",
+              marker = list(color = "#458B00", symbol = "diamond"),
+              showlegend = TRUE,
+              name = "SOS (50%)"
+            ) %>%
+            add_segments(x = ~ as.Date(transition_50_lower_ci),
+                         xend = ~ as.Date(transition_50_upper_ci),
+                         y = ~ threshold_50,
+                         yend = ~ threshold_50,
+                         line = list(color = "#458B00"),
+                         name = "SOS (50%) - CI"
+            ) %>%
+            
+            # EOS fall
+            # 50%
+            add_trace(
+              data = fall,
+              x = ~ as.Date(transition_50),
+              y = ~ threshold_50,
+              mode = "markers",
+              type = "scatter",
+              marker = list(color = "#FFB90F", symbol = "diamond"),
+              showlegend = TRUE,
+              name = "EOS (50%)"
+            ) %>%
+            add_segments(x = ~ as.Date(transition_50_lower_ci),
+                         xend = ~ as.Date(transition_50_upper_ci),
+                         y = ~ threshold_50,
+                         yend = ~ threshold_50,
+                         line = list(color = "#FFB90F"),
+                         name = "EOS (50%) - CI"
+            ) %>%
+            # 25 %
+            add_trace(
+              x = ~ as.Date(transition_25),
+              y = ~ threshold_25,
+              mode = "markers",
+              type = "scatter",
+              marker = list(color = "#CD950C", symbol = "square"),
+              showlegend = TRUE,
+              name = "EOS (25%)"
+            ) %>%
+            add_segments(x = ~ as.Date(transition_25_lower_ci),
+                         xend = ~ as.Date(transition_25_upper_ci),
+                         y = ~ threshold_25,
+                         yend = ~ threshold_25,
+                         line = list(color = "#CD950C"),
+                         name = "EOS (25%) - CI"
+            ) %>%
+            # 10 %
+            add_trace(
+              x = ~ as.Date(transition_10),
+              y = ~ threshold_10,
+              mode = "markers",
+              marker = list(color = "#8B6508", symbol = "circle"),
+              showlegend = TRUE,
+              name = "EOS (10%)"
+            ) %>%
+            add_segments(x = ~ as.Date(transition_10_lower_ci),
+                         xend = ~ as.Date(transition_10_upper_ci),
+                         y = ~ threshold_10,
+                         yend = ~ threshold_10,
+                         line = list(color = "#8B6508"),
+                         name = "EOS (10%) - CI"
+            ) %>%
+            layout(xaxis = list(title = "Date"),
+                   yaxis = list(title = "Gcc"))
+        } else {
+          
+          p = plot_ly(
+            data = plot_data,
+            x = ~ date,
+            y = ~ bcc,
+            showlegend = FALSE
+          ) %>%
+            add_trace(
+              y = ~ bcc,
+              mode = "markers",
+              type = "scatter",
+              marker = list(color = "#0000FF", symbol = "circle"),
+              name = "Bcc",
+              showlegend = TRUE
+            ) %>%
+            add_trace(
+              y = ~ rcc,
+              marker = list(color = "#FF0000", symbol = "circle"),
+              name = "Rcc",
+              showlegend = TRUE
+            ) %>%
+            add_trace(
+              y = ~ gcc,
+              symbol = ~ I(outlier_symbols),
+              marker = list(color = "#00FF00", symbols = ~ outlier_symbols),
+              name = "Gcc",
+              showlegend = TRUE
+            ) %>% 
+            add_trace(
+              y = ~ gcc_smooth,
+              type="scatter",
+              mode = "lines",
+              line = list(width = 2, color = "#00FF00"),
+              name = "Gcc loess fit",
+              showlegend = TRUE
+            ) %>%
+            layout(xaxis = list(title = "Date"),
+                   yaxis = list(title = "Gcc / Rcc / Bcc"))
+        }
+        
+      } else{
+        
+        # condense to one plot along DOY
+        if (input$plot_type == "byyear") {
+          
+          ltm = plot_data %>% group_by(doy) %>%
+            summarise(mn = mean(gcc_smooth), sd = sd(gcc_smooth), doymn = mean(doy))
+          
+          # delete interpolated data
+          # NA values == data available
+          plot_data$gcc_smooth[!is.na(plot_data$int_flag)] = NA
+          
+          p = plot_ly(
+            data = ltm,
+            x = ~ doymn,
+            y = ~ mn - sd,
+            mode = "lines",
+            fill = "none",
+            type = 'scatter',
+            line = list(width = 0, color = "rgb(200,200,200)"),
+            showlegend = FALSE,
+            name = "1 SD"
+          ) %>%
+            add_trace(
+              y = ~ mn + sd,
+              mode = "lines",
+              fill = "tonexty",
+              line = list(width = 0, color = "rgb(200,200,200)"),
+              showlegend = TRUE,
+              name = "1 SD"
+            ) %>%
+            add_trace(
+              y = ~ mn,
+              line = list(
+                width = 2,
+                dash = "dot",
+                color = "black"
+              ),
+              name = "LTM",
+              showlegend = TRUE
+            ) %>%
+            add_trace(
+              data = plot_data,
+              x = ~ doy,
+              y = ~ gcc_smooth,
+              split = ~ year,
+              type = "scatter",
+              mode = "lines",
+              line = list(width = 2, color = "Set1"),
+              showlegend = TRUE
+            ) %>%
+            layout(xaxis = list(title = "DOY"),
+                   yaxis = list(title = "Gcc"))
+        } else {
+          # these are the transition date regression plots
+          
+          if (dim(fall)[1] < 9 & dim(spring)[1] < 9) {
+            p = plot_ly(
+              x = 0,
+              y = 0,
+              text = "TOO FEW (<9) DATES FOR MEANINGFUL REGRESSION ANALYSIS",
+              mode = "text",
+              textfont = list(color = '#000000', size = 16)
+            ) %>% layout(xaxis = ax, yaxis = ax)
+          } else {
+            
+            # grab dates from the fall and spring matrices
+            fall_date = unique(as.Date(fall[,grep(sprintf("^transition_%s$",upper.thresh*100),names(fall))]))
+            spring_date = unique(as.Date(spring[,grep(sprintf("^transition_%s$",upper.thresh*100),names(spring))]))
+            
+            fall_doy = as.numeric(format(fall_date, "%j"))
+            fall_year = as.numeric(format(fall_date, "%Y"))
+            
+            spring_doy = as.numeric(format(spring_date, "%j"))
+            spring_year = as.numeric(format(spring_date, "%Y"))
+            
+            # # regression stats
+            reg_spring = lm(spring_doy ~ spring_year)
+            reg_fall = lm(fall_doy ~ fall_year)
+            
+            # summaries
+            reg_spring_sum = summary(reg_spring)
+            reg_fall_sum = summary(reg_fall)
+            
+            # r-squared and slope
+            r2_spring = round(reg_spring_sum$r.squared, 2)
+            slp_spring = round(reg_spring_sum$coefficients[2, 1], 2)
+            r2_fall = round(reg_fall_sum$r.squared, 2)
+            slp_fall = round(reg_fall_sum$coefficients[2, 1], 2)
+            
+            p1 = plot_ly(
+              x = spring_year,
+              y = spring_doy,
+              yaxis = "y1",
+              title = "PhenoCam Phenology (DOY)"
+            ) %>%
+              add_trace(
+                x = spring_year,
+                y = spring_doy,
+                marker = list(color = "#66CD00", symbol = "square"),
+                mode = "markers",
+                type = "scatter",
+                name = "Spring",
+                yaxis = "y1"
+              ) %>%
+              add_trace(type = "scatter",
+                        x = fall_year,
+                        y = fall_doy,
+                        marker = list(color = "#CD950C", symbol = "square"),
+                        mode = "markers",
+                        type = "scatter",
+                        name = "Autumn",
+                        yaxis = "y1"
+              ) %>%
+              add_trace(
+                x = spring_year,
+                y = reg_spring$fitted.values,
+                mode = "lines",
+                type = "scatter",
+                name = sprintf("R2: %s| slope: %s", r2_spring, slp_spring),
+                line = list(width = 2, color = "#66CD00"),
+                yaxis = "y1"
+              ) %>%
+              add_trace(
+                x = fall_year,
+                y = reg_fall$fitted.values,
+                mode = "lines",
+                type = "scatter",
+                name = sprintf("R2: %s| slope: %s", r2_fall, slp_fall),
+                line = list(width = 2, color = "#CD950C"),
+                yaxis = "y1"
+              ) %>%
+              layout(xaxis = list(title = "Year"),
+                     yaxis = list(title = "DOY"))
+          }
+        }
+      }
+    }
+  }) # plotly action end
+```

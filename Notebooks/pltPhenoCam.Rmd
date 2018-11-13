@@ -19,7 +19,7 @@ df$date=as.Date(df$date)
 ```
 
 ```{r}
-smoothed=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90","rcc_mean", "rcc_50", "rcc_75","rcc_90"),force = TRUE, 1)
+smoothed=smooth_ts(df,metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"),force = TRUE, 1)
 ```
 
 ```{r}
