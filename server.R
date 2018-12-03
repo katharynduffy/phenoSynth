@@ -974,15 +974,8 @@ server = function(input, output, session) {
       }
     }
 
-
-
-      # Build [Raster Grid] with raster (NDVI, EVI, or etc.)
-      #------------------------------------------------------------------------
-
-
       start_site = as.character(site_data$date_first)
       end_site   = as.character(site_data$date_last)
-
 
       updateSliderInput(session, 'dataDateRange',
                         min = as.Date(start_site),
