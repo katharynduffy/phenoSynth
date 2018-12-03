@@ -814,18 +814,19 @@ server = function(input, output, session) {
       }
     }
 
-    # withProgress(message = 'Grabbing AppEEARS Data. ', detail = paste0('   Site: ', site, ', NDVI'), value = 0, {
-    #   incProgress(.1)
-
 
       # Import [NDVI] netcdf(ndvi) and csv(qa)
       #------------------------------------------------------------------------
     if (data_options[1] %in% selected_data){
+      withProgress(message = 'Importing NDVI', value = 0, {
+      incProgress(.1)
       layers$ndvi_MOD13Q1_v6 = TRUE
+      
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       print ('Importing NDVI')
       ndvi_filepath    = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.nc')
       ndvi_qa_filepath = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.csv')
+      incProgress(.1)
 
       if (input$localDownload){
         if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$ndvi$task_id, ndvi_filepath, 'nc')}
@@ -861,6 +862,7 @@ server = function(input, output, session) {
       # Set lat and lon arrays for NDVI data
       lat_NDVI = ncvar_get(ndvi_output, "lat")
       lon_NDVI = ncvar_get(ndvi_output, "lon")
+      incProgress(.3)
 
       # Grab the fill value and set to NA
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
@@ -877,17 +879,18 @@ server = function(input, output, session) {
       build_raster_grid(data$r_ndvi_cropped, map = 'map')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
-      
       shinyjs::show(id = 'plotRemoteData')
       shinyjs::hide(id = 'noPixelWarning')
       shinyjs::show(id = 'highlightPixelModeNDVI')
-
+      })
     }
 
 
       # Import [Transition Dates] netcdfs
       #------------------------------------------------------------------------
     if (data_options[4] %in% selected_data){
+      withProgress(message = 'Importing Transition Dates', value = 0, {
+      incProgress(.2)
       appeears$tds  = get_appeears_task(site, type = 'tds')
       layers$td_MCD12Q2_v5 = TRUE
       print ('Importing Transition Dates')
@@ -906,6 +909,7 @@ server = function(input, output, session) {
           delete_file(temp_nc)
         }
       }
+      incProgress(.2)
       # Loading in the Transition Date layers
       NBAR_EVI_Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Maximum")
       NBAR_EVI_Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Minimum")
@@ -913,6 +917,8 @@ server = function(input, output, session) {
       Onset_Greenness_Increase = ncvar_get(data$tds_nc, "Onset_Greenness_Increase")
       Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "Onset_Greenness_Maximum")
       Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "Onset_Greenness_Minimum")
+      incProgress(.2)
+    })
       }
 
 
@@ -953,7 +959,9 @@ server = function(input, output, session) {
       # Import [GCC] splined Data from phenocam (csv)
       #------------------------------------------------------------------------
     if (data_options[3] %in% selected_data){
+      withProgress(message = 'Importing GCC', value = 0, {
       print ('Importing Phenocam GCC')
+      incProgress(.2)
       layers$gcc_Phenocam = TRUE
       gcc_filepath    = paste0(file_path, 'gcc', '_', 'ddmmyyyy', '.csv')
       if (input$localDownload){
@@ -972,6 +980,8 @@ server = function(input, output, session) {
                                                 roi_files_ = roi_files)
         }
       }
+      incProgress(.2)
+      })
     }
 
       start_site = as.character(site_data$date_first)
