@@ -874,7 +874,14 @@ server = function(input, output, session) {
       # Grab first observation of NDVI and Quality datasets
       v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
       data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
+      build_raster_grid(data$r_ndvi_cropped, map = 'map')
+      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
+      
+      
+      shinyjs::show(id = 'plotRemoteData')
+      shinyjs::hide(id = 'noPixelWarning')
       shinyjs::show(id = 'highlightPixelModeNDVI')
+
     }
 
 
@@ -971,12 +978,7 @@ server = function(input, output, session) {
 
       # Build [Raster Grid] with raster (NDVI, EVI, or etc.)
       #------------------------------------------------------------------------
-      build_raster_grid(data$r_ndvi_cropped, map = 'map')
-      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
 
-
-      shinyjs::show(id = 'plotRemoteData')
-      shinyjs::hide(id = 'noPixelWarning')
 
       start_site = as.character(site_data$date_first)
       end_site   = as.character(site_data$date_last)
