@@ -31,10 +31,9 @@ ui = fluidPage(shinyjs::useShinyjs(),
                        "Download Data from Plot", "downloadData",
                        tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                        size = "medium",
-                       selectInput('dataTypes_download', 'Data Types', multiple = TRUE, c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
-                       actionButton('downloadDataButton', 'Download Dataframe'),
-                       tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
-                       helpText(id = 'selectDataframe', 'Data Acquired'))
+                       selectInput('dataTypes_download', 'Data Types',selected = 'All Data', multiple = TRUE, c('All Data','NDVI', 'EVI', 'GCC', 'Transition Dates')),
+                       downloadButton('downloadDataButton', 'Download'),
+                       tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")))
                ,
                navbarPage("PhenoSynth-development phase", id="navbar",
 

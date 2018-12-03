@@ -35,6 +35,7 @@ server = function(input, output, session) {
                       run   = 0,
                       names = c(),
                       df    = data.frame(),
+                      all_data = data.frame(),
                       veg_types = c(),
                       pixel_sps = SpatialPolygons(list()),
                       pixel_sps_500m = SpatialPolygons(list()),
@@ -456,6 +457,7 @@ server = function(input, output, session) {
     panel$mode = 'analyzer'
     site       = input$site
     site_data  = get_site_info(site)
+    data$all_data = data.frame()
 
     data$global_pth = './www/global_landcover_2016.tif'
     global_r   = raster::raster(data$global_pth)
@@ -619,9 +621,9 @@ server = function(input, output, session) {
       }else{
         shinyjs::show(id = 'buildingPlot')
 
-        # withProgress(message = 'Building NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
+        withProgress(message = 'Building NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
           for (x in c(1:len)){
-            # incProgress((1/len)/1.1)
+            incProgress((1/len)/1.1)
             r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
             values_under_polygon = extract(r_ndvi, pixels)
 
@@ -691,21 +693,9 @@ server = function(input, output, session) {
             scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
           p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
 
-        # })
+        })
       }
     }
-
-    # if('EVI' %in% selected_data){
-    #   print ('Pretending to plot modis EVI')
-    #   print ('need to add data into the all_data df')
-    # }
-    # 
-    # if('GCC' %in% selected_data){
-    #   print ('Pretending to plot modis GCC')
-    #   print ('need to add data into the all_data df')
-    # }
-    # print (pixels)
-    # print (length(pixels))
     
     if(is.null(selected_data) | length(pixels)==0){
       df = data.frame()
@@ -1028,6 +1018,15 @@ server = function(input, output, session) {
       shinyjs::hide(id = 'plotDataButton')
       shinyjs::hide(id = 'dataDateRange')}
   })
+
+  output$downloadDataButton <- downloadHandler(
+    filename = function() {
+      paste0(input$site, '_data.csv')
+    },
+    content = function(file) {
+      write.csv(data$all_data, file)
+    }
+  )
 
 
   #--------------------------------------------------------------------------------------------------------------------------------------
