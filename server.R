@@ -120,11 +120,15 @@ server = function(input, output, session) {
   #initiating with observer
   observe({
     switch_to_explorer_panel()
-    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
+                                c("Id", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     panel$mode = 'explorer'
-    data$df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
+    data$df        = setNames(data.frame(matrix(ncol = 4, nrow = 0)), 
+                              c('Name', 'Longitude', 'Latitude', 'LeafletId'))
+    data$layers_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
+                              c("Site", "evi_MOD13Q1_v6", 'td_MCD12Q2_v5', 'ndvi_MOD13Q1_v6', 'gcc_Phenocam'))
   })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -260,9 +264,6 @@ server = function(input, output, session) {
 
     # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
     build_polygon_table(data$df)
-
-
-    # print (data$df)
   })
 
   # Save shapefile button
@@ -458,6 +459,11 @@ server = function(input, output, session) {
     site       = input$site
     site_data  = get_site_info(site)
     data$all_data = data.frame()
+    data$layers_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
+                                                   c("Site", "evi_MOD13Q1_v6", 'td_MCD12Q2_v5', 'ndvi_MOD13Q1_v6', 'gcc_Phenocam'))
+    data$layers_df = rbind(data$layers_df, 
+                      data.frame(Site= site, evi_MOD13Q1_v6=FALSE, td_MCD12Q2_v5 =FALSE, 
+                                 ndvi_MOD13Q1_v6=FALSE, gcc_Phenocam=FALSE))
 
     data$global_pth = './www/global_landcover_2016.tif'
     global_r   = raster::raster(data$global_pth)
@@ -493,8 +499,6 @@ server = function(input, output, session) {
       c3 = build_pft_palette(r)
       data$r_landcover = r
 
-
-
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       print (veg_types)
 
@@ -517,12 +521,10 @@ server = function(input, output, session) {
                          overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels'),
                          position = c("topleft"),
                          options = layersControlOptions(collapsed = FALSE))
-
-      print ('Attempting to run pft selection observer')
     }
   })
 
-  # When ROI Vegetation type changes replot highlighted veg type
+  # When ROI Vegetation type changes re-plot highlighted veg type
   observeEvent(input$pftSelection, {
     if (panel$mode == 'analyzer'){
         print ('Running pft Selection')
@@ -550,7 +552,6 @@ server = function(input, output, session) {
     }
   })
 
-
   #Button switches to Site explorer mode
   observeEvent(input$siteExplorerMode,{
     print ('Switching to Explorer Mode')
@@ -559,10 +560,6 @@ server = function(input, output, session) {
     data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
-    layers$evi_MOD13Q1_v6  = FALSE
-    layers$td_MCD12Q2_v5   = FALSE
-    layers$ndvi_MOD13Q1_v6 = FALSE
-    layers$gcc_Phenocam    = FALSE
   })
 
   # Button that plots selected Data Types
@@ -810,7 +807,6 @@ server = function(input, output, session) {
     if (data_options[1] %in% selected_data){
       withProgress(message = 'Importing NDVI', value = 0, {
       incProgress(.1)
-      layers$ndvi_MOD13Q1_v6 = TRUE
       
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       print ('Importing NDVI')
@@ -869,9 +865,11 @@ server = function(input, output, session) {
       build_raster_grid(data$r_ndvi_cropped, map = 'map')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
-      shinyjs::show(id = 'plotRemoteData')
       shinyjs::hide(id = 'noPixelWarning')
       shinyjs::show(id = 'highlightPixelModeNDVI')
+      
+      data$layers_df$ndvi_MOD13Q1_v6 = TRUE
+      shinyjs::show(id = 'plotRemoteData')
       })
     }
 
@@ -882,7 +880,7 @@ server = function(input, output, session) {
       withProgress(message = 'Importing Transition Dates', value = 0, {
       incProgress(.2)
       appeears$tds  = get_appeears_task(site, type = 'tds')
-      layers$td_MCD12Q2_v5 = TRUE
+
       print ('Importing Transition Dates')
       ndvi_filepath    = paste0(file_path, 'td', '_', 'ddmmyyyy', '.nc')
 
@@ -908,15 +906,17 @@ server = function(input, output, session) {
       Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "Onset_Greenness_Maximum")
       Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "Onset_Greenness_Minimum")
       incProgress(.2)
+      
+      data$layers_df$td_MCD12Q2_v5 = TRUE
+      shinyjs::show(id = 'plotRemoteData')
     })
-      }
+    }
 
 
     #   # Import [EVI] netcdf(evi) and csv(qa)
     #   #------------------------------------------------------------------------
-    # if (data_options[2] %in% selected_data){
+    if (data_options[2] %in% selected_data){
     #   print ('Importing EVI')
-    #   layers$evi_MOD13Q1_v6 = TRUE
     #   evi_filepath    = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.nc')
     #   evi_qa_filepath = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.csv')
     # 
@@ -943,8 +943,10 @@ server = function(input, output, session) {
     #       delete_file(temp_qa)
     #     }
     #   }
-    # }
-
+      
+      data$layers_df$evi_MOD13Q1_v6 = TRUE
+      shinyjs::show(id = 'plotRemoteData')
+    }
 
       # Import [GCC] splined Data from phenocam (csv)
       #------------------------------------------------------------------------
@@ -971,20 +973,26 @@ server = function(input, output, session) {
         }
       }
       incProgress(.2)
+      data$layers_df$gcc_Phenocam = TRUE
+      shinyjs::show(id = 'plotRemoteData')
       })
     }
 
-      start_site = as.character(site_data$date_first)
-      end_site   = as.character(site_data$date_last)
+    start_site = as.character(site_data$date_first)
+    end_site   = as.character(site_data$date_last)
 
-      updateSliderInput(session, 'dataDateRange',
-                        min = as.Date(start_site),
-                        max = as.Date(end_site),
-                        value = c(as.Date(start_site), as.Date(end_site)))
+    updateSliderInput(session, 'dataDateRange',
+                      min = as.Date(start_site),
+                      max = as.Date(end_site),
+                      value = c(as.Date(start_site), as.Date(end_site)))
 
-    shinyjs::show(id = 'doneGetData')
     shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
+    print (data$layers_df)
+    
+    
   })
+  
+  
 
   observeEvent(input$downloadDataButton, {
     print ('add download function please')
@@ -1147,7 +1155,6 @@ server = function(input, output, session) {
          print ((data$pixel_sps_500m))
          print ('250m Grid Sp Object info:')
          print ((data$pixel_sps_250m))
-
          print ('Dataframe of all highlighted pixels (250m + 500m)')
          print (data$pixel_df)
        }

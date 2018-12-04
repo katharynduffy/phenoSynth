@@ -9,8 +9,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                          checkboxInput("localDownload", "Download Data Locally", value = TRUE),
                          selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('NDVI', 'GCC', 'EVI', 'Transition Dates'), c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
                          actionButton('getDataButton', 'Get Data'),
-                         tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")),
-                         helpText(id = 'doneGetData', 'Data Acquired'))
+                         tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")))
                  ,
                  bsModal("plotDataPopup",
                          "Select Plot Data", "plotRemoteData",
