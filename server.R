@@ -603,26 +603,121 @@ server = function(input, output, session) {
       int_pixels = list()
       final_ndvi_list = c()
       len = length(dates)
-      pixels = data$pixel_sps_250m
+      sm_pixels = data$pixel_sps_250m
+      lg_pixels = data$pixel_sps_500m
+      
+      selected_pixel_type = input$pixelTypes
+      
+      print (selected_pixel_type)
 
-      # Setting length of polygons to select with
-      if (is.null(polys_len)){
-        # Number of polygons (aka highlighted pixels) selected
-        polys_len = length(pixels)
-      }
 
-      if (is.null(pixels@polygons[1][[1]])){
+      if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
         print ('No pixels selected')
         shinyjs::show(id = 'noPixelWarning')
+        df = data.frame()
+        p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1) + ggtitle('Select a Pixel!!')
 
       }else{
-        shinyjs::show(id = 'buildingPlot')
+        
+        if(selected_pixel_type == '250m'){
 
-        withProgress(message = 'Building NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
+          shinyjs::show(id = 'buildingPlot')
+          
+          # Setting length of polygons to select with
+          if (is.null(polys_len)){
+            # Number of polygons (aka highlighted pixels) selected
+            polys_len = length(sm_pixels)
+          }
+    
+          withProgress(message = 'Building NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
+            for (x in c(1:len)){
+              incProgress((1/len)/1.1)
+              r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
+              values_under_polygon = extract(r_ndvi, sm_pixels)
+    
+              # Setting length of pixels in each polygon
+              if (length(int_pixels) == 0){
+                for (xx in c(1:polys_len)){
+                  # Number of pixels picked up by the highlighted pixel
+                  pixel_len  = length(values_under_polygon[[xx]])
+                  int_pixels[[xx]] = pixel_len
+                }
+              }
+              ndvi_means = c()
+              # Loop through the different polygons to extract ndvi values and save to dataframe
+              for (i in c(1:polys_len)){
+                ndvi_ = values_under_polygon[[i]]
+                ndvis_ = c(ndvis_, ndvi_)
+              }
+            }
+            # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
+            #   to build the necessary dataframe lists.
+            list_ = list()
+            cols  = c()
+            variables_ = c()
+            for (i in c(1:polys_len)){
+              col = paste0('pixel_', as.character(i))
+              cols = c(cols, col)
+              a = c(1:(length(ndvis_)))
+              b = a[seq((1 + (i-1)), length(a), polys_len)]
+              print (col)
+              print (b)
+              list_[[col]] = ndvis_[b]
+              var_ = paste0('pixel_', i)
+              variables_ = c(variables_, var_)
+            }
+    
+            # Grab GCC
+            csv = phenocam$csv
+            pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
+            source= rep('PhenoCam GCC', nrow(pData))
+            variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
+            pData=cbind(pData, source, variable)
+            colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
+            pData$date=as.Date(pData$date)
+    
+            #Parse data with Dates
+            data_df = data.frame(date = date_list, list_)
+            start_ = input$dataDateRange[1]
+            end_   = input$dataDateRange[2]
+    
+            parsed_data = subset(data_df, date >= start_ & date <= end_)
+            parsed_data$date=as.Date(parsed_data$date)
+            source      = rep('MODIS NDVI', nrow(parsed_data))
+            parsed_data   = cbind(parsed_data, source)
+            parsed_data_melt = melt(data.table(parsed_data), measure.vars = variables_)
+    
+            # incProgress(.1)
+            # combine GCC and NDVI dfs
+            all_data=full_join(parsed_data_melt, pData)
+    
+            final_data=subset(all_data, date >= start_ & date <= end_)
+    
+            data$all_data = all_data
+            data$final_data = final_data
+    
+            p = ggplot(data = final_data, aes(x= date, y=value, color=variable)) +
+              geom_line() +
+              scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
+            p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
+    
+          })
+        }
+        else if(selected_pixel_type == '500m'){
+          print ('Extracting ndvi values under this 500m pixel')
+          
+          # Setting length of polygons to select with
+          if (is.null(polys_len)){
+            # Number of polygons (aka highlighted pixels) selected
+            polys_len = length(lg_pixels)
+          }
+          
+          withProgress(message = 'Building NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
+
           for (x in c(1:len)){
             incProgress((1/len)/1.1)
             r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
-            values_under_polygon = extract(r_ndvi, pixels)
+            values_under_polygon = extract(r_ndvi, lg_pixels)
 
             # Setting length of pixels in each polygon
             if (length(int_pixels) == 0){
@@ -639,23 +734,26 @@ server = function(input, output, session) {
               ndvis_ = c(ndvis_, ndvi_)
             }
           }
-          # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
-          #   to build the necessary dataframe lists.
+      
           list_ = list()
           cols  = c()
           variables_ = c()
+          pixels_in_500m = as.numeric(int_pixels[1])
+          count = 0
           for (i in c(1:polys_len)){
-            col = paste0('pixel_', as.character(i))
-            cols = c(cols, col)
-            a = c(1:(length(ndvis_)))
-            b = a[seq((1 + (i-1)), length(a), polys_len)]
-            print (col)
-            print (b)
-            list_[[col]] = ndvis_[b]
-            var_ = paste0('pixel_', i)
-            variables_ = c(variables_, var_)
-          }
-
+            for (j in c(1:pixels_in_500m)){
+              count = count + 1
+              # col = paste0('pixel_', as.character(count))
+              col = paste0('pixel_', as.character(i),'_',as.character(j))
+              cols = c(cols, col)
+              a = c(1:(length(ndvis_)))
+              b = a[seq((1 + (count-1)), length(a), polys_len * pixels_in_500m)]
+              list_[[col]] = ndvis_[b]
+              # var_ = paste0('pixel_', count)
+              var_ = paste0('pixel_', i, '_', j)
+              variables_ = c(variables_, var_)
+          }}
+          
           # Grab GCC
           csv = phenocam$csv
           pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
@@ -664,24 +762,23 @@ server = function(input, output, session) {
           pData=cbind(pData, source, variable)
           colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
           pData$date=as.Date(pData$date)
-
+          
           #Parse data with Dates
           data_df = data.frame(date = date_list, list_)
           start_ = input$dataDateRange[1]
           end_   = input$dataDateRange[2]
-
+          
           parsed_data = subset(data_df, date >= start_ & date <= end_)
           parsed_data$date=as.Date(parsed_data$date)
           source      = rep('MODIS NDVI', nrow(parsed_data))
           parsed_data   = cbind(parsed_data, source)
           parsed_data_melt = melt(data.table(parsed_data), measure.vars = variables_)
-
-          # incProgress(.1)
-          # combine GCC and NDVI dfs
+          
+          
           all_data=full_join(parsed_data_melt, pData)
-
+          
           final_data=subset(all_data, date >= start_ & date <= end_)
-
+          
           data$all_data = all_data
           data$final_data = final_data
 
@@ -689,15 +786,15 @@ server = function(input, output, session) {
             geom_line() +
             scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
           p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
-
-        })
+          })
+        }
       }
     }
     
-    if(is.null(selected_data) | length(pixels)==0){
-      df = data.frame()
-      p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1) + ggtitle('Select a Pixel!!')
-    }
+    # if(is.null(selected_data) | length(pixels)==0){
+    #   df = data.frame()
+    #   p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1) + ggtitle('Select a Pixel!!')
+    # }
 
     
     # Plot p
@@ -774,6 +871,24 @@ server = function(input, output, session) {
       shinyjs::hide(id = 'noPixelWarning')
       shinyjs::hide(id = 'buildingPlot')
       shinyjs::hide(id = 'doneBuildingPlot')
+      shinyjs::show(id = 'pixelTypes')
+      sm_pixels = data$pixel_sps_250m
+      lg_pixels = data$pixel_sps_500m
+      print (sm_pixels)
+      print (lg_pixels)
+      if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
+        print ('no pixels selected')
+        shinyjs::hide(id = 'pixelTypes')
+      }else if (is.null(sm_pixels@polygons[1][[1]])){
+        updateSelectInput(session, 'pixelTypes', choices = c('500m'))
+        print ('test1')
+      }else if (is.null(lg_pixels@polygons[1][[1]])){
+        updateSelectInput(session, 'pixelTypes', choices = c('250m'))
+        print ('test2')
+      }else{
+        updateSelectInput(session, 'pixelTypes', choices = c('250m', '500m'))
+        print ('test3')
+      }
   })
 
 
@@ -1172,6 +1287,30 @@ server = function(input, output, session) {
   count = function(){
     isolate({
       counter$countervalue = counter$countervalue + 1
+    })
+  }
+  
+  # Builds the polygon table to display all user created polygons in analyzer mode
+  build_polygon_table = function(data_df_){
+    # Creating Dataframe with 1 record per shapefile
+    if (nrow(data_df_) == 0){
+      df = setNames(data.frame(matrix(ncol = 3, nrow = 0)), c('Name', 'Longitude', 'Latitude'))
+    }else {
+      df = aggregate(data_df_[,c(2,3)], list(data_df_$Name), max)
+    }
+    x  = df
+    print (x)
+    # x$Date = Sys.time() + seq_len(nrow(x))
+    output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
+    proxy            = dataTableProxy('pAOIchart')
+    observeEvent(input$pAOIchart_cell_edit, {
+      info = input$pAOIchart_cell_edit
+      str(info)
+      i = info$row
+      j = info$col
+      v = info$value
+      x[i, j] <<- DT::coerceValue(v, x[i, j])
+      replaceData(proxy, x, resetPaging = FALSE)  # important
     })
   }
 }

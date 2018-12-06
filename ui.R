@@ -16,7 +16,7 @@ ui = fluidPage(shinyjs::useShinyjs(),
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
                          selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('NDVI', 'GCC'), c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
-                         # selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
+                         selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
                          sliderInput('dataDateRange', 'Date start to end',
                                      min = as.Date('2000-01-01'),
                                      max = Sys.Date(),
@@ -122,19 +122,15 @@ ui = fluidPage(shinyjs::useShinyjs(),
            # 
            #         ),
 
-           tabPanel('User Guide',
-                    includeMarkdown('UserGuide.Rmd')
-                    ),
+           # tabPanel('User Guide',
+           #          includeMarkdown('UserGuide.Rmd')
+           #          ),
 
            tabPanel('Phenocam Metadata',
                     tableOutput("phenoTable")
                     
                    ),
 
-           # tabPanel('Plot NDVI', value = 'PlotPanel',
-           #          # actionButton('clearPlot', 'Clear Plot'),
-           #          plotOutput("ndvi_pixels_plot")
-           # ),
            tabPanel('Plot Data', value = 'PlotPanel',
                     plotlyOutput("data_plot", height = 600, width = 1300, inline =TRUE),
                     # verbatimTextOutput("event_plot")
