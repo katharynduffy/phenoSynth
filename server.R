@@ -866,31 +866,6 @@ server = function(input, output, session) {
               }}}
     })
 
-  # Observer for the popup
-  observeEvent(input$plotRemoteData, {
-      shinyjs::hide(id = 'noPixelWarning')
-      shinyjs::hide(id = 'buildingPlot')
-      shinyjs::hide(id = 'doneBuildingPlot')
-      shinyjs::show(id = 'pixelTypes')
-      sm_pixels = data$pixel_sps_250m
-      lg_pixels = data$pixel_sps_500m
-      print (sm_pixels)
-      print (lg_pixels)
-      if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
-        print ('no pixels selected')
-        shinyjs::hide(id = 'pixelTypes')
-      }else if (is.null(sm_pixels@polygons[1][[1]])){
-        updateSelectInput(session, 'pixelTypes', choices = c('500m'))
-        print ('test1')
-      }else if (is.null(lg_pixels@polygons[1][[1]])){
-        updateSelectInput(session, 'pixelTypes', choices = c('250m'))
-        print ('test2')
-      }else{
-        updateSelectInput(session, 'pixelTypes', choices = c('250m', '500m'))
-        print ('test3')
-      }
-  })
-
 
   # Add netcdf from AppEEARS of netcdf
   observeEvent(input$getDataButton, {
@@ -1107,23 +1082,33 @@ server = function(input, output, session) {
     
   })
   
-  
-
   observeEvent(input$downloadDataButton, {
-    print ('add download function please')
+    print ('Download button')
   })
 
+  
+  # Observer for the popup
   observeEvent(input$plotRemoteData, {
-    shinyjs::hide(id = 'pixelTypes')
-    shinyjs::hide(id = 'dataDateRange')
-    shinyjs::hide(id = 'plotDataButton')
-    types = input$dataTypes_plot
-    if ('NDVI' %in% types || 'EVI' %in% types |'Transition Dates' %in% types){
-      shinyjs::show(id = 'pixelTypes')
-    }
-    if (!is.null(types)){
-      shinyjs::show(id = 'plotDataButton')
-      shinyjs::show(id = 'dataDateRange')
+    shinyjs::hide(id = 'noPixelWarning')
+    shinyjs::hide(id = 'buildingPlot')
+    shinyjs::hide(id = 'doneBuildingPlot')
+    shinyjs::show(id = 'pixelTypes')
+    sm_pixels = data$pixel_sps_250m
+    lg_pixels = data$pixel_sps_500m
+    print (sm_pixels)
+    print (lg_pixels)
+    if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
+      print ('no pixels selected')
+      shinyjs::hide(id = 'pixelTypes')
+    }else if (is.null(sm_pixels@polygons[1][[1]])){
+      updateSelectInput(session, 'pixelTypes', choices = c('500m'))
+      print ('test1')
+    }else if (is.null(lg_pixels@polygons[1][[1]])){
+      updateSelectInput(session, 'pixelTypes', choices = c('250m'))
+      print ('test2')
+    }else{
+      updateSelectInput(session, 'pixelTypes', choices = c('250m', '500m'))
+      print ('test3')
     }
   })
   
