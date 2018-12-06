@@ -241,27 +241,3 @@ rotate_pt = function(lon, lat, azm, r){
   lat_ = lat + (r * cos(rad))
   return (list(lon_, lat_))
 }
-
-# Builds the polygon table to display all user created polygons in analyzer mode
-build_polygon_table = function(data_df_){
-  # Creating Dataframe with 1 record per shapefile
-  if (nrow(data_df_) == 0){
-    df = setNames(data.frame(matrix(ncol = 3, nrow = 0)), c('Name', 'Longitude', 'Latitude'))
-  }else {
-    df = aggregate(data_df_[,c(2,3)], list(data_df_$Name), max)
-  }
-  x  = df
-  print (x)
-  # x$Date = Sys.time() + seq_len(nrow(x))
-  output$pAOIchart = renderDT(x, selection = 'none', editable = TRUE)
-  proxy            = dataTableProxy('pAOIchart')
-  observeEvent(input$pAOIchart_cell_edit, {
-    info = input$pAOIchart_cell_edit
-    str(info)
-    i = info$row
-    j = info$col
-    v = info$value
-    x[i, j] <<- DT::coerceValue(v, x[i, j])
-    replaceData(proxy, x, resetPaging = FALSE)  # important
-  })
-}
