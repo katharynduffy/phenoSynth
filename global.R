@@ -86,6 +86,6 @@ idx=is.element(cams_$Sitename, roi_files$site)
 cams_=cams_[idx,]
 
 # Load in dataframe with cached AppEEARS tasks
-appeears_tasks     = readRDS(file = './www/cache_df.df')
+appeears_tasks_ndvi     = readRDS(file = './www/cache_df_ndvi.df')
 # Load in df with cached AppEEARS Transition Dates (dts)
 appeears_tasks_tds = readRDS(file = './www/cache_df_tds.df')
