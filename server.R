@@ -895,14 +895,14 @@ server = function(input, output, session) {
       # Import [NDVI] netcdf(ndvi) and csv(qa)
       #------------------------------------------------------------------------
     if (data_options[1] %in% selected_data){
-      withProgress(message = 'Importing NDVI', value = 0, {
-      incProgress(.1)
+      # withProgress(message = 'Importing NDVI', value = 0, {
+      # incProgress(.1)
       
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       print ('Importing NDVI')
       ndvi_filepath    = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.nc')
       ndvi_qa_filepath = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.csv')
-      incProgress(.1)
+      # incProgress(.1)
 
       if (input$localDownload){
         if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$ndvi$task_id, ndvi_filepath, 'nc')}
@@ -938,7 +938,7 @@ server = function(input, output, session) {
       # Set lat and lon arrays for NDVI data
       lat_NDVI = ncvar_get(ndvi_output, "lat")
       lon_NDVI = ncvar_get(ndvi_output, "lon")
-      incProgress(.3)
+      # incProgress(.3)
 
       # Grab the fill value and set to NA
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
@@ -960,7 +960,7 @@ server = function(input, output, session) {
       
       data$layers_df$ndvi_MOD13Q1_v6 = TRUE
       shinyjs::show(id = 'plotRemoteData')
-      })
+      # })
     }
 
 

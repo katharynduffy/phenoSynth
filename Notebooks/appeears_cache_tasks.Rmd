@@ -133,28 +133,35 @@ saveRDS(cache_df, file = './www/cache_df_ndvi.df')
 
 ### Load in file
 ```{r}
-dfdf = readRDS(file = './www/cache_df_ndvi.df')
+dfdf = readRDS(file = '/users/kenns/test/AGU/phenoSynth_AGU/www/cache_df_ndvi.df')
 ```
 
 
 ### Function used to grab the row from cached appeears tasks using a phenocam site name
 ```{r}
-get_appeears_task = function(name){
-  task_pos = grep(site ,dfdf$task_name)
-  
-  task_pos
-  
-  for (i in c(1:length(task_pos))){
-    row = get_site_from_task(dfdf[task_pos[i],]$task_name)
-    if (row == site){
-      task_ = dfdf[task_pos[i],]$task_name
+get_appeears_task_ = function(name, type){
+  if (type == 'ndvi'){
+    task_pos = grep(name ,appeears_tasks_ndvi$task_name)
+    for (i in c(1:length(task_pos))){
+      row = get_site_from_task(appeears_tasks_ndvi[task_pos[i],]$task_name, 3)
+      if (row == name){
+        task_ = appeears_tasks_ndvi[task_pos[i],]$task_name
+        return (subset(appeears_tasks_ndvi, appeears_tasks_ndvi$task_name == task_))
+      }
     }
-    print (get_site_from_task(dfdf[task_pos[i],]$task_name))
-  }
-  return (subset(dfdf, dfdf$task_name == task_))
+  }else if (type == 'tds'){
+    task_pos = grep(name, appeears_tasks_tds$task_name)
+    for (i in c(1:length(task_pos))){
+      row = get_site_from_task(appeears_tasks_tds[task_pos[i],]$task_name, 3)
+      if (row == name){
+        task_ = appeears_tasks_tds[task_pos[i],]$task_name
+        return (subset(appeears_tasks_tds, appeears_tasks_tds$task_name == task_))
+      }
+    }
+  }else {print ('failed to ')}
 }
 site = 'arbutuslake'
-get_appeears_task(site)
+task_ = get_appeears_task_(site, 'ndvi')
 
 ```
 
