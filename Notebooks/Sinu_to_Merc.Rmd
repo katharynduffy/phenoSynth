@@ -1,0 +1,110 @@
+---
+title: "Sinu_to_Merc"
+author: "Kyle"
+date: "12/19/2018"
+output: html_document
+---
+
+
+grab task_id from appeears
+```{r}
+library(httr)
+task_id = "ba9d46ab-7648-4b7d-82db-670ac7a1d21b"
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", task_id, sep = ""))
+bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+```
+
+grab file_id for the tiff we will use to transform and test with (in Sinusoidal)
+```{r}
+document = jsonlite::fromJSON(txt=bundle_response)
+files = document$files
+print ('file id for selected tif: ')
+file_id = files[1,]$file_id  #1 is the position of the .tif file with pft
+file_id
+```
+
+download file locally, then delete it (change the directory to wherever you want to temporarily download)
+```{r}
+dir = './www/'
+filename = 'landcover_test_tiff.tif'
+filepath = paste0(dir, filename)
+
+print (paste0('downloading to: ', filepath))
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", task_id , '/', file_id, sep = ""), write_disk(filepath, overwrite = TRUE), progress())
+
+```
+read in the downloaded file and then delete it
+```{r}
+library(raster); library(leaflet)
+sinu_lc = raster(filepath)
+plot(sinu_lc)  # tif is too big to plot in leaflet, must crop first
+```
+
+functions used to switch between sinusoidal and mercator
+```{r}
+# Function to convert WGS lat/lon coordinates into Sinusoidal
+  wgs_to_sinu = function(lon_,lat_){
+    xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
+    colnames(xy)    = c('lon', 'lat')
+    coordinates(xy) = ~ lon + lat
+    proj4string(xy) = CRS("+proj=longlat +datum=WGS84")
+    p               = spTransform(xy, CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"))
+    return (p)
+  }
+# Function to conver Sinusoidal to WGS84
+  merc_to_sinu = function(lon_,lat_){
+    print ('Reprojecting coords to WGS84')
+    xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
+    colnames(xy)    = c('lon', 'lat')
+    coordinates(xy) = ~ lon + lat
+    proj4string(xy) = CRS('+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m+nadgrids=@null +wktext  +no_defs')
+    p               = spTransform(xy, CRS("+proj=longlat +datum=WGS84"))
+    return (p)
+  }
+  
+```
+
+crop the sinusoidal landcover raster so we can plot and view in an interactive leaflet map
+```{r}
+# raster we will manipulate: sinu_lc (stands for sinusoidal landcover layer)
+data      = subset(cams_, Sitename == 'turkeypointenf74')
+
+sinu_crs = CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+wgs_crs  = CRS("+proj=longlat +datum=WGS84")
+
+#Convert wgs lat/lon into sinusoidal
+lon_wgs      = data$Lon
+lat_wgs      = data$Lat
+
+this = wgs_to_sinu(lon_wgs,lat_wgs)
+coordinates(this)
+lon_sinu = coordinates(this)[1]
+lat_sinu = coordinates(this)[2]
+
+height = 1000
+width  = 1000
+e      = as(extent(lon_sinu-width, lon_sinu + width, lat_sinu - height, lat_sinu + height), 'SpatialPolygons')
+crs(e) <- "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+
+r       = raster::crop(sinu_lc, e, snap='out')
+# r       = projectRaster(r, crs = newproj, res = 257.5014113)
+# r       = projectRaster(r, crs = sinu_crs)
+plot (r)
+library(leaflet)
+leaflet('testmap') %>% addTiles() %>% addRasterImage(r)
+```
+
+reproject the sinusoidal raster into mercator and add to a leaflet map (development)
+```{r}
+library(Proj4Leaflet)
+merc_crs = CRS('+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m+nadgrids=@null +wktext  +no_defs')
+r
+
+spTransform(r, CRSobj = )
+
+
+```
+
+
+
+
