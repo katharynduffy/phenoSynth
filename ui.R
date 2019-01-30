@@ -2,10 +2,6 @@
 # Initiate the UI
 ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                mainPanel(
-                 bsModal('frontPage', 'Front Page, Select your data', size = 'large',
-                         title = 'Front Page',
-                         selectInput('frontPageData', 'Primary Data', multiple = TRUE, selected = c('Phenocam GCC'), 
-                                     c('Modis Ndvi', 'Phenocam GCC', 'Landsat Phenometrics'), width = '90%')),
                  bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),

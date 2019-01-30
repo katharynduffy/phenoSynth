@@ -116,19 +116,32 @@ server = function(input, output, session) {
     }
   })
 
-  #initiating with observer
-  observe({
-    shinyBS::toggleModal(session, 'frontPage')
+  # Open landing page and initialze application
+  observe({ 
+    showModal(tags$div(id = 'frontPage', modalDialog(
+      tags$div(id = 'row1'),
+      h1('Welcome to Phenosynth'),
+      fluidRow(
+        column(6, align='center', offset = 3,
+               p('PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.'))),
+      tags$div(id = 'frontPageData',
+               fluidRow(
+                 column(12, align="center", offset = 0,
+                        selectInput('frontPageDataSelection', 'Choose Your Data (click in box)', multiple = TRUE, 
+                                    c('Modis Ndvi', 'Phenocam GCC', 'Landsat Phenometrics')),
+                        tags$style(type='text/css', "#frontPageData { vertical-align: middle; height: 50px; width: 100%; font-size: 15px;}"))
+               )),
+      fluidRow(
+        column(4, align='center', offset = 4,
+               p('Once you have your choices pop up in the input above, press the button below to enter into the Shiny Application Interface'))),
+      footer = modalButton('Enter Phenosynth with Seletected Data')
+    )))
     switch_to_explorer_panel()
-    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
-                                c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     panel$mode = 'explorer'
-    data$df        = setNames(data.frame(matrix(ncol = 4, nrow = 0)), 
-                              c('Name', 'Longitude', 'Latitude', 'LeafletId'))
-    data$layers_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
-                              c("Site", "evi_MOD13Q1_v6", 'td_MCD12Q2_v5', 'ndvi_MOD13Q1_v6', 'gcc_Phenocam'))
+    data$df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
   })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -141,7 +154,7 @@ server = function(input, output, session) {
     if (checked == FALSE){
       updateCheckboxInput(session, inputId = 'drawImageROI', value = FALSE)
     }
-  }, suspended = T)
+  })
 
 
   # Start of Drawing - set highlight pixel to off
@@ -166,7 +179,7 @@ server = function(input, output, session) {
       leafletProxy('map') %>% showGroup('500m Highlighted Pixels')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = FALSE)
     }
-  }, suspended = T)
+  })
 
   # Turn off 250m highlighted pixels if 500m highlighted pixels
   observe({
@@ -175,7 +188,7 @@ server = function(input, output, session) {
       leafletProxy('map') %>% showGroup('250m Highlighted Pixels')
       updateCheckboxInput(session, 'highlightPixelMode', value = FALSE)
     }
-  }, suspended = T)
+  })
 
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
@@ -450,7 +463,7 @@ server = function(input, output, session) {
       removeUI(selector = '#phenocamSiteImage')
       shinyjs::hide(id = 'currentImage')
     }
-  }, suspended = T)
+  })
 
 
   # Button switches to Analyzer Mode
