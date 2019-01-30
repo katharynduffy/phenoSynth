@@ -129,7 +129,7 @@ server = function(input, output, session) {
                               c('Name', 'Longitude', 'Latitude', 'LeafletId'))
     data$layers_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
                               c("Site", "evi_MOD13Q1_v6", 'td_MCD12Q2_v5', 'ndvi_MOD13Q1_v6', 'gcc_Phenocam'))
-  })
+  }, suspended = T)
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
@@ -141,7 +141,7 @@ server = function(input, output, session) {
     if (checked == FALSE){
       updateCheckboxInput(session, inputId = 'drawImageROI', value = FALSE)
     }
-  })
+  }, suspended = T)
 
 
   # Start of Drawing - set highlight pixel to off
@@ -166,7 +166,7 @@ server = function(input, output, session) {
       leafletProxy('map') %>% showGroup('500m Highlighted Pixels')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = FALSE)
     }
-  })
+  }, suspended = T)
 
   # Turn off 250m highlighted pixels if 500m highlighted pixels
   observe({
@@ -175,7 +175,7 @@ server = function(input, output, session) {
       leafletProxy('map') %>% showGroup('250m Highlighted Pixels')
       updateCheckboxInput(session, 'highlightPixelMode', value = FALSE)
     }
-  })
+  }, suspended = T)
 
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
@@ -450,7 +450,7 @@ server = function(input, output, session) {
       removeUI(selector = '#phenocamSiteImage')
       shinyjs::hide(id = 'currentImage')
     }
-  })
+  }, suspended = T)
 
 
   # Button switches to Analyzer Mode
