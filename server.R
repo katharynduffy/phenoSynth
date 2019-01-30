@@ -5,7 +5,6 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  REACTIVE VALUES
   #--------------------------------------------------------------------------------------------------------------------------------------
-  print ('testtest')
   variables = reactiveValues(
                       filter   = 'All',
                       sites_df = cams_,
@@ -119,6 +118,7 @@ server = function(input, output, session) {
 
   #initiating with observer
   observe({
+    shinyBS::toggleModal(session, 'frontPage')
     switch_to_explorer_panel()
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
                                 c("Id", "Site", "Lat", 'Lon', 'pft'))
@@ -129,7 +129,7 @@ server = function(input, output, session) {
                               c('Name', 'Longitude', 'Latitude', 'LeafletId'))
     data$layers_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
                               c("Site", "evi_MOD13Q1_v6", 'td_MCD12Q2_v5', 'ndvi_MOD13Q1_v6', 'gcc_Phenocam'))
-  }, suspended = T)
+  })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
