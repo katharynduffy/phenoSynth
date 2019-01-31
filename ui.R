@@ -71,7 +71,8 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                                       checkboxInput("highlightPixelMode", "Select Landcover Pixels (500m resolution)", value = FALSE),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS NDVI Pixels (250m resolution)", value = FALSE),
                                       actionButton('getData', 'Import Data'),
-                                      actionButton('plotRemoteData', 'Plot Data')
+                                      actionButton('plotRemoteData', 'Plot Data'),
+                                      actionButton('clearPixels', 'Clear Pixels')
                                                                             ),
 
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,

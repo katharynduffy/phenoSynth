@@ -28,6 +28,7 @@ switch_to_explorer_panel = function(map_ = 'map'){
   shinyjs::hide(id = 'plotPixelsNDVI')
   shinyjs::hide(id = 'getData')
   shinyjs::hide(id = 'getDataPopup')
+  shinyjs::hide(id = 'clearPixels')
   leafletProxy(map_) %>%
     clearControls() %>%
     clearShapes() %>%
@@ -64,6 +65,7 @@ switch_to_analyzer_panel = function(){
   shinyjs::hide(id = 'showHidePlot')
   shinyjs::hide(id = 'plotRemoteData')
   shinyjs::hide(id = 'doneGetData')
+  shinyjs::hide(id = 'clearPixels')
 }
 
 

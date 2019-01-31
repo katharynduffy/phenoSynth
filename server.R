@@ -577,6 +577,7 @@ server = function(input, output, session) {
 
   # Button that plots selected Data Types
   observeEvent(input$plotDataButton, {
+    shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
     print ('Plotting NDVI')
 
     # Inputs from popup
@@ -586,7 +587,7 @@ server = function(input, output, session) {
     site          = input$site
     site_data     = get_site_info(site)
     selected_data = input$dataTypes_plot
-
+    
 
     #----NDVI------------------------------------------------------------------------------------------------------------------------
     if ('NDVI' %in% selected_data | 'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
@@ -835,7 +836,6 @@ server = function(input, output, session) {
     })
 
     print (paste0(data_type_selected, ' Plotting Completed'))
-    shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
     updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
   })
 
@@ -877,7 +877,23 @@ server = function(input, output, session) {
               }else if(input$highlightPixelModeNDVI == TRUE){
                 showpos(x = lon_ , y = lat_, site, data$r_ndvi_cropped, '250m')
               }}}
+          if (dim(data$pixel_df)[1] == 0){
+            shinyjs::hide(id = 'clearPixels')
+          }else if (dim(data$pixel_df)[1] > 0){
+            shinyjs::show(id = 'clearPixels')
+          }
     })
+  
+  # Clear all pixels on map by clearing the selected pixel dataframe of 500m and 250m pixels
+  observeEvent(input$clearPixels,{
+    # Remove drawn pixels from map and then remove them from the dataframe (data$pixel_df)
+    ids = data$pixel_df[,1]
+    for (id_ in ids){
+      remove_polyline(id = id_, all = FALSE)
+    }
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    shinyjs::hide(id = 'clearPixels')
+  })
 
 
   # Add netcdf from AppEEARS of netcdf
@@ -887,6 +903,8 @@ server = function(input, output, session) {
     selected_data = input$dataTypes_get
     data_options  = c('NDVI', 'EVI', 'GCC', 'Transition Dates')
     file_path     = paste0('./www/site_data/', site, '/data_layers/')
+    
+    shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
 
     print ('Importing data for:')
     print (selected_data)
@@ -908,14 +926,14 @@ server = function(input, output, session) {
       # Import [NDVI] netcdf(ndvi) and csv(qa)
       #------------------------------------------------------------------------
     if (data_options[1] %in% selected_data){
-      # withProgress(message = 'Importing NDVI', value = 0, {
-      # incProgress(.1)
+      withProgress(message = 'Importing NDVI', value = 0, {
+      incProgress(.1)
       
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       print ('Importing NDVI')
       ndvi_filepath    = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.nc')
       ndvi_qa_filepath = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.csv')
-      # incProgress(.1)
+      incProgress(.1)
 
       if (input$localDownload){
         if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$ndvi$task_id, ndvi_filepath, 'nc')}
@@ -951,7 +969,7 @@ server = function(input, output, session) {
       # Set lat and lon arrays for NDVI data
       lat_NDVI = ncvar_get(ndvi_output, "lat")
       lon_NDVI = ncvar_get(ndvi_output, "lon")
-      # incProgress(.3)
+      incProgress(.3)
 
       # Grab the fill value and set to NA
       fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
@@ -973,7 +991,7 @@ server = function(input, output, session) {
       
       data$layers_df$ndvi_MOD13Q1_v6 = TRUE
       shinyjs::show(id = 'plotRemoteData')
-      # })
+      })
     }
 
 
@@ -1089,10 +1107,7 @@ server = function(input, output, session) {
                       max = as.Date(end_site),
                       value = c(as.Date(start_site), as.Date(end_site)))
 
-    shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
     print (data$layers_df)
-    
-    
   })
   
   observeEvent(input$downloadDataButton, {
@@ -1156,7 +1171,7 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #--------------------------------------------------------------------------------------------------------------------------------------
 
-  # Creates a polyline surrounding any MODIS 2016 500m pixel from cropped raster
+  # Creates a polyline surrounding any MODIS 2016 500m or 250m pixel from cropped raster
   showpos = function(x=NULL, y=NULL, name, raster_, type_, map_ = NULL) { # type = '500m' or '250m'
     # If clicked within the Raster on the leaflet map
     r_ = raster_
