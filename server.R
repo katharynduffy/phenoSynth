@@ -155,6 +155,15 @@ server = function(input, output, session) {
       updateCheckboxInput(session, inputId = 'drawImageROI', value = FALSE)
     }
   })
+  
+  # hides frequency UI element if GCC isn't selected for data to download/get
+  observe({
+    data = input$dataTypes_get
+    if ('GCC' %in% data){
+      shinyjs::show(id = 'phenocamFrequency')
+    } else{
+      shinyjs::hide(id = 'phenocamFrequency')}
+  })
 
 
   # Start of Drawing - set highlight pixel to off
@@ -896,13 +905,14 @@ server = function(input, output, session) {
   })
 
 
-  # Add netcdf from AppEEARS of netcdf
+  # Download/get data for desired phenocam/satellite products
   observeEvent(input$getDataButton, {
     site          = input$site
     site_data     = get_site_info(site)
     selected_data = input$dataTypes_get
     data_options  = c('NDVI', 'EVI', 'GCC', 'Transition Dates')
     file_path     = paste0('./www/site_data/', site, '/data_layers/')
+    frequency_    = input$phenocamFrequency
     
     shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
 
@@ -1076,13 +1086,14 @@ server = function(input, output, session) {
       print ('Importing Phenocam GCC')
       incProgress(.2)
       layers$gcc_Phenocam = TRUE
-      gcc_filepath    = paste0(file_path, 'gcc', '_', 'ddmmyyyy', '.csv')
+      gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(frequency_,'day_'), 'ddmmyyyy', '.csv')
       if (input$localDownload){
         if (file.exists(gcc_filepath)){
           phenocam$csv = read.csv(gcc_filepath, header = TRUE)
         }else{
           phenocam$csv = get_site_roi_3day_csvs(name       = site,
-                                                roi_files_ = roi_files)
+                                                roi_files_ = roi_files,
+                                                frequency_)
           write.csv(phenocam$csv, file = gcc_filepath)
         }
       } else{
@@ -1090,7 +1101,8 @@ server = function(input, output, session) {
           phenocam$csv = read.csv(gcc_filepath, header = TRUE)
         } else{
           phenocam$csv = get_site_roi_3day_csvs(name       = site,
-                                                roi_files_ = roi_files)
+                                                roi_files_ = roi_files,
+                                                frequency_)
         }
       }
       incProgress(.2)

@@ -1,19 +1,19 @@
 
 # Grabs the list of 3_day csv data from phenocam website
-
-get_site_roi_3day_csvs = function(name, roi_files_){
+get_site_roi_3day_csvs = function(name, roi_files_, frequency_){
   idx      = is.element(roi_files_$site, name)
   num_rois = length(idx[idx == TRUE])
   loc_rois = which(idx == TRUE)
   csv      = data.frame()
+  print (loc_rois)
   
   if(num_rois==1) {
     df  = data.table::fread(roi_files_$one_day_summary[idx])
-    csv = smooth_ts(df, metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), force = TRUE, 1)
+    csv = smooth_ts(df, metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), force = TRUE, frequency_)
   }else {
     for(i in loc_rois){
       df  = data.table::fread(roi_files_$one_day_summary[i])
-      c   = smooth_ts(df, metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), force = TRUE, 1)
+      c   = smooth_ts(df, metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), force = TRUE, frequency_)
       csv = rbind(csv, c)}}
   
   return(csv)
