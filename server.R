@@ -912,7 +912,7 @@ server = function(input, output, session) {
     selected_data = input$dataTypes_get
     data_options  = c('NDVI', 'EVI', 'GCC', 'Transition Dates')
     file_path     = paste0('./www/site_data/', site, '/data_layers/')
-    frequency_    = input$phenocamFrequency
+    frequency_    = as.numeric(substring(input$phenocamFrequency, 1, 1))
     
     shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
 
@@ -1086,7 +1086,7 @@ server = function(input, output, session) {
       print ('Importing Phenocam GCC')
       incProgress(.2)
       layers$gcc_Phenocam = TRUE
-      gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(frequency_,'day_'), 'ddmmyyyy', '.csv')
+      gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(frequency_,'_'), 'ddmmyyyy', '.csv')
       if (input$localDownload){
         if (file.exists(gcc_filepath)){
           phenocam$csv = read.csv(gcc_filepath, header = TRUE)
