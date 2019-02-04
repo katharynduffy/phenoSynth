@@ -726,7 +726,7 @@ server = function(input, output, session) {
             data$final_data = final_data
     
             p = ggplot(data = final_data, aes(x= date, y=value, color=variable)) +
-              geom_line() +
+              geom_point() +
               scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
             p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
     
