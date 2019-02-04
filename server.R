@@ -172,6 +172,7 @@ server = function(input, output, session) {
     print ('Starting Draw Mode')
   })
 
+  # Clears plot
   observeEvent(input$clearPlot, {
     output$ndvi_pixels_plot = renderPlot({
       # Only plotting the first 250m pixel
@@ -713,6 +714,11 @@ server = function(input, output, session) {
             # incProgress(.1)
             # combine GCC and NDVI dfs
             all_data=full_join(parsed_data_melt, pData)
+            
+            print ('pData GCC')
+            print (head(pData))
+            print ('parsed_data_melt NDVI')
+            print (head(parsed_data_melt))
     
             final_data=subset(all_data, date >= start_ & date <= end_)
     
@@ -901,6 +907,8 @@ server = function(input, output, session) {
       remove_polyline(id = id_, all = FALSE)
     }
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_sps_500m = SpatialPolygons(list())
+    data$pixel_sps_250m = SpatialPolygons(list())
     shinyjs::hide(id = 'clearPixels')
   })
 
