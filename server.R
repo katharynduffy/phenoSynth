@@ -692,7 +692,7 @@ server = function(input, output, session) {
             }
     
             # Grab GCC
-            csv = phenocam$csv
+            csv = phenocam$gcc
             pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
             source= rep('PhenoCam GCC', nrow(pData))
             variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
@@ -784,7 +784,7 @@ server = function(input, output, session) {
           }}
           
           # Grab GCC
-          csv = phenocam$csv
+          csv = phenocam$gcc
           pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
           source= rep('PhenoCam GCC', nrow(pData))
           variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
@@ -915,12 +915,13 @@ server = function(input, output, session) {
 
   # Download/get data for desired phenocam/satellite products
   observeEvent(input$getDataButton, {
-    site          = input$site
-    site_data     = get_site_info(site)
-    selected_data = input$dataTypes_get
-    data_options  = c('NDVI', 'EVI', 'GCC', 'Transition Dates')
-    file_path     = paste0('./www/site_data/', site, '/data_layers/')
-    frequency_    = as.numeric(substring(input$phenocamFrequency, 1, 1))
+    site           = input$site
+    site_data      = get_site_info(site)
+    selected_data  = input$dataTypes_get
+    data_options   = c('NDVI', 'EVI', 'GCC', 'Transition Dates')
+    file_path      = paste0('./www/site_data/', site, '/data_layers/')
+    freq           = as.numeric(substring(input$phenocamFrequency, 1, 1))
+    percentile_gcc = 90 
     
     shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
 
@@ -1090,33 +1091,51 @@ server = function(input, output, session) {
       # Import [GCC] splined Data from phenocam (csv)
       #------------------------------------------------------------------------
     if (data_options[3] %in% selected_data){
-      withProgress(message = 'Importing GCC', value = 0, {
+      # withProgress(message = 'Importing GCC', value = 0, {
       print ('Importing Phenocam GCC')
-      incProgress(.2)
+      pft_long = input$pftSelection
+      pft = strsplit(pft_long, '_')[[1]][1]
+      pft_abb = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+      # incProgress(.2)
       layers$gcc_Phenocam = TRUE
-      gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(frequency_,'_'), 'ddmmyyyy', '.csv')
+      gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(freq,'_'), 'ddmmyyyy', '.csv')
       if (input$localDownload){
         if (file.exists(gcc_filepath)){
-          phenocam$csv = read.csv(gcc_filepath, header = TRUE)
+          phenocam$gcc = read.csv(gcc_filepath, header = TRUE)
         }else{
-          phenocam$csv = get_site_roi_3day_csvs(name       = site,
-                                                roi_files_ = roi_files,
-                                                frequency_)
-          write.csv(phenocam$csv, file = gcc_filepath)
+          print (site)
+          print (freq)
+          print (percentile_gcc)
+          print (pft_abb)
+          phenocam$data = get_site_roi_csvs(name        = site,
+                                            roi_files_  = roi_files,
+                                            frequency_  = freq,
+                                            percentile_ = percentile_gcc,
+                                            roi_type_   = pft_abb)
+          phenocam$gcc    = phenocam$data[[1]]
+          phenocam$spring = phenocam$data[[2]]
+          phenocam$fall   = phenocam$data[[3]]
+          
+          write.csv(phenocam$gcc, file = gcc_filepath)
         }
       } else{
         if (file.exists(gcc_filepath)){
-          phenocam$csv = read.csv(gcc_filepath, header = TRUE)
+          phenocam$gcc = read.csv(gcc_filepath, header = TRUE)
         } else{
-          phenocam$csv = get_site_roi_3day_csvs(name       = site,
-                                                roi_files_ = roi_files,
-                                                frequency_)
+          phenocam$data = get_site_roi_csvs(name        = site,
+                                            roi_files_  = roi_files,
+                                            frequency_  = freq,
+                                            percentile_ = percentile_gcc,
+                                            roi_type_   = pft_abb)
+          phenocam$gcc    = phenocam$data[[1]]
+          phenocam$spring = phenocam$data[[2]]
+          phenocam$fall   = phenocam$data[[3]]
         }
       }
-      incProgress(.2)
+      # incProgress(.2)
       data$layers_df$gcc_Phenocam = TRUE
       shinyjs::show(id = 'plotRemoteData')
-      })
+      # }) # End with progress
     }
 
     start_site = as.character(site_data$date_first)
@@ -1150,13 +1169,10 @@ server = function(input, output, session) {
       shinyjs::hide(id = 'pixelTypes')
     }else if (is.null(sm_pixels@polygons[1][[1]])){
       updateSelectInput(session, 'pixelTypes', choices = c('500m'))
-      print ('test1')
     }else if (is.null(lg_pixels@polygons[1][[1]])){
       updateSelectInput(session, 'pixelTypes', choices = c('250m'))
-      print ('test2')
     }else{
       updateSelectInput(session, 'pixelTypes', choices = c('250m', '500m'))
-      print ('test3')
     }
   })
   

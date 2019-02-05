@@ -8,7 +8,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                          size = "medium",
                          checkboxInput("localDownload", "Download Data Locally", value = TRUE),
                          selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('NDVI', 'GCC', 'EVI', 'Transition Dates'), c('NDVI', 'EVI', 'GCC', 'Transition Dates')),
-                         selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '1 day', c('1 day', '3 day')),
+                         selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '3 day', c('1 day', '3 day')),
                          actionButton('getDataButton', 'Get Data'),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")))
                  ,

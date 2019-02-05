@@ -1,44 +1,97 @@
 
-# Grabs the list of 3_day csv data from phenocam website
-get_site_roi_3day_csvs = function(name, roi_files_, frequency_){
+# Grabs the list of 3_day or 1_day csv data from phenocam website with spring and fall
+get_site_roi_csvs = function(name, roi_files_, frequency_, 
+                             metrics_ = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), 
+                             percentile_, roi_type_){
   idx      = is.element(roi_files_$site, name)
+  idx2     = is.element(roi_files_$roitype, roi_type_)
   num_rois = length(idx[idx == TRUE])
-  loc_rois = which(idx == TRUE)
-  csv      = data.frame()
-  
-  if (frequency_ ==1){
-    if(num_rois==1) {
-      df  = data.table::fread(roi_files_$one_day_summary[idx])
-      csv = smooth_ts(df, metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), force = TRUE, frequency_)
-    }else {
-      for(i in loc_rois){
-        df  = data.table::fread(roi_files_$one_day_summary[i])
-        c   = smooth_ts(df, metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), force = TRUE, frequency_)
-        csv = rbind(csv, c)}}
-    print (frequency_)
-    print (roi_files_$one_day_summary[idx])
-  }else{
-    if(num_rois==3) {
-      df  = data.table::fread(roi_files_$three_day_summary[idx])
-      csv = smooth_ts(df, metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), force = TRUE, frequency_)
-    }else {
-      for(i in loc_rois){
-        df  = data.table::fread(roi_files_$three_day_summary[i])
-        c   = smooth_ts(df, metrics = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), force = TRUE, frequency_)
-        csv = rbind(csv, c)}}
-    print (frequency_)
-    print (roi_files_$three_day_summary[idx])
+  loc_rois = which(idx == TRUE & idx2 ==TRUE)
+  plot_data      = data.frame()
+  unix = "1970-01-01"
+  roi  = 1000
+
+  if (frequency_ == 1){
+    for (i in loc_rois){
+      downloadable_file = roi_files_$one_day_summary[i]
+      df  = data.table::fread(downloadable_file)
+      print (roi_files$roitype[i])
+      print (downloadable_file)
+      c   = smooth_ts(df, metrics = metrics_, force = TRUE, frequency_)
+      plot_data = rbind(plot_data, c)
+    }
+  }
+  if (frequency_ == 3){
+    for (i in loc_rois){
+      downloadable_file = roi_files_$three_day_summary[i]
+      df  = data.table::fread(downloadable_file)
+      print (roi_files$roitype[i])
+      print (downloadable_file)
+      c   = smooth_ts(df, metrics = metrics_, force = TRUE, frequency_)
+      plot_data = rbind(plot_data, c)
+    }
   }
   
+  spring = transition_dates(plot_data,
+                            percentile = percentile_,
+                            reverse = FALSE)
+
+  fall = transition_dates(plot_data,
+                          percentile = percentile_,
+                          reverse = TRUE)
   
-  return(csv)
+  # Creating a header for the file to save out to (metadata)
+  # format dates correctly (unix time to date format)
+  spring[, 1:9] = apply(spring[, 1:9], 2, function(x)
+    as.character(as.Date(x, origin = unix)))
+  fall[, 1:9] = apply(fall[, 1:9], 2, function(x)
+    as.character(as.Date(x, origin = unix)))
+
+  # bind spring and fall phenology data in a coherent format
+  phenology = rbind(spring,fall)
+  rising_length = dim(spring)[1]
+  falling_length = dim(fall)[1]
+  direction = c(rep("rising", rising_length),
+                rep("falling", falling_length))
+  sitename = rep(name, rising_length + falling_length)
+  veg_type = rep(roi_type_, rising_length + falling_length)
+  roi_id = rep(sprintf("%04d",roi), rising_length + falling_length)
+
+  phenology[, 1:9] = apply(phenology[, 1:9], 2, function(x)
+    as.character(as.Date(x, origin = unix)))
+
+  # bind in new labels
+  phenology = cbind(sitename,veg_type,roi_id,direction,phenology)
+
+  # drop NA lines
+  phenology = na.omit(phenology)
+
+  # create header with output information
+  phenology_header = matrix("#",12,1)
+# 
+  # populate the header file
+  phenology_header[2,1] = "# Transition date estimates"
+  phenology_header[4,1] = sprintf("# Sitename: %s",name)
+  phenology_header[5,1] = sprintf("# Vegetation Type: %s",roi_type_)
+  phenology_header[6,1] = sprintf("# ROI ID: %04d",roi)
+  phenology_header[7,1] = sprintf("# Aggregation period: %s", as.numeric(frequency_))
+  phenology_header[8,1] = sprintf("# Year min: %s",
+                                  min(strptime(as.matrix(phenology[, 5:13]),"%Y-%m-%d")$year +
+                                        1900), # THIS IS UGLY THIS CAN BE SHORTER
+                                  na.rm = TRUE)
+  phenology_header[9,1] = sprintf("# Year max: %s",
+                                  max(strptime(as.matrix(phenology[, 5:13]),"%Y-%m-%d")$year +
+                                        1900),
+                                  na.rm = TRUE)
+  phenology_header[10,1] = sprintf("# Creation Date: %s", Sys.Date())
+  phenology_header[11,1] = sprintf("# Creation Time: %s", format(Sys.time(), "%H:%M:%S"))
+  
+  return(list(plot_data, spring, fall, phenology_header))
 }
 
-
-
-
-
-
+# test = get_site_roi_csvs('acadia', roi_files, frequency_ = 3, metrics_ = c('gcc_90'), percentile_ = 90, roi_type_ = 'DB')
+# test = get_site_roi_csvs('arbutuslakeinlet', roi_files, frequency_ = 1, metrics_ = c('gcc_90'), percentile_ = 90, roi_type_ = 'EN')
+# test = get_site_roi_csvs('arbutuslakeinlet', roi_files, frequency_ = 3, metrics_ = c('gcc_90'), percentile_ = 90, roi_type_ = 'DB')
 
 
 

@@ -92,7 +92,7 @@ transition_dates = function(data,
  # } else {
     loc_freq = 1:nrow(df)
  # }
-  
+    
   # select original smooth data, needed to grab the
   # threshold values on the original scale for export
     idx=which(colnames(df) == sprintf("smooth_gcc_%s", percentile))
@@ -103,9 +103,9 @@ transition_dates = function(data,
   if ( all(is.na(smooth_orig)) ) {
     return(err_function())
   }
-  
+    
   # put raw data values into a variable
-  idx=which(colnames(df) == sprintf("gcc_%s", percentile))
+    idx=which(colnames(df) == sprintf("gcc_%s", percentile))
     raw_data = df[, ..idx]
   
   # if the variability over the whole time series is too
