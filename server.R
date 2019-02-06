@@ -1091,6 +1091,7 @@ server = function(input, output, session) {
       # Import [GCC] splined Data from phenocam (csv)
       #------------------------------------------------------------------------
     if (data_options[3] %in% selected_data){
+      unix = "1970-01-01"
       # withProgress(message = 'Importing GCC', value = 0, {
       print ('Importing Phenocam GCC')
       pft_long = input$pftSelection
@@ -1098,25 +1099,30 @@ server = function(input, output, session) {
       pft_abb = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
       # incProgress(.2)
       layers$gcc_Phenocam = TRUE
-      gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(freq,'_'), 'ddmmyyyy', '.csv')
+      gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(freq,'_day'), '.csv')
+      spring_filepath = paste0(file_path, 'gcc', '_',paste0(freq,'_day_spring_tds'), '.csv')
+      fall_filepath   = paste0(file_path, 'gcc', '_',paste0(freq,'_day_fall_tds'), '.csv')
       if (input$localDownload){
         if (file.exists(gcc_filepath)){
           phenocam$gcc = read.csv(gcc_filepath, header = TRUE)
         }else{
-          print (site)
-          print (freq)
-          print (percentile_gcc)
-          print (pft_abb)
           phenocam$data = get_site_roi_csvs(name        = site,
                                             roi_files_  = roi_files,
                                             frequency_  = freq,
                                             percentile_ = percentile_gcc,
                                             roi_type_   = pft_abb)
+
           phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring = phenocam$data[[2]]
-          phenocam$fall   = phenocam$data[[3]]
+          phenocam$spring    = phenocam$data[[2]]
+          phenocam$fall    = phenocam$data[[3]]
+          # phenocam$spring = apply(phenocam$data[[2]][, 2:9], 2, function(x)
+          #   as.character(as.Date(x, origin = unix)))
+          # phenocam$fall = apply(phenocam$data[[3]][, 2:9], 2, function(x)
+          #   as.character(as.Date(x, origin = unix)))
           
-          write.csv(phenocam$gcc, file = gcc_filepath)
+          write.csv(phenocam$gcc,    file = gcc_filepath)
+          write.csv(phenocam$spring, file = spring_filepath)
+          write.csv(phenocam$fall,   file = fall_filepath)
         }
       } else{
         if (file.exists(gcc_filepath)){
@@ -1127,11 +1133,18 @@ server = function(input, output, session) {
                                             frequency_  = freq,
                                             percentile_ = percentile_gcc,
                                             roi_type_   = pft_abb)
+          
           phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring = phenocam$data[[2]]
-          phenocam$fall   = phenocam$data[[3]]
+          phenocam$spring    = phenocam$data[[2]]
+          phenocam$fall    = phenocam$data[[3]]
+          # phenocam$spring = apply(phenocam$data[[2]][, 2:9], 2, function(x)
+          #   as.character(as.Date(x, origin = unix)))
+          # phenocam$fall = apply(phenocam$data[[3]][, 2:9], 2, function(x)
+          #   as.character(as.Date(x, origin = unix)))
         }
       }
+      
+      
       # incProgress(.2)
       data$layers_df$gcc_Phenocam = TRUE
       shinyjs::show(id = 'plotRemoteData')
