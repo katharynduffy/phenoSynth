@@ -7,15 +7,11 @@ output: html_document
 
 
 ```{r}
-<<<<<<< HEAD
-gcc    = read.csv('/users/kenns/projects/r/apis/phenosynth/www/site_data/acadia/data_layers/gcc_3_day.csv')
-spring = read.csv('/users/kenns/projects/r/apis/phenosynth/www/site_data/acadia/data_layers/gcc_3_day_spring_tds.csv')
-fall   = read.csv('/users/kenns/projects/r/apis/phenosynth/www/site_data/acadia/data_layers/gcc_3_day_fall_tds.csv')
-=======
+
 gcc    = read.csv('/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/site_data/acadia/data_layers/gcc_3_day.csv')
 spring = read.csv('/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/site_data/acadia/data_layers/gcc_3_day_spring_tds.csv')
 fall   = read.csv('/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/site_data/acadia/data_layers/gcc_3_day_fall_tds.csv')
->>>>>>> refs/remotes/origin/master
+
 gcc$date = as.Date(gcc$date)
 # spring$date = as.Date(spring$date)
 # fall$date = as.Date(fall$date)
