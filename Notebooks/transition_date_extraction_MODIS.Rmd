@@ -1,0 +1,26 @@
+---
+title: "MODIS_transtion_date_worflow"
+author: "K. Duffy"
+date: "2/6/2019"
+output: html_document
+---
+```{r}
+library(raster); library(rmarkdown); library(ncdf4); library(sp); library(tidyr);library(plotly)
+filepath=c('/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/site_data/acadia/data_layers/td_ddmmyyyy.nc')
+ndvi_output = nc_open(filepath)
+
+# Print a list of variables in file
+print (attributes(ndvi_output$var)$names)
+
+# Print a list of dimensions in file
+print (attributes(ndvi_output$dim)$names)
+```
+
+```{r}
+td_modis= ncatt_get(ndvi_output, "NBAR_EVI_Onset_Greenness_Minimum")
+transition_MODIS = ncvar_get(ndvi_output, "time")
+```
+v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
+v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")                    #Fails in binder on this line
+print (dim(v6_NDVI))
+print (dim(v6_QA))

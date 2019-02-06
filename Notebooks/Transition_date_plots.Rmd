@@ -161,24 +161,36 @@ p_gg
 MODIS application of plotly:
 **Kyle can you throw in some code in the server to download the NDVI data as a .csv or similar, then I will finish tackling this.  Right now the NDVI csv is the QAQC Stuff
 ```{r}
-ndvi    = read.csv('/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/www/site_data/acadia/data_layers/ndvi_ddmmyyyy.csv')
+ndvi    = load(data.Rda) #temporary hack to work offline
 ```
 ```{r}
-p = plot_ly(
-            data = df_test,
+p2 = plot_ly(
+            data = ndvi,
             x = ~ date,
-            y = ~ gcc_90,
+            y = ~ pixel_1,
             showlegend = FALSE,
             type = 'scatter',
             mode = 'markers'
           ) %>%
               add_trace(
-              y = ~ smooth_gcc_90,
+              y = smooth(pixel_1),
               mode = "lines",
               line = list(width = 2, color = "rgb(120,120,120)"),
-              name = "Gcc loess fit",
+              name = "MODIS loess fit",
               showlegend = TRUE
-            ) %>%
+            )
+p2
+```
+
+got it to work!  ignore my miultiplot function.  need to add legends etc though
+```{r}
+p3=subplot(p, p2, nrows=2)
+p3
+
+```
+This is saved for when I get the transition dates in from MODIS
+
+%>%
   # SOS spring
             # 10%
             add_trace(
