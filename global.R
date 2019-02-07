@@ -47,10 +47,8 @@ print ('Importing Modules and Phenocam site data')
 
 
 # Variables
-table_url = 'https://phenocam.sr.unh.edu/webcam/network/siteinfo/?format=csv'
-df <- read.csv(url(table_url))
-colnames(df)
 
+print ('Grabbing phenocam cameras-api')
 c      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=2000')
 c = c$results
 c_m=c$sitemetadata
@@ -80,6 +78,7 @@ pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded)
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
+print ('Grabbing phenocam rois-api')
 rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
 roi_files = rois$results
 

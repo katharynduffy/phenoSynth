@@ -825,8 +825,9 @@ server = function(input, output, session) {
     #   p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1) + ggtitle('Select a Pixel!!')
     # }
 
-    
+    p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
     # Plot p
+    
     output$ndvi_pixels_plot = renderPlot({
       p
     })
@@ -842,7 +843,7 @@ server = function(input, output, session) {
                                 ))
 
     output$data_plot = renderPlotly({
-      pp
+      p
     })
 
     output$event_plot = renderPrint({
@@ -1104,7 +1105,9 @@ server = function(input, output, session) {
       fall_filepath   = paste0(file_path, 'gcc', '_',paste0(freq,'_day_fall_tds'), '.csv')
       if (input$localDownload){
         if (file.exists(gcc_filepath)){
-          phenocam$gcc = read.csv(gcc_filepath, header = TRUE)
+          phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
+          phenocam$spring = read.csv(spring_filepath, header = TRUE)
+          phenocam$fall   = read.csv(fall_filepath, header = TRUE)
         }else{
           phenocam$data = get_site_roi_csvs(name        = site,
                                             roi_files_  = roi_files,
@@ -1113,12 +1116,8 @@ server = function(input, output, session) {
                                             roi_type_   = pft_abb)
 
           phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring    = phenocam$data[[2]]
-          phenocam$fall    = phenocam$data[[3]]
-          # phenocam$spring = apply(phenocam$data[[2]][, 2:9], 2, function(x)
-          #   as.character(as.Date(x, origin = unix)))
-          # phenocam$fall = apply(phenocam$data[[3]][, 2:9], 2, function(x)
-          #   as.character(as.Date(x, origin = unix)))
+          phenocam$spring = phenocam$data[[2]]
+          phenocam$fall   = phenocam$data[[3]]
           
           write.csv(phenocam$gcc,    file = gcc_filepath)
           write.csv(phenocam$spring, file = spring_filepath)
@@ -1135,12 +1134,8 @@ server = function(input, output, session) {
                                             roi_type_   = pft_abb)
           
           phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring    = phenocam$data[[2]]
-          phenocam$fall    = phenocam$data[[3]]
-          # phenocam$spring = apply(phenocam$data[[2]][, 2:9], 2, function(x)
-          #   as.character(as.Date(x, origin = unix)))
-          # phenocam$fall = apply(phenocam$data[[3]][, 2:9], 2, function(x)
-          #   as.character(as.Date(x, origin = unix)))
+          phenocam$spring = phenocam$data[[2]]
+          phenocam$fall   = phenocam$data[[3]]
         }
       }
       
