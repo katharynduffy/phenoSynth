@@ -10,3 +10,5 @@ tokens.R
 powerpoint
 www/site_data/
 *.jar
+Notebooks/transition_date_extraction_modis_test.Rmd
+Notebooks/transition_date_plots_test.Rmd
