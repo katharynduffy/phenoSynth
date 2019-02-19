@@ -1255,6 +1255,10 @@ server = function(input, output, session) {
        datalon = c(xclose, xfar, xfar, xclose ,xclose)
        datalat = c(yclose, yclose, yfar, yfar, yclose)
        id_     = paste0(name, '_', row, '_', col, '_', vegindex)
+       
+       print (datalon)
+       print (datalat)
+       print (midcell)
 
        # Check to see if already drawn, and if so remove it from df and leaflet map
        if (id_ %in% data$pixel_df$Id){

@@ -4,6 +4,7 @@
 .Ruserdata
 .Rapp.history
 .DS_Store
+*.Rproj
 rsconnect/
 tokens/
 tokens.R
