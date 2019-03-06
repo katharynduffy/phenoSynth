@@ -38,8 +38,8 @@ gcc_plot = function(gcc, spring, fall){
     ) %>%
     add_segments(x = ~ as.Date(transition_10_lower_ci),
                  xend = ~ as.Date(transition_10_upper_ci),
-                 y = ~ threshold_10,
-                 yend = ~ threshold_10,
+                 y = ~ 0,
+                 yend = ~ 1,
                  line = list(color = "#7FFF00"),
                  name = "SOS (10%) - CI"
     ) %>%

@@ -166,19 +166,19 @@ p_gg
 MODIS application of plotly:
 **Kyle can you throw in some code in the server to download the NDVI data as a .csv or similar, then I will finish tackling this.  Right now the NDVI csv is the QAQC Stuff
 ```{r}
-ndvi    = load(data.Rda) #temporary hack to work offline
+ndvi    = readRDS('/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/all_data.Rmd') #temporary hack to work offline
 ```
 ```{r}
 p2 = plot_ly(
             data = ndvi,
             x = ~ date,
-            y = ~ pixel_1,
+            y = ~ ndvi$value,
             showlegend = FALSE,
             type = 'scatter',
             mode = 'markers'
           ) %>%
               add_trace(
-              y = smooth(pixel_1),
+              y = smooth(ndvi$value),
               mode = "lines",
               line = list(width = 2, color = "rgb(120,120,120)"),
               name = "MODIS loess fit",

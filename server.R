@@ -707,6 +707,7 @@ server = function(input, output, session) {
     
             parsed_data = subset(data_df, date >= start_ & date <= end_)
             parsed_data$date=as.Date(parsed_data$date)
+            saveRDS(data_df, 'testMODIS.Rda')
             source      = rep('MODIS NDVI', nrow(parsed_data))
             parsed_data   = cbind(parsed_data, source)
             parsed_data_melt = melt(data.table(parsed_data), measure.vars = variables_)
@@ -725,10 +726,10 @@ server = function(input, output, session) {
             data$all_data = all_data
             data$final_data = final_data
     
-            p = ggplot(data = final_data, aes(x= date, y=value, color=variable)) +
-              geom_point() +
-              scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
-            p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
+            # p = ggplot(data = final_data, aes(x= date, y=value, color=variable)) +
+            #   geom_point() +
+            #   scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
+            # p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
     
           })
         }
