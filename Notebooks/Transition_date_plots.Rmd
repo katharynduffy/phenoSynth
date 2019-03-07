@@ -169,22 +169,24 @@ MODIS application of plotly:
 ndvi    = readRDS('/Users/kdw223/Google Drive/PhenoPostdoc/phenoRemote/all_data.Rmd') #temporary hack to work offline
 ```
 ```{r}
-p2 = plot_ly(
+
+p4 = plot_ly(
             data = ndvi,
             x = ~ date,
             y = ~ ndvi$value,
             showlegend = FALSE,
             type = 'scatter',
-            mode = 'markers'
+            mode = 'markers', 
+            color= ~variable
           ) %>%
-              add_trace(
+              add_trace(data=ndvi,
               y = smooth(ndvi$value),
               mode = "lines",
               line = list(width = 2, color = "rgb(120,120,120)"),
               name = "MODIS loess fit",
               showlegend = TRUE
             )
-p2
+p4
 ```
 
 got it to work!  ignore my miultiplot function.  need to add legends etc though
