@@ -52,7 +52,6 @@ switch_to_analyzer_panel = function(){
   shinyjs::show(id = 'mouse')
   shinyjs::show(id = 'siteTitle')
   shinyjs::show(id = 'pftSelection')
-  shinyjs::show(id = 'highlightPixelMode')
   shinyjs::show(id = 'getData')
   # Ids to hide:
   shinyjs::hide(id = 'explorerTitle')
@@ -94,4 +93,29 @@ get_download_folder = function(){
 # Deletes the netcdf from input filepath
 delete_file = function(filepath_){
   if (file.exists(filepath_)) file.remove(filepath_)
+}
+
+
+# Given a length, return a vector with different RGB values
+get_custom_color_list = function(len){
+  colors = c()
+  len = len +2
+  g = 0
+  b = 0
+  val = as.integer(255/(len/3))
+  r = -(val)
+  for (x in c(1:len)){
+    
+    if ((x+2)%%3==0){
+      r = val + r
+    }
+    else if ((x+1)%%3==0){
+      g = val + g
+    }
+    else if (x%%3==0){
+      b = val + b
+    }
+    colors = c(colors, paste0('rgb(',r,',',g,',',b,')'))
+  }
+  return(colors[2:(len-1)])
 }

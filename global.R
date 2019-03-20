@@ -88,3 +88,5 @@ cams_=cams_[idx,]
 appeears_tasks_ndvi     = readRDS(file = './www/cache_df_ndvi.df')
 # Load in df with cached AppEEARS Transition Dates (dts)
 appeears_tasks_tds = readRDS(file = './www/cache_df_tds.df')
+# Load in df with cached AppEEARS EVI data
+appeears_tasks_evi      = readRDS(file = './www/cache_df_evi.df')

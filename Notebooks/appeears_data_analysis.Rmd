@@ -118,6 +118,42 @@ v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_
 ```
 
 
+### Reading in netcdf as Brick and extracting using pixels
+this cell won't run. proof of concept for using Raster brick and netcdf to speed up app
+```{r}
+test_brick = brick(filepath)
+test_pixel = readOGR('./downloads/test_shp') 
+
+ndvi_under_pixels = extract(test_brick, test_pixel)
+px1 = ndvi_under_pixels[[1]][1,]
+px2 = ndvi_under_pixels[[2]][1,]
+px3 = ndvi_under_pixels[[3]][1,]
+
+dates = as.Date(names(px1),format='X%Y.%m.%d')
+test_df = data.frame(date = dates, pixel_1=px1, pixel_2=px2, pixel_3=px3)
+test_p = plot_ly(
+    data = test_df,
+    x = ~ date,
+    y = ~ px1,
+    showlegend = FALSE,
+    type = 'scatter',
+    mode = 'lines'
+  ) %>%
+      add_trace(
+      data = test_df,
+      x = ~ date,
+      y = ~ px2,
+      mode = "lines",
+      type = "scatter",
+      lines = list(color = "#7FFF00", symbol = "circle"),
+      name = "SOS (10%)",
+      showlegend = TRUE
+    ) 
+test_p
+```
+
+
+
 ### Get lookup table for the netcdf (quality table)
 ```{r}
 download_this_file = quality_lookup_id

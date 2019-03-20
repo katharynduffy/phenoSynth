@@ -8,7 +8,7 @@ gcc_plot = function(gcc, spring, fall){
     as.character(as.Date(x, origin = unix)))
   
   
-  
+  print ('adding GCC')
   p = plot_ly(
     data = gcc,
     x = ~ date,
@@ -38,8 +38,10 @@ gcc_plot = function(gcc, spring, fall){
     ) %>%
     add_segments(x = ~ as.Date(transition_10_lower_ci),
                  xend = ~ as.Date(transition_10_upper_ci),
-                 y = ~ 0,
-                 yend = ~ 1,
+                 # y = ~ 0,
+                 # yend = ~ 1,
+                 y = ~ threshold_10,
+                 yend = ~ threshold_10,
                  line = list(color = "#7FFF00"),
                  name = "SOS (10%) - CI"
     ) %>%
@@ -130,7 +132,10 @@ gcc_plot = function(gcc, spring, fall){
                  line = list(color = "#8B6508"),
                  name = "EOS (10%) - CI"
     ) %>%
-    layout(xaxis = list(title = "Date"),
-           yaxis = list(title = "Gcc"))
+    layout(xaxis = list(title = "Date")) #%>%
+    # add_annotations(text = 'GCC',
+    #                 xanchor= 'middle',
+    #                 yanchor= 'top',
+    #                 showarrow = FALSE)
   return (p)
 }

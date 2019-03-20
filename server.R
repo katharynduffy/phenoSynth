@@ -127,8 +127,8 @@ server = function(input, output, session) {
       tags$div(id = 'frontPageData',
                fluidRow(
                  column(12, align="center", offset = 0,
-                        selectInput('frontPageDataSelection', 'Choose Your Data (click in box)', multiple = TRUE, 
-                                    c('Modis Ndvi', 'Phenocam GCC', 'Landsat Phenometrics')),
+                        selectInput('frontPageDataSelection', 'Choose Your Data (click in box) - Phenocam is always included', multiple = TRUE, 
+                                    c('Modis Ndvi', 'Landsat Phenometrics')),
                         tags$style(type='text/css', "#frontPageData { vertical-align: middle; height: 50px; width: 100%; font-size: 15px;}"))
                )),
       fluidRow(
@@ -498,7 +498,7 @@ server = function(input, output, session) {
 
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
-    updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
+    # updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
 
     veg_idx       = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
@@ -588,7 +588,9 @@ server = function(input, output, session) {
   # Button that plots selected Data Types
   observeEvent(input$plotDataButton, {
     shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
-    print ('Plotting NDVI')
+    gcc_p = 'none'
+    ndvi_p = 'none'
+    evi_p = 'none'
 
     # Inputs from popup
     data_type_selected  = input$dataTypes_plot
@@ -598,263 +600,207 @@ server = function(input, output, session) {
     site_data     = get_site_info(site)
     selected_data = input$dataTypes_plot
     
+    print (paste0('Plotting: ', selected_data))
+    
+    
+    # ------------------PLOT GCC------------------------------------
+    if ('GCC' %in% selected_data){
+      gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
+    } #END GCC PLOT
+    
+    # ------------------PLOT NDVI------------------------------------
+    if ('NDVI' %in% selected_data){
+      
+        # nc_data = data$ndvi_site_nc
+        # dates   = ncvar_get(nc_data, 'time')
+        # start_date_str = nc_data[[11]]$time$units
+        # start_date     = as.Date(strsplit(start_date_str, ' ')[[1]][3])
+        # # In date format
+        # date_list = dates + start_date
+        # nc_ndvi = data$ndvi_nc
 
-    #----NDVI------------------------------------------------------------------------------------------------------------------------
-    if ('NDVI' %in% selected_data | 'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
+        sm_pixels = data$pixel_sps_250m
+        lg_pixels = data$pixel_sps_500m
 
-      nc_data = data$site_nc
-      dates   = ncvar_get(nc_data, 'time')
-      crs = CRS("+proj=longlat +datum=WGS84")
+        selected_pixel_type = input$pixelTypes
 
-      start_date_str = nc_data[[11]]$time$units
-      # print (start_date_str)
-      start_date     = as.Date(strsplit(start_date_str, ' ')[[1]][3])
-      # print (start_date)
+        print (selected_pixel_type)
 
-      # In date format
-      date_list = dates + start_date
-      # print (date_list)
+        if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
+          print ('No pixels selected')
+          ndvi_p = plot_ly()
+        }else{
 
-      nc_ndvi = data$ndvi_nc
-
-      lat = ncvar_get(nc_data, "lat")
-      lon = ncvar_get(nc_data, "lon")
-
-      data_plot  = c()
-      polys_len  = c()
-      pixel_len  = c()
-      ndvis_     = c()
-      int_pixels = list()
-      final_ndvi_list = c()
-      len = length(dates)
+          if(selected_pixel_type == '250m'){
+            ndvi_brick = data$ndvi_brick
+            ndvi_under_pixel = extract(ndvi_brick, sm_pixels)
+            cs  = get_custom_color_list(length(ndvi_under_pixel))
+            ndvi_p = plot_ly()
+            
+            for (num in c(1:length(ndvi_under_pixel))){
+              px = ndvi_under_pixel[[num]][1,]
+              dates = as.Date(names(px),format='X%Y.%m.%d')
+              ndvi_brick_df = data.frame(date = dates, pixel = px)
+              
+              ndvi_p = ndvi_p %>%
+                add_trace(
+                data = ndvi_brick_df,
+                x = ~ date,
+                y = ~ pixel,
+                showlegend = TRUE,
+                type = 'scatter',
+                mode = 'lines',
+                name = paste0(num,'_px_NDVI_250m'),
+                line = list(color = cs[num])
+              )
+              print (cs[num])
+            }
+          } else if (selected_pixel_type == '500m'){
+            ndvi_brick = data$ndvi_brick
+            ndvi_under_pixel = extract(ndvi_brick, lg_pixels)
+            values_in_pixel = dim(ndvi_under_pixel[[1]])[[1]]
+            cs  = get_custom_color_list(length(ndvi_under_pixel)*values_in_pixel)
+            ndvi_p = plot_ly()
+            
+            for (num in c(1:length(ndvi_under_pixel))){
+              
+              for (num_quad in c(1:values_in_pixel)){
+                px = ndvi_under_pixel[[num]][num_quad,]
+                dates = as.Date(names(px),format='X%Y.%m.%d')
+                ndvi_brick_df = data.frame(date = dates, pixel = px)
+                
+                letter = c('A', 'B', 'C', 'D')[num_quad]
+                ndvi_p = ndvi_p %>%
+                  add_trace(
+                    data = ndvi_brick_df,
+                    x = ~ date,
+                    y = ~ pixel,
+                    showlegend = TRUE,
+                    type = 'scatter',
+                    mode = 'lines',
+                    name = paste0(num,'_',letter,'_px_NDVI_500m'),
+                    lines = list(color = cs[num]))
+              }
+            }
+          }
+        }
+      } #END NDVI PLOT
+    
+    # ------------------PLOT EVI------------------------------------
+    if ('EVI' %in% selected_data){
+      
       sm_pixels = data$pixel_sps_250m
       lg_pixels = data$pixel_sps_500m
       
       selected_pixel_type = input$pixelTypes
       
-      print (selected_pixel_type)
-
-
       if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
         print ('No pixels selected')
-        shinyjs::show(id = 'noPixelWarning')
-        df = data.frame()
-        p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1) + ggtitle('Select a Pixel!!')
-
+        evi_p = plot_ly()
       }else{
-        
-        if(selected_pixel_type == '250m'){
-
-          shinyjs::show(id = 'buildingPlot')
-          
-          # Setting length of polygons to select with
-          if (is.null(polys_len)){
-            # Number of polygons (aka highlighted pixels) selected
-            polys_len = length(sm_pixels)
-          }
-    
-          withProgress(message = 'Building NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
-            for (x in c(1:len)){
-              incProgress((1/len)/1.1)
-              r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
-              values_under_polygon = extract(r_ndvi, sm_pixels)
-    
-              # Setting length of pixels in each polygon
-              if (length(int_pixels) == 0){
-                for (xx in c(1:polys_len)){
-                  # Number of pixels picked up by the highlighted pixel
-                  pixel_len  = length(values_under_polygon[[xx]])
-                  int_pixels[[xx]] = pixel_len
-                }
-              }
-              ndvi_means = c()
-              # Loop through the different polygons to extract ndvi values and save to dataframe
-              for (i in c(1:polys_len)){
-                ndvi_ = values_under_polygon[[i]]
-                ndvis_ = c(ndvis_, ndvi_)
-              }
-            }
-            # Build out individual pixel lists as c() and do %1,2,3,4,5 (for number of pixels)
-            #   to build the necessary dataframe lists.
-            list_ = list()
-            cols  = c()
-            variables_ = c()
-            for (i in c(1:polys_len)){
-              col = paste0('pixel_', as.character(i))
-              cols = c(cols, col)
-              a = c(1:(length(ndvis_)))
-              b = a[seq((1 + (i-1)), length(a), polys_len)]
-              print (col)
-              print (b)
-              list_[[col]] = ndvis_[b]
-              var_ = paste0('pixel_', i)
-              variables_ = c(variables_, var_)
-            }
-    
-            # Grab GCC
-            csv = phenocam$gcc
-            pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
-            source= rep('PhenoCam GCC', nrow(pData))
-            variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
-            pData=cbind(pData, source, variable)
-            colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
-            pData$date=as.Date(pData$date)
-    
-            #Parse data with Dates
-            data_df = data.frame(date = date_list, list_)
-            start_ = input$dataDateRange[1]
-            end_   = input$dataDateRange[2]
-    
-            parsed_data = subset(data_df, date >= start_ & date <= end_)
-            parsed_data$date=as.Date(parsed_data$date)
-            saveRDS(data_df, 'testMODIS.Rda')
-            source      = rep('MODIS NDVI', nrow(parsed_data))
-            parsed_data   = cbind(parsed_data, source)
-            parsed_data_melt = melt(data.table(parsed_data), measure.vars = variables_)
-    
-            # incProgress(.1)
-            # combine GCC and NDVI dfs
-            all_data=full_join(parsed_data_melt, pData)
-            
-            print ('pData GCC')
-            print (head(pData))
-            print ('parsed_data_melt NDVI')
-            print (head(parsed_data_melt))
-    
-            final_data=subset(all_data, date >= start_ & date <= end_)
-    
-            data$all_data = all_data
-            data$final_data = final_data
-    
-            # p = ggplot(data = final_data, aes(x= date, y=value, color=variable)) +
-            #   geom_point() +
-            #   scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
-            # p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
-    
-          })
-        }
-        else if(selected_pixel_type == '500m'){
-          print ('Extracting ndvi values under this 500m pixel')
-          
-          # Setting length of polygons to select with
-          if (is.null(polys_len)){
-            # Number of polygons (aka highlighted pixels) selected
-            polys_len = length(lg_pixels)
-          }
-          
-          withProgress(message = 'Building NDVI Plot: ', detail = paste0('Site: ', site), value = 0, {
-
-          for (x in c(1:len)){
-            incProgress((1/len)/1.1)
-            r_ndvi = raster(t(nc_ndvi[,,x]), xmn=min(lon), xmx=max(lon), ymn=min(lat), ymx=max(lat), crs=crs)
-            values_under_polygon = extract(r_ndvi, lg_pixels)
-
-            # Setting length of pixels in each polygon
-            if (length(int_pixels) == 0){
-              for (xx in c(1:polys_len)){
-                # Number of pixels picked up by the highlighted pixel
-                pixel_len  = length(values_under_polygon[[xx]])
-                int_pixels[[xx]] = pixel_len
-              }
-            }
-            ndvi_means = c()
-            # Loop through the different polygons to extract ndvi values and save to dataframe
-            for (i in c(1:polys_len)){
-              ndvi_ = values_under_polygon[[i]]
-              ndvis_ = c(ndvis_, ndvi_)
-            }
-          }
       
-          list_ = list()
-          cols  = c()
-          variables_ = c()
-          pixels_in_500m = as.numeric(int_pixels[1])
-          count = 0
-          for (i in c(1:polys_len)){
-            for (j in c(1:pixels_in_500m)){
-              count = count + 1
-              # col = paste0('pixel_', as.character(count))
-              col = paste0('pixel_', as.character(i),'_',as.character(j))
-              cols = c(cols, col)
-              a = c(1:(length(ndvis_)))
-              b = a[seq((1 + (count-1)), length(a), polys_len * pixels_in_500m)]
-              list_[[col]] = ndvis_[b]
-              # var_ = paste0('pixel_', count)
-              var_ = paste0('pixel_', i, '_', j)
-              variables_ = c(variables_, var_)
-          }}
+      if(selected_pixel_type == '250m'){
+        evi_brick = data$evi_brick
+        evi_under_pixel = extract(evi_brick, sm_pixels)
+        cs  = get_custom_color_list(length(evi_under_pixel))
+        
+        evi_p = plot_ly()
+        
+        for (num in c(1:length(evi_under_pixel))){
+          px = evi_under_pixel[[num]][1,]
+          dates = as.Date(names(px),format='X%Y.%m.%d')
+          evi_brick_df = data.frame(date = dates, pixel = px)
           
-          # Grab GCC
-          csv = phenocam$gcc
-          pData=csv%>%dplyr::select('date', 'year', 'doy', 'gcc_mean', 'smooth_gcc_mean')
-          source= rep('PhenoCam GCC', nrow(pData))
-          variable= rep('PhenoCam', nrow(pData)) #this is new so that it plots
-          pData=cbind(pData, source, variable)
-          colnames(pData)=c('date', 'year', 'doy', 'gcc_mean','value', 'source','variable')
-          pData$date=as.Date(pData$date)
+          evi_p = evi_p %>%
+            add_trace(
+              data = evi_brick_df,
+              x = ~ date,
+              y = ~ pixel,
+              showlegend = TRUE,
+              type = 'scatter',
+              mode = 'lines',
+              name = paste0(num,'_px_EVI_250m'),
+              line = list(color = cs[num])
+            )
+          print (cs[num])
+        } #END 250M LOOP
+      } else if (selected_pixel_type == '500m'){
+        evi_brick = data$evi_brick
+        evi_under_pixel = extract(evi_brick, lg_pixels)
+        values_in_pixel = dim(evi_under_pixel[[1]])[[1]]
+        cs  = get_custom_color_list(length(evi_under_pixel)*values_in_pixel)
+        evi_p = plot_ly()
+        
+        for (num in c(1:length(evi_under_pixel))){
           
-          #Parse data with Dates
-          data_df = data.frame(date = date_list, list_)
-          start_ = input$dataDateRange[1]
-          end_   = input$dataDateRange[2]
-          
-          parsed_data = subset(data_df, date >= start_ & date <= end_)
-          parsed_data$date=as.Date(parsed_data$date)
-          source      = rep('MODIS NDVI', nrow(parsed_data))
-          parsed_data   = cbind(parsed_data, source)
-          parsed_data_melt = melt(data.table(parsed_data), measure.vars = variables_)
-          
-          
-          all_data=full_join(parsed_data_melt, pData)
-          
-          final_data=subset(all_data, date >= start_ & date <= end_)
-          
-          data$all_data = all_data
-          data$final_data = final_data
-
-          p = ggplot(data = final_data, aes(x= date, y=value, color=variable)) +
-            geom_line() +
-            scale_colour_brewer(palette="Set1") + facet_wrap(~source, ncol=1, scales='free_y')
-          p + theme_minimal() + scale_fill_manual(values = colorRampPalette(brewer.pal(12,'RdYlBu'))(12))
-          })
+          for (num_quad in c(1:values_in_pixel)){
+            px = evi_under_pixel[[num]][num_quad,]
+            dates = as.Date(names(px),format='X%Y.%m.%d')
+            evi_brick_df = data.frame(date = dates, pixel = px)
+            
+            letter = c('A', 'B', 'C', 'D')[num_quad]
+            evi_p = evi_p %>%
+              add_trace(
+                data = evi_brick_df,
+                x = ~ date,
+                y = ~ pixel,
+                showlegend = TRUE,
+                type = 'scatter',
+                mode = 'lines',
+                name = paste0(num,'_',letter,'_px_EVI_500m'),
+                lines = list(color = cs[num]))
+          }
+        }
+      } #END 500M LOOP
+      }
+    } #END EVI PLOT
+    
+    
+    # ------------------COMPILING PLOT ------------------------------------
+    if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
+      
+      
+      
+      plot_list = vector('list', length(selected_data))
+      count = 0
+      for (i in selected_data){
+        count = count + 1
+        if (i == 'GCC'){
+          plot_list[[count]] = gcc_p
+        }
+        if (i =='NDVI'){
+          plot_list[[count]] = ndvi_p
+        }
+        if (i == 'EVI'){
+          plot_list[[count]] = evi_p
         }
       }
-    }
-    
-    # if(is.null(selected_data) | length(pixels)==0){
-    #   df = data.frame()
-    #   p = ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 1) + ggtitle('Select a Pixel!!')
-    # }
-
-    p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
-    # Plot p
-    
-    output$ndvi_pixels_plot = renderPlot({
-      p
-    })
-
-    pp = ggplotly(p) %>% config(displaylogo = FALSE,
-                                modeBarButtonsToRemove = list(
-                                  'sendDataToCloud',
-                                  'autoScale2d',
-                                  'resetScale2d',
-                                  'hoverClosestCartesian',
-                                  'hoverCompareCartesian',
-                                  'toggleSpikelines'
-                                ))
-
+      intermediate_p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE) %>%
+        layout(title='PhenoSynth Plots')
+      
+      
+      # Removing unwanted mode bar options on plotly plot
+      final_plot = intermediate_p %>% config(displaylogo = FALSE,
+                                 modeBarButtonsToRemove = list(
+                                   'sendDataToCloud',
+                                   'autoScale2d',
+                                   'resetScale2d',
+                                   'hoverClosestCartesian',
+                                   'hoverCompareCartesian',
+                                   'toggleSpikelines'
+                                 ))
+      
+      
+    # Rendering plotly plot to UI called 'data_plot'
     output$data_plot = renderPlotly({
-      p
+      final_plot
     })
-
-    output$event_plot = renderPrint({
-      d = event_data("plotly_hover")
-      if (is.null(d)) "Hover on a point!" else d
-    })
-
+    
     print (paste0(data_type_selected, ' Plotting Completed'))
     updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
-  })
+    }
+    
+  }) #END PLOTTING DATA OBSERVER
 
 
 
@@ -925,6 +871,8 @@ server = function(input, output, session) {
     freq           = as.numeric(substring(input$phenocamFrequency, 1, 1))
     percentile_gcc = 90 
     
+    shinyjs::hide(id = 'getData')
+    
     shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
 
     print ('Importing data for:')
@@ -961,14 +909,19 @@ server = function(input, output, session) {
         if (!file.exists(ndvi_qa_filepath)) {download_bundle_file(appeears$ndvi$task_id, ndvi_qa_filepath, 'qa_csv')}
 
         ndvi_output    = nc_open(ndvi_filepath)
+        ndvi_brick     = raster::brick(ndvi_filepath)
         v6_QA_lut      = read.csv(ndvi_qa_filepath)
 
       }else{
-        if (file.exists(ndvi_filepath))    {ndvi_output    = nc_open(ndvi_filepath)}
+        if (file.exists(ndvi_filepath))    {
+          ndvi_output    = nc_open(ndvi_filepath)
+          ndvi_brick     = raster::brick(ndvi_filepath)
+          }
         else{
           temp_nc = './www/deleteme.nc'
           download_bundle_file(appeears$ndvi$task_id, temp_nc, 'nc')
           ndvi_output    = nc_open(temp_nc)
+          ndvi_brick     = raster::brick(temp_nc)
           delete_file(temp_nc)
         }
         if (file.exists(ndvi_qa_filepath)) {v6_QA_lut      = read.csv(ndvi_qa_filepath)}
@@ -981,7 +934,8 @@ server = function(input, output, session) {
       }
 
       # Add ndvi_nc file to memory
-      data$site_nc = ndvi_output
+      data$ndvi_site_nc = ndvi_output
+      data$ndvi_brick   = ndvi_brick
 
       # netcdf manipulation
       v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
@@ -1005,15 +959,15 @@ server = function(input, output, session) {
       v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
       data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
       build_raster_grid(data$r_ndvi_cropped, map = 'map')
-      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
-      shinyjs::hide(id = 'noPixelWarning')
       shinyjs::show(id = 'highlightPixelModeNDVI')
+      shinyjs::show(id = 'highlightPixelMode')
+      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
       data$layers_df$ndvi_MOD13Q1_v6 = TRUE
       shinyjs::show(id = 'plotRemoteData')
-      })
-    }
+      }) #END WITH PROGRESS BAR
+    } #END IMPORT NDVI
 
 
       # Import [Transition Dates] netcdfs
@@ -1051,47 +1005,86 @@ server = function(input, output, session) {
       
       data$layers_df$td_MCD12Q2_v5 = TRUE
       shinyjs::show(id = 'plotRemoteData')
-    })
-    }
+      }) #END WITH PROGRESS BAR
+    } #END IMPORT TRANSITION DATES
 
 
     #   # Import [EVI] netcdf(evi) and csv(qa)
     #   #------------------------------------------------------------------------
     if (data_options[2] %in% selected_data){
-    #   print ('Importing EVI')
-    #   evi_filepath    = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.nc')
-    #   evi_qa_filepath = paste0(file_path, 'evi', '_', 'ddmmyyyy', '.csv')
-    # 
-    #   if (input$localDownload){
-    #     if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$evi$task_id, evi_filepath, 'nc')}
-    #     if (!file.exists(ndvi_qa_filepath)) {download_bundle_file(appeears$evi$task_id, evi_qa_filepath, 'qa_csv')}
-    # 
-    #     ndvi_output    = nc_open(ndvi_filepath)
-    #     v6_QA_lut      = read.csv(ndvi_qa_filepath)
-    # 
-    #   }else{
-    #     if (file.exists(ndvi_filepath))    {ndvi_output    = nc_open(ndvi_filepath)}
-    #     else{
-    #       temp_nc = './www/deleteme.nc'
-    #       download_bundle_file(appeears$ndvi$task_id, temp_nc, 'nc')
-    #       ndvi_output    = nc_open(temp_nc)
-    #       delete_file(temp_nc)
-    #     }
-    #     if (file.exists(ndvi_qa_filepath)) {v6_QA_lut      = read.csv(ndvi_qa_filepath)}
-    #     else {
-    #       temp_qa = './www/deletemetoo.nc'
-    #       download_bundle_file(appeears$ndvi$task_id, temp_qa, 'qa_csv')
-    #       v6_QA_lut      = read.csv(temp_qa)
-    #       delete_file(temp_qa)
-    #     }
-    #   }
+      print ('Importing EVI')
+      evi_filepath    = paste0(file_path, 'evi', '.nc')
+      evi_qa_filepath = paste0(file_path, 'evi', '.csv')
+      
+      appeears$evi  = get_appeears_task(site, type = 'evi')
+      
+      if (input$localDownload){
+        if (!file.exists(evi_filepath))    {download_bundle_file(appeears$evi$task_id, evi_filepath, 'nc')}
+        if (!file.exists(evi_qa_filepath)) {download_bundle_file(appeears$evi$task_id, evi_qa_filepath, 'qa_csv')}
+        
+        evi_output      = nc_open(evi_filepath)
+        evi_brick       = raster::brick(evi_filepath)
+        evi_QA_lut      = read.csv(evi_qa_filepath)
+        
+      }else{
+        if (file.exists(evi_filepath))    {
+          evi_output    = nc_open(evi_filepath)
+          evi_brick       = raster::brick(evi_filepath)
+          }
+        else{
+          temp_nc = './www/deleteme.nc'
+          download_bundle_file(appeears$evi$task_id, temp_nc, 'nc')
+          evi_output    = nc_open(temp_nc)
+          evi_brick       = raster::brick(temp_nc)
+          delete_file(temp_nc)
+        }
+        if (file.exists(evi_qa_filepath)) {v6_QA_lut      = read.csv(evi_qa_filepath)}
+        else {
+          temp_qa = './www/deletemetoo.nc'
+          download_bundle_file(appeears$evi$task_id, temp_qa, 'qa_csv')
+          v6_QA_lut      = read.csv(temp_qa)
+          delete_file(temp_qa)
+        }
+      }
+      
+      # Add evi ndvi_nc file to memory
+      data$evi_site_nc = evi_output
+      data$evi_brick   = evi_brick
+      
+      # netcdf manipulation
+      v6_evi = ncvar_get(evi_output, "_250m_16_days_EVI")
+      v6_QA_evi   = ncvar_get(evi_output, "_250m_16_days_VI_Quality")
+      
+      # Set lat and lon arrays for NDVI data
+      lat_evi = ncvar_get(evi_output, "lat")
+      lon_evi = ncvar_get(evi_output, "lon")
+      incProgress(.3)
+      
+      # Grab the fill value and set to NA
+      fillvalue = ncatt_get(evi_output, "_250m_16_days_EVI", "_FillValue")
+      v6_evi[v6_evi == fillvalue$value] = NA
+      
+      data$evi_nc = v6_evi
+      
+      # Define the coordinate referense system proj.4 string
+      crs = CRS("+proj=longlat +datum=WGS84")
+      
+      # Grab first observation of NDVI and Quality datasets
+      v6_evi = raster(t(v6_evi[,,1]), xmn=min(lon_evi), xmx=max(lon_evi), ymn=min(lat_evi), ymx=max(lat_evi), crs=crs)
+      data$grid_250 = crop_raster(site_data$Lat, site_data$Lon, v6_evi)
+      build_raster_grid(data$grid_250, map = 'map')
+      
+      shinyjs::show(id = 'highlightPixelModeNDVI')
+      shinyjs::show(id = 'highlightPixelMode')
+      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
       data$layers_df$evi_MOD13Q1_v6 = TRUE
       shinyjs::show(id = 'plotRemoteData')
-    }
+    } #END IMPORT EVI
+    
 
-      # Import [GCC] splined Data from phenocam (csv)
-      #------------------------------------------------------------------------
+    # Import [GCC] splined Data from phenocam (csv)
+    #------------------------------------------------------------------------
     if (data_options[3] %in% selected_data){
       unix = "1970-01-01"
       # withProgress(message = 'Importing GCC', value = 0, {
@@ -1115,7 +1108,7 @@ server = function(input, output, session) {
                                             frequency_  = freq,
                                             percentile_ = percentile_gcc,
                                             roi_type_   = pft_abb)
-
+          
           phenocam$gcc    = phenocam$data[[1]]
           phenocam$spring = phenocam$data[[2]]
           phenocam$fall   = phenocam$data[[3]]
@@ -1139,13 +1132,11 @@ server = function(input, output, session) {
           phenocam$fall   = phenocam$data[[3]]
         }
       }
-      
-      
       # incProgress(.2)
       data$layers_df$gcc_Phenocam = TRUE
       shinyjs::show(id = 'plotRemoteData')
-      # }) # End with progress
-    }
+      # }) #END WITH PROGRESS BAR
+    } #END IMPORT GCC
 
     start_site = as.character(site_data$date_first)
     end_site   = as.character(site_data$date_last)
@@ -1154,10 +1145,14 @@ server = function(input, output, session) {
                       min = as.Date(start_site),
                       max = as.Date(end_site),
                       value = c(as.Date(start_site), as.Date(end_site)))
+    
+    # Update plot data input to only include data that has been imported for this site
+    updateSelectInput(session, 'dataTypes_plot', choices = selected_data, selected = selected_data)
 
     print (data$layers_df)
-  })
+  }) #END GET DATA OBSERVER
   
+  # Observer for download data button
   observeEvent(input$downloadDataButton, {
     print ('Download button')
   })
@@ -1171,11 +1166,13 @@ server = function(input, output, session) {
     shinyjs::show(id = 'pixelTypes')
     sm_pixels = data$pixel_sps_250m
     lg_pixels = data$pixel_sps_500m
+    
     print (sm_pixels)
     print (lg_pixels)
     if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
       print ('no pixels selected')
       shinyjs::hide(id = 'pixelTypes')
+      
     }else if (is.null(sm_pixels@polygons[1][[1]])){
       updateSelectInput(session, 'pixelTypes', choices = c('500m'))
     }else if (is.null(lg_pixels@polygons[1][[1]])){
@@ -1194,7 +1191,8 @@ server = function(input, output, session) {
     #   shinyjs::hide(id = 'pixelTypes')}
     if (!is.null(types)){
       shinyjs::show(id = 'plotDataButton')
-      shinyjs::show(id = 'dataDateRange')
+      shinyjs::hide(id = 'dataDateRange')
+      # shinyjs::show(id = 'dataDateRange')
     }else {
       shinyjs::hide(id = 'plotDataButton')
       shinyjs::hide(id = 'dataDateRange')}
