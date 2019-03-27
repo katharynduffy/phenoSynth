@@ -657,13 +657,13 @@ server = function(input, output, session) {
               ndvi_brick_df = data.frame(date = dates, pixel = px)
               
               ndvi_p = ndvi_p %>%
-                add_trace(
+                add_markers(
                 data = ndvi_brick_df,
                 x = ~ date,
                 y = ~ pixel,
                 showlegend = TRUE,
                 type = 'scatter',
-                mode = 'lines',
+                mode = 'markers',
                 name = paste0(num,'_px_NDVI_250m'),
                 line = list(color = cs[num])
               )
@@ -685,15 +685,15 @@ server = function(input, output, session) {
                 
                 letter = c('A', 'B', 'C', 'D')[num_quad]
                 ndvi_p = ndvi_p %>%
-                  add_trace(
+                  add_markers(
                     data = ndvi_brick_df,
                     x = ~ date,
                     y = ~ pixel,
                     showlegend = TRUE,
                     type = 'scatter',
-                    mode = 'lines',
+                    mode = 'markers',
                     name = paste0(num,'_',letter,'_px_NDVI_500m'),
-                    lines = list(color = cs[num]))
+                    color = list(color = cs[num]))#testing here
               }
             }
           }
@@ -727,19 +727,19 @@ server = function(input, output, session) {
           evi_brick_df = data.frame(date = dates, pixel = px)
           
           evi_p = evi_p %>%
-            add_trace(
+            add_markers(
               data = evi_brick_df,
               x = ~ date,
               y = ~ pixel,
               showlegend = TRUE,
               type = 'scatter',
-              mode = 'lines',
+              mode = 'markers',
               name = paste0(num,'_px_EVI_250m'),
               line = list(color = cs[num])
             ) 
           if ('Transition Dates' %in% selected_data){
             evi_p = evi_p %>% 
-              add_trace(
+              add_markers(
                 data = subset(OGMa,OGMa$pixel==num),
                 x = ~ dates,
                 y = .5,
@@ -769,13 +769,13 @@ server = function(input, output, session) {
             
             letter = c('A', 'B', 'C', 'D')[num_quad]
             evi_p = evi_p %>%
-              add_trace(
+              add_markers(
                 data = evi_brick_df,
                 x = ~ date,
                 y = ~ pixel,
                 showlegend = TRUE,
                 type = 'scatter',
-                mode = 'lines',
+                mode = 'markers',
                 name = paste0(num,'_',letter,'_px_EVI_500m'),
                 lines = list(color = cs[num]))
           }
