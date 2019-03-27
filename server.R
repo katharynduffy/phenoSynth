@@ -600,6 +600,8 @@ server = function(input, output, session) {
     site_data     = get_site_info(site)
     selected_data = input$dataTypes_plot
     
+    
+    selected_pixel_type = input$pixelTypes
     print (paste0('Plotting: ', selected_data))
     
     
@@ -608,21 +610,33 @@ server = function(input, output, session) {
       gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
     } #END GCC PLOT
     
+    # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
+    if ('Transition Dates' %in% selected_data){
+      if(selected_pixel_type == '250m'){
+        pixels = subset(data$pixel_df, data$pixel_df$Type == '250m')
+      }else if(selected_pixel_type =='500m'){
+        pixels = subset(data$pixel_df, data$pixel_df$Type == '500m')
+      }
+      lats = pixels$Lat
+      lngs = pixels$Lon
+      print (lats)
+      print (lngs)
+      
+      tds_modis_df = get_tds_modis_df(lats, lngs, data$tds_nc)
+      
+      EVI_OGMa = subset(tds_modis_df, tds_modis_df$layer == 'NBAR_EVI_Onset_Greenness_Maximum')
+      EVI_OGMi = subset(tds_modis_df, tds_modis_df$layer == 'NBAR_EVI_Onset_Greenness_Minimum')
+      OGD      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Decrease')
+      OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
+      OGMa     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Maximum')
+      OGMi     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Minimum')
+    } # END TRANSITION DATE EXTRATION FOR PIXELS
+    
     # ------------------PLOT NDVI------------------------------------
     if ('NDVI' %in% selected_data){
-      
-        # nc_data = data$ndvi_site_nc
-        # dates   = ncvar_get(nc_data, 'time')
-        # start_date_str = nc_data[[11]]$time$units
-        # start_date     = as.Date(strsplit(start_date_str, ' ')[[1]][3])
-        # # In date format
-        # date_list = dates + start_date
-        # nc_ndvi = data$ndvi_nc
 
         sm_pixels = data$pixel_sps_250m
         lg_pixels = data$pixel_sps_500m
-
-        selected_pixel_type = input$pixelTypes
 
         print (selected_pixel_type)
 
@@ -687,6 +701,7 @@ server = function(input, output, session) {
       } #END NDVI PLOT
     
     # ------------------PLOT EVI------------------------------------
+    # Will add transition date points to pixels if Transition dates are selected
     if ('EVI' %in% selected_data){
       
       sm_pixels = data$pixel_sps_250m
@@ -721,8 +736,22 @@ server = function(input, output, session) {
               mode = 'lines',
               name = paste0(num,'_px_EVI_250m'),
               line = list(color = cs[num])
-            )
-          print (cs[num])
+            ) 
+          if ('Transition Dates' %in% selected_data){
+            evi_p = evi_p %>% 
+              add_trace(
+                data = subset(OGMa,OGMa$pixel==num),
+                x = ~ dates,
+                y = .5,
+                showlegend = TRUE,
+                type = 'scatter',
+                mode = 'markers',
+                marker = list(color = cs[num], size= 10),
+                name = paste0(num,'_px_Onset_Greenness_Minimum') 
+              )
+          }
+          # print (num)
+          # print (cs[num])
         } #END 250M LOOP
       } else if (selected_pixel_type == '500m'){
         evi_brick = data$evi_brick
@@ -752,16 +781,20 @@ server = function(input, output, session) {
           }
         }
       } #END 500M LOOP
-      }
-    } #END EVI PLOT
-    
-    
+    }
+  } #END EVI PLOT
+
+
     # ------------------COMPILING PLOT ------------------------------------
     if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
       
       
       
-      plot_list = vector('list', length(selected_data))
+      if ('Transition Dates' %in% selected_data){
+        plot_list = vector('list', length(selected_data)-1)
+      }else {
+        plot_list = vector('list', length(selected_data))
+        }
       count = 0
       for (i in selected_data){
         count = count + 1
@@ -773,6 +806,9 @@ server = function(input, output, session) {
         }
         if (i == 'EVI'){
           plot_list[[count]] = evi_p
+        }
+        if (i =='Transition Dates'){
+          print ('need to add transition date plot')
         }
       }
       intermediate_p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE) %>%
@@ -900,8 +936,8 @@ server = function(input, output, session) {
       
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       print ('Importing NDVI')
-      ndvi_filepath    = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.nc')
-      ndvi_qa_filepath = paste0(file_path, 'ndvi', '_', 'ddmmyyyy', '.csv')
+      ndvi_filepath    = paste0(file_path, 'ndvi', '_', 'MOD13Q1_006', '.nc')
+      ndvi_qa_filepath = paste0(file_path, 'ndvi_qa_', '_', 'MOD13Q1_006', '.csv')
       incProgress(.1)
 
       if (input$localDownload){
@@ -909,19 +945,19 @@ server = function(input, output, session) {
         if (!file.exists(ndvi_qa_filepath)) {download_bundle_file(appeears$ndvi$task_id, ndvi_qa_filepath, 'qa_csv')}
 
         ndvi_output    = nc_open(ndvi_filepath)
-        ndvi_brick     = raster::brick(ndvi_filepath)
+        ndvi_brick     = raster::brick(ndvi_filepath, varname='_250m_16_days_NDVI')
         v6_QA_lut      = read.csv(ndvi_qa_filepath)
 
       }else{
         if (file.exists(ndvi_filepath))    {
           ndvi_output    = nc_open(ndvi_filepath)
-          ndvi_brick     = raster::brick(ndvi_filepath)
+          ndvi_brick     = raster::brick(ndvi_filepath, varname='_250m_16_days_NDVI')
           }
         else{
           temp_nc = './www/deleteme.nc'
           download_bundle_file(appeears$ndvi$task_id, temp_nc, 'nc')
           ndvi_output    = nc_open(temp_nc)
-          ndvi_brick     = raster::brick(temp_nc)
+          ndvi_brick     = raster::brick(temp_nc, varname='_250m_16_days_NDVI')
           delete_file(temp_nc)
         }
         if (file.exists(ndvi_qa_filepath)) {v6_QA_lut      = read.csv(ndvi_qa_filepath)}
@@ -978,7 +1014,7 @@ server = function(input, output, session) {
       appeears$tds  = get_appeears_task(site, type = 'tds')
 
       print ('Importing Transition Dates')
-      ndvi_filepath    = paste0(file_path, 'td', '_', 'ddmmyyyy', '.nc')
+      ndvi_filepath    = paste0(file_path, 'td', '_', 'MCD12Q2_005', '.nc')
 
       if (input$localDownload){
         if (!file.exists(ndvi_filepath)) {download_bundle_file(appeears$tds$task_id, ndvi_filepath, 'nc')}
@@ -994,17 +1030,18 @@ server = function(input, output, session) {
         }
       }
       incProgress(.2)
-      # Loading in the Transition Date layers
-      NBAR_EVI_Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Maximum")
-      NBAR_EVI_Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "NBAR_EVI_Onset_Greenness_Minimum")
-      Onset_Greenness_Decrease = ncvar_get(data$tds_nc, "Onset_Greenness_Decrease")
-      Onset_Greenness_Increase = ncvar_get(data$tds_nc, "Onset_Greenness_Increase")
-      Onset_Greenness_Maximum = ncvar_get(data$tds_nc, "Onset_Greenness_Maximum")
-      Onset_Greenness_Minimum = ncvar_get(data$tds_nc, "Onset_Greenness_Minimum")
+
+      # # # Grab the fill value and set to NA
+      # fillvalue = ncatt_get(modis_td, "Onset_Greenness_Decrease", "_FillValue")
+      # OGD_var[OGD_var == fillvalue$value] = NA
+      
       incProgress(.2)
       
       data$layers_df$td_MCD12Q2_v5 = TRUE
       shinyjs::show(id = 'plotRemoteData')
+      
+      
+
       }) #END WITH PROGRESS BAR
     } #END IMPORT TRANSITION DATES
 
@@ -1013,8 +1050,8 @@ server = function(input, output, session) {
     #   #------------------------------------------------------------------------
     if (data_options[2] %in% selected_data){
       print ('Importing EVI')
-      evi_filepath    = paste0(file_path, 'evi', '.nc')
-      evi_qa_filepath = paste0(file_path, 'evi', '.csv')
+      evi_filepath    = paste0(file_path, 'evi', '_', 'MCD12Q2_005', '.nc')
+      evi_qa_filepath = paste0(file_path, 'evi_qa', '_', 'MCD12Q2_005', '.nc')
       
       appeears$evi  = get_appeears_task(site, type = 'evi')
       
@@ -1023,19 +1060,19 @@ server = function(input, output, session) {
         if (!file.exists(evi_qa_filepath)) {download_bundle_file(appeears$evi$task_id, evi_qa_filepath, 'qa_csv')}
         
         evi_output      = nc_open(evi_filepath)
-        evi_brick       = raster::brick(evi_filepath)
+        evi_brick       = raster::brick(evi_filepath, varname='_250m_16_days_EVI')
         evi_QA_lut      = read.csv(evi_qa_filepath)
         
       }else{
         if (file.exists(evi_filepath))    {
           evi_output    = nc_open(evi_filepath)
-          evi_brick       = raster::brick(evi_filepath)
+          evi_brick       = raster::brick(evi_filepath, varname='_250m_16_days_EVI')
           }
         else{
           temp_nc = './www/deleteme.nc'
           download_bundle_file(appeears$evi$task_id, temp_nc, 'nc')
           evi_output    = nc_open(temp_nc)
-          evi_brick       = raster::brick(temp_nc)
+          evi_brick       = raster::brick(temp_nc, varname='_250m_16_days_EVI')
           delete_file(temp_nc)
         }
         if (file.exists(evi_qa_filepath)) {v6_QA_lut      = read.csv(evi_qa_filepath)}
@@ -1135,6 +1172,7 @@ server = function(input, output, session) {
       # incProgress(.2)
       data$layers_df$gcc_Phenocam = TRUE
       shinyjs::show(id = 'plotRemoteData')
+      data$imported_types = selected_data
       # }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
 
@@ -1145,6 +1183,7 @@ server = function(input, output, session) {
                       min = as.Date(start_site),
                       max = as.Date(end_site),
                       value = c(as.Date(start_site), as.Date(end_site)))
+    shinyjs::hide(id = 'dataDateRange')
     
     # Update plot data input to only include data that has been imported for this site
     updateSelectInput(session, 'dataTypes_plot', choices = selected_data, selected = selected_data)
@@ -1164,38 +1203,59 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'buildingPlot')
     shinyjs::hide(id = 'doneBuildingPlot')
     shinyjs::show(id = 'pixelTypes')
+    shinyjs::hide(id = 'plotDataButton')
     sm_pixels = data$pixel_sps_250m
     lg_pixels = data$pixel_sps_500m
+    
+    types = data$imported_types
+    print (types)
     
     print (sm_pixels)
     print (lg_pixels)
     if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
       print ('no pixels selected')
       shinyjs::hide(id = 'pixelTypes')
+      if ('GCC' %in% types){
+        updateSelectInput(session, 'dataTypes_plot', choices ='GCC', selected = 'GCC')
+        shinyjs::hide(id = 'dataDateRange')
+      }else {
+        updateSelectInput(session, 'dataTypes_plot', choices ='No Data Available')
+      }
       
     }else if (is.null(sm_pixels@polygons[1][[1]])){
       updateSelectInput(session, 'pixelTypes', choices = c('500m'))
+      updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
     }else if (is.null(lg_pixels@polygons[1][[1]])){
       updateSelectInput(session, 'pixelTypes', choices = c('250m'))
+      updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
     }else{
       updateSelectInput(session, 'pixelTypes', choices = c('250m', '500m'))
+      updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
     }
   })
   
   observeEvent(input$dataTypes_plot, {
     types = input$dataTypes_plot
     print (types)
-    # if ('NDVI' %in% types || 'EVI' %in% types |'Transition Dates' %in% types){
-    #   shinyjs::show(id = 'pixelTypes')
-    # }else {
-    #   shinyjs::hide(id = 'pixelTypes')}
-    if (!is.null(types)){
+    if ('NDVI' %in% types | 'EVI' %in% types |'Transition Dates' %in% types |'GCC' %in% types){
       shinyjs::show(id = 'plotDataButton')
-      shinyjs::hide(id = 'dataDateRange')
-      # shinyjs::show(id = 'dataDateRange')
-    }else {
+      if (length(types)==1 & types[1]=='Transition Dates'){
+        shinyjs::hide(id = 'plotDataButton')
+      }
+    } else {
       shinyjs::hide(id = 'plotDataButton')
-      shinyjs::hide(id = 'dataDateRange')}
+    }
+    #   shinyjs::hide(id = 'pixelTypes')}
+    # if (!is.null(types)){
+    #   shinyjs::show(id = 'plotDataButton')
+    #   shinyjs::hide(id = 'dataDateRange')
+    #   # shinyjs::show(id = 'dataDateRange')
+    # }else if(types == 'No Data Available'){
+    #   print ('hiding plot data button')
+    #   shinyjs::hide(id = 'plotDataButton')
+    # }else{
+    #   shinyjs::hide(id = 'plotDataButton')
+    #   shinyjs::hide(id = 'dataDateRange')}
   })
 
   output$downloadDataButton <- downloadHandler(
