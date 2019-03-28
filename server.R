@@ -656,6 +656,8 @@ server = function(input, output, session) {
               dates = as.Date(names(px),format='X%Y.%m.%d')
               ndvi_brick_df = data.frame(date = dates, pixel = px)
               
+              # add smoothing function
+              
               ndvi_p = ndvi_p %>%
                 add_markers(
                 data = ndvi_brick_df,
@@ -665,15 +667,16 @@ server = function(input, output, session) {
                 type = 'scatter',
                 mode = 'markers',
                 name = paste0(num,'_px_NDVI_250m'),
+                marker = list(color = cs[num]),
                 line = list(color = cs[num])
               )
-              print (cs[num])
             }
           } else if (selected_pixel_type == '500m'){
             ndvi_brick = data$ndvi_brick
             ndvi_under_pixel = extract(ndvi_brick, lg_pixels)
             values_in_pixel = dim(ndvi_under_pixel[[1]])[[1]]
             cs  = get_custom_color_list(length(ndvi_under_pixel)*values_in_pixel)
+            print (cs)
             ndvi_p = plot_ly()
             
             for (num in c(1:length(ndvi_under_pixel))){
@@ -693,7 +696,9 @@ server = function(input, output, session) {
                     type = 'scatter',
                     mode = 'markers',
                     name = paste0(num,'_',letter,'_px_NDVI_500m'),
-                    color = list(color = cs[num]))#testing here
+                    line = list(color = cs[((num-1)*4)+num_quad]),
+                    marker = list(color = cs[((num-1)*4)+num_quad])
+                  )
               }
             }
           }
@@ -725,6 +730,9 @@ server = function(input, output, session) {
           px = evi_under_pixel[[num]][1,]
           dates = as.Date(names(px),format='X%Y.%m.%d')
           evi_brick_df = data.frame(date = dates, pixel = px)
+          print (head(evi_brick_df))
+          
+          # add smoothing
           
           evi_p = evi_p %>%
             add_markers(
@@ -735,7 +743,7 @@ server = function(input, output, session) {
               type = 'scatter',
               mode = 'markers',
               name = paste0(num,'_px_EVI_250m'),
-              line = list(color = cs[num])
+              marker = list(color = cs[num])
             ) 
           if ('Transition Dates' %in% selected_data){
             evi_p = evi_p %>% 
@@ -746,12 +754,10 @@ server = function(input, output, session) {
                 showlegend = TRUE,
                 type = 'scatter',
                 mode = 'markers',
-                marker = list(color = cs[num], size= 10),
+                marker = list(color = cs[num], size= 10, symbol='diamond'),
                 name = paste0(num,'_px_Onset_Greenness_Minimum') 
               )
           }
-          # print (num)
-          # print (cs[num])
         } #END 250M LOOP
       } else if (selected_pixel_type == '500m'){
         evi_brick = data$evi_brick
@@ -761,7 +767,6 @@ server = function(input, output, session) {
         evi_p = plot_ly()
         
         for (num in c(1:length(evi_under_pixel))){
-          
           for (num_quad in c(1:values_in_pixel)){
             px = evi_under_pixel[[num]][num_quad,]
             dates = as.Date(names(px),format='X%Y.%m.%d')
@@ -777,7 +782,7 @@ server = function(input, output, session) {
                 type = 'scatter',
                 mode = 'markers',
                 name = paste0(num,'_',letter,'_px_EVI_500m'),
-                lines = list(color = cs[num]))
+                marker = list(color = cs[((num-1)*4)+num_quad]))
           }
         }
       } #END 500M LOOP
@@ -787,8 +792,6 @@ server = function(input, output, session) {
 
     # ------------------COMPILING PLOT ------------------------------------
     if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
-      
-      
       
       if ('Transition Dates' %in% selected_data){
         plot_list = vector('list', length(selected_data)-1)
@@ -806,9 +809,6 @@ server = function(input, output, session) {
         }
         if (i == 'EVI'){
           plot_list[[count]] = evi_p
-        }
-        if (i =='Transition Dates'){
-          print ('need to add transition date plot')
         }
       }
       intermediate_p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE) %>%
@@ -1203,7 +1203,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'buildingPlot')
     shinyjs::hide(id = 'doneBuildingPlot')
     shinyjs::show(id = 'pixelTypes')
-    shinyjs::hide(id = 'plotDataButton')
+    # shinyjs::hide(id = 'plotDataButton')
     sm_pixels = data$pixel_sps_250m
     lg_pixels = data$pixel_sps_500m
     
