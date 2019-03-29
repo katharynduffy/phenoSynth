@@ -49,6 +49,7 @@ get_tds_df = function(lats_, lngs_, netcdf_){
   EVI_OGMa_df = NULL
   EVI_OGMi_df = NULL
   
+  # Loop through each lat/lon which is the center of each selected pixel in app
   for (x in c(1:length(lats_))){
     this_pixel_ll = c(lngs_[x], lats_[x])
     xy              = data.frame(matrix(this_pixel_ll, ncol=2))
@@ -63,17 +64,13 @@ get_tds_df = function(lats_, lngs_, netcdf_){
       values_under_polygon = extract(layer_raster, xy)
       OGD_data = c(OGD_data, values_under_polygon)
     }
-    print (OGD_data)
     OGD_data = OGD_data[!is.na(OGD_data)]
     OGD_data = OGD_data[order(OGD_data)]
     date_data = start_date + as.integer(OGD_data)
-    print (date_data)
     if (is.null(OGD_df)){
-      print ('if')
       df = data.frame(dates = date_data, layer = 'Onset_Greenness_Decrease', pixel = x, value = NA)
       OGD_df = df
     } else{
-      print ('else')
       df = data.frame(dates = date_data, layer = 'Onset_Greenness_Decrease', pixel = x, value = NA)
       OGD_df = rbind(OGD_df, df)
     }
@@ -84,105 +81,72 @@ get_tds_df = function(lats_, lngs_, netcdf_){
       values_under_polygon = extract(layer_raster, xy)
       OGI_data = c(OGI_data, values_under_polygon)
     }
-    print (OGI_data)
     OGI_data = OGI_data[!is.na(OGI_data)]
     OGI_data = OGI_data[order(OGI_data)]
     date_data = start_date + as.integer(OGI_data)
-    print (date_data)
     if (is.null(OGI_df)){
-      print ('if')
       df = data.frame(dates = date_data, layer = 'Onset_Greenness_Increase', pixel = x, value = NA)
       OGI_df = df
     } else{
-      print ('else')
       df = data.frame(dates = date_data, layer = 'Onset_Greenness_Increase', pixel = x, value = NA)
       OGI_df = rbind(OGI_df, df)
     }
     #-----------------------------Onset_Greenness_Maximum-----------------------------
     OGMa_data = c()
+    EVI_OGMa_data = c()
     for (layer in c(1:dim(OGMa_var)[3])){
       layer_raster = raster(t(OGMa_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
       values_under_polygon = extract(layer_raster, xy)
       OGMa_data = c(OGMa_data, values_under_polygon)
-    }
-    print (OGMa_data)
-    OGMa_data = OGMa_data[!is.na(OGMa_data)]
-    OGMa_data = OGMa_data[order(OGMa_data)]
-    date_data = start_date + as.integer(OGMa_data)
-    print (date_data)
-    if (is.null(OGMa_df)){
-      print ('if')
-      df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = x, value = NA)
-      OGMa_df = df
-    } else{
-      print ('else')
-      df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = x, value = NA)
-      OGMa_df = rbind(OGMa_df, df)
-    }
-    #-----------------------------Onset_Greenness_Minimum-----------------------------
-    OGMi_data = c()
-    for (layer in c(1:dim(OGMi_var)[3])){
-      layer_raster = raster(t(OGMi_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
-      values_under_polygon = extract(layer_raster, xy)
-      OGMi_data = c(OGMi_data, values_under_polygon)
-    }
-    print (OGMi_data)
-    OGMi_data = OGMi_data[!is.na(OGMi_data)]
-    OGMi_data = OGMi_data[order(OGMi_data)]
-    date_data = start_date + as.integer(OGMi_data)
-    print (date_data)
-    if (is.null(OGMi_df)){
-      print ('if')
-      df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = x, value = NA)
-      OGMi_df = df
-    } else{
-      print ('else')
-      df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = x, value = NA)
-      OGMi_df = rbind(OGMi_df, df)
-    }
-    
-    #-----------------------------NBAR_EVI_Onset_Greenness_Maximum-----------------------------
-    EVI_OGMa_data = c()
-    for (layer in c(1:dim(EVI_OGMa_var)[3])){
+      
       layer_raster = raster(t(EVI_OGMa_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
       values_under_polygon = extract(layer_raster, xy)
       EVI_OGMa_data = c(EVI_OGMa_data, values_under_polygon)
     }
-    print (EVI_OGMa_data)
-    date_data = start_date + time_td
-    print (date_data)
-    print (class(date_data))
-    if (is.null(EVI_OGMa_df)){
-      print ('if')
-      df = data.frame(dates = date_data, layer = 'NBAR_EVI_Onset_Greenness_Maximum', pixel = x, value = EVI_OGMa_data)
-      EVI_OGMa_df = df
+    # Transition dates x (time)
+    OGMa_data = OGMa_data[!is.na(OGMa_data)]
+    OGMa_data = OGMa_data[order(OGMa_data)]
+    date_data = start_date + as.integer(OGMa_data)
+    
+    # Transition date y (value 0-1)
+    EVI_OGMa_data = EVI_OGMa_data[!is.na(EVI_OGMa_data)]
+    
+    if (is.null(OGMa_df)){
+      df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = x, value = EVI_OGMa_data)
+      OGMa_df = df
     } else{
-      print ('else')
-      df = data.frame(dates = date_data, layer = 'NBAR_EVI_Onset_Greenness_Maximum', pixel = x, value = EVI_OGMa_data)
-      EVI_OGMa_df = rbind(EVI_OGMa_df, df)
+      df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = x, value = EVI_OGMa_data)
+      OGMa_df = rbind(OGMa_df, df)
     }
-        #-----------------------------NBAR_EVI_Onset_Greenness_Minimum-----------------------------
+    #-----------------------------Onset_Greenness_Minimum-----------------------------
+    OGMi_data = c()
     EVI_OGMi_data = c()
-    for (layer in c(1:dim(EVI_OGMi_var)[3])){
+    for (layer in c(1:dim(OGMi_var)[3])){
+      layer_raster = raster(t(OGMi_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
+      values_under_polygon = extract(layer_raster, xy)
+      OGMi_data = c(OGMi_data, values_under_polygon)
+      
       layer_raster = raster(t(EVI_OGMi_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
       values_under_polygon = extract(layer_raster, xy)
       EVI_OGMi_data = c(EVI_OGMi_data, values_under_polygon)
     }
-    print (EVI_OGMi_data)
-    date_data = start_date + time_td
-    print (date_data)
-    print (class(date_data))
-    if (is.null(EVI_OGMi_df)){
-      print ('if')
-      df = data.frame(dates = date_data, layer = 'NBAR_EVI_Onset_Greenness_Minimum', pixel = x, value = EVI_OGMi_data)
-      EVI_OGMi_df = df
+    # Transition dates x (time)
+    OGMi_data = OGMi_data[!is.na(OGMi_data)]
+    OGMi_data = OGMi_data[order(OGMi_data)]
+    date_data = start_date + as.integer(OGMi_data)
+    
+    # Transition date y (value 0-1)
+    EVI_OGMi_data = EVI_OGMi_data[!is.na(EVI_OGMi_data)]
+    
+    if (is.null(OGMi_df)){
+      df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = x, value = EVI_OGMi_data)
+      OGMi_df = df
     } else{
-      print ('else')
-      df = data.frame(dates = date_data, layer = 'NBAR_EVI_Onset_Greenness_Minimum', pixel = x, value = EVI_OGMi_data)
-      EVI_OGMi_df = rbind(EVI_OGMi_df, df)
+      df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = x, value = EVI_OGMi_data)
+      OGMi_df = rbind(OGMi_df, df)
     }
   }
-  final_df = rbind(OGI_df, OGD_df, OGMa_df, OGMi_df, EVI_OGMa_df, EVI_OGMi_df)
+  final_df = rbind(OGI_df, OGD_df, OGMa_df, OGMi_df)
   return (final_df)
 }
 lats = c(44.3635698743466, 44.3781228257341, 44.3885177910109)
@@ -195,13 +159,12 @@ data
 ### mess around with the plotting of these transition dates within the dataframe data
 ```{r}
 library(plotly)
-
-OGMi_values = subset(data,data$layer=='Onset_Greenness_Minimum')
+OGMa_values = subset(data,data$layer == 'Onset_Greenness_Maximum')
 
   p = plot_ly(
-    data = subset(OGMi_values,OGMi_values$pixel==1),
-    x = ~ dates,
-    y = .5,
+    data = subset(OGMa_values,OGMa_values$pixel==1),
+    x = ~dates,
+    y = ~value,
     showlegend = TRUE,
     type = 'scatter',
     mode = 'markers',

@@ -730,8 +730,8 @@ server = function(input, output, session) {
           px = evi_under_pixel[[num]][1,]
           dates = as.Date(names(px),format='X%Y.%m.%d')
           evi_brick_df = data.frame(date = dates, pixel = px)
-          print (head(evi_brick_df))
-          
+          y_max = subset(EVI_OGMa, EVI_OGMa$pixel == num)
+          y_max_values = y_max$value
           # add smoothing
           
           evi_p = evi_p %>%
@@ -750,12 +750,42 @@ server = function(input, output, session) {
               add_markers(
                 data = subset(OGMa,OGMa$pixel==num),
                 x = ~ dates,
+                y = ~value,
+                showlegend = TRUE,
+                type = 'scatter',
+                mode = 'markers',
+                marker = list(color = cs[num], size= 10, symbol=2),
+                name = paste0(num,'_px_Onset_Greenness_Maximum') 
+              ) %>% 
+              add_markers(
+                data = subset(OGMi,OGMi$pixel==num),
+                x = ~ dates,
+                y = ~ value,
+                showlegend = TRUE,
+                type = 'scatter',
+                mode = 'markers',
+                marker = list(color = cs[num], size= 10, symbol=25),
+                name = paste0(num,'_px_Onset_Greenness_Minimum') 
+              ) %>% 
+              add_markers(
+                data = subset(OGI,OGI$pixel==num),
+                x = ~ dates,
                 y = .5,
                 showlegend = TRUE,
                 type = 'scatter',
                 mode = 'markers',
-                marker = list(color = cs[num], size= 10, symbol='diamond'),
-                name = paste0(num,'_px_Onset_Greenness_Minimum') 
+                marker = list(color = cs[num], size= 10, symbol=5),
+                name = paste0(num,'_px_Onset_Greenness_Increase') 
+              ) %>% 
+              add_markers(
+                data = subset(OGD,OGD$pixel==num),
+                x = ~ dates,
+                y = .5,
+                showlegend = TRUE,
+                type = 'scatter',
+                mode = 'markers',
+                marker = list(color = cs[num], size= 10, symbol=6),
+                name = paste0(num,'_px_Onset_Greenness_Decrease') 
               )
           }
         } #END 250M LOOP
