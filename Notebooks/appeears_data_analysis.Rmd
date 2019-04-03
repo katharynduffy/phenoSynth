@@ -1,11 +1,11 @@
 ---
 title: "appeears_data_analysis"
 author: "K. Enns"
-date: "9/4/2018"
+date: "4/3/2019"
 output: html_document
 ---
 
-
+# Download all files for NDVI data from AppEEARS and filter it using raster::brick objects
 ### Site and AppEEARS task ID from (K. Enns) tasks, edited by KDuffy
 ```{r}
 library(jsonlite)
@@ -42,7 +42,7 @@ netcdf
 ```
 
 
-### Download the netcdf from the netcdf id
+### Download all the files from the task (NDVI, Quality Statistics, Quality Lookup, Statistics, Granule List, request, metadata, README)
 ```{r}
 get_download_folder = function(){
   if (Sys.info()['sysname'] == 'Darwin'){
@@ -55,30 +55,51 @@ get_download_folder = function(){
   return (folder)
   }
 
-download_this_file = netcdf_id
-# # retrieve the filename from the file_id
-bundle = jsonlite::fromJSON(bundle_response)$files
-filename = subset(bundle, bundle$file_id == download_this_file)$file_name
-# create a destination directory to store the file in
-dest_dir = get_download_folder()
-filepath = paste(dest_dir, filename, sep = '')
-# suppressWarnings(dir.create(dirname(filepath)))
-
-# write the file to disk using the destination directory and file name 
-response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, '/', download_this_file, sep = ""),
-                      write_disk(filepath, overwrite = TRUE), progress())
+filepaths = c()
+filenames = c()
+for (file in files$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(bundle_response)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+  dest_dir = get_download_folder()
+  filepath = paste(dest_dir, filename, sep = '')
+  print (filepath)
+  filepaths = c(filepaths, filepath)
+  filenames = c(filenames, filename)
+  
+  # write the file to disk using the destination directory and file name
+  response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, '/', download_this_file, sep = ""),
+                 write_disk(filepath, overwrite = TRUE), progress())
+}
+print (filepaths)
 ```
 
-### Function to read in the netcdf
-
-
-
-
+### Store all of the differen't downloaded files into variables
+```{r}
+# Netcdf for NDVI Data
+ndvi_output = nc_open(filepaths[1])
+# Quality lookup
+ndvi_quality_lookup = read.csv(filepaths[2])
+# Quality Statistics Quality Assurance
+ndvi_quality_statistics = read.csv(filepaths[3])
+# Statistics
+ndvi_statistics = read.csv(filepaths[4])
+# Granule list
+ndvi_granule_list = read.delim(filepaths[5])
+# Request JSON
+ndvi_request_json = read_json(filepaths[6])
+# Readme
+ndvi_metadata = read.delim(filepaths[7])
+# Readme
+ndvi_readme = read.delim(filepaths[8])
+```
 
 ### Read in netCDF file just downloaded above
 ```{r}
 library(raster); library(rmarkdown); library(ncdf4); library(sp)
-ndvi_output = nc_open(filepath)
+ndvi_output = nc_open(filepaths[1])
 
 # Print a list of variables in file
 print (attributes(ndvi_output$var)$names)
@@ -90,13 +111,97 @@ print (attributes(ndvi_output$dim)$names)
 ## Start of the https://lpdaac.usgs.gov/sites/default/files/public/elearning/AppEEARS_NC_QualityFiltering_R.html#8_mask_by_land_cover_type example
 ### Extracting the NDVI and Quality layers from the netcdf (NDVI)
 ```{r}
-v6_info = ncatt_get(ndvi_output, "_250m_16_days_NDVI")
-
-v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
-v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")                    #Fails in binder on this line
-print (dim(v6_NDVI))
-print (dim(v6_QA))
+# ndvi_info  = ncatt_get(ndvi_output, "_250m_16_days_NDVI")
+# fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")$value
+# ndvi_nc    = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
+# ndvi_qc_nc = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")  
+# 
+# fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
+# # v6_NDVI[v6_NDVI == fillvalue$value] = NA
+# ndvi_crs   = ncatt_get(ndvi_output, "crs", "epsg_code")[2][[1]]
+# ndvi_brick = raster::brick(filepaths[1], varname='_250m_16_days_NDVI')
+# ndvi_brick_qc = raster::brick(filepaths[1], varname='_250m_16_days_VI_Quality')
+# 
+# 
+# unique_qualities = unique(subset(ndvi_brick_qc, 5))
+# 
+# library(leaflet)
+# leaflet() %>% addTiles() %>% addRasterImage(subset(ndvi_brick, 5))
+# subset(ndvi_brick, 5)
+# 
+# nas_removed = reclassify(subset(ndvi_brick, 5), cbind(fillvalue$value, NA))
+# 
+# leaflet() %>% addTiles() %>% addRasterImage(nas_removed)
+# 
+# print (dim(ndvi_nc))
+# print (dim(ndvi_qc_nc))
 ```
+
+### Use one raster layer in the net cdf files (ndvi/qc) to remove low quality pixels
+```{r}
+library(raster); library(rmarkdown); library(ncdf4); library(sp); library(dplyr); library(leaflet)
+ndvi_brick = raster::brick(filepaths[1], varname='_250m_16_days_NDVI')
+ndvi_brick_qc = raster::brick(filepaths[1], varname='_250m_16_days_VI_Quality')
+fillvalue = -3000
+# Select a layer in the Raster (5th from the top)
+raster_layer = 2 #Can be any value from 1 to 10 to work with cells bellow
+
+# Use fill value to remove -3000 and change them to NA values
+nas_removed = reclassify(subset(ndvi_brick, raster_layer), cbind(fillvalue, NA))
+# Subset the raster by the selected raster_layer above
+qualities_raster = subset(ndvi_brick_qc, raster_layer)
+# Grab vector of all unique values from qualities_raster
+unique_qualities = unique(qualities_raster)
+
+# Display the qualities_raster layer 
+leaflet() %>% addTiles() %>% addRasterImage(qualities_raster)
+
+# Subset Dataframe with all Quality Types (Lookup table) by unique values present in selected raster
+unique_qc_types  = subset(ndvi_quality_lookup, Value %in% unique_qualities)
+
+# Extract all values that aren't highest quality
+low_quality = subset(unique_qc_types, VI.Usefulness != 'Highest quality')
+
+# Reclassifying all low quality to NA values
+high_qual_raster = reclassify(qualities_raster, cbind(low_quality$Value,NA))
+# high_qual_raster = reclassify(high_qual_raster, cbind())
+leaflet() %>% addTiles() %>% addRasterImage(high_qual_raster, color='black')
+
+# Filter NDVI raster using these high quality pixels
+high_qual_ndvi_raster = nas_removed
+high_qual_ndvi_raster[is.na(high_qual_raster)] = NA
+
+# Plot NDVI high quality data
+leaflet() %>% addTiles() %>% addRasterImage(high_qual_ndvi_raster)
+```
+
+
+### Remove low quality pixels with the rasterBricks instead of individual raster layers
+```{r}
+# Quality raster brick - shrink down rasterbrick to 10 layers to save time/memory
+#    - this is a proof of concept on how to filter a whole raster brick using another raster
+#      brick if needed
+ndvi_brick_qc_subset = subset(ndvi_brick_qc, c(1,2,3,4,5,6,7,8,9,10))
+dim(ndvi_brick_qc_subset)
+
+# Extract all values that aren't highest quality
+low_quality_all = subset(ndvi_quality_lookup, VI.Usefulness != 'Highest quality')
+ndvi_brick_qc_high_quality = reclassify(ndvi_brick_qc_subset, cbind(low_quality_all$Value,NA))  # Comment out after initial run
+
+#NDVI raster brick
+filtered_ndvi_brick = subset(ndvi_brick, c(1,2,3,4,5,6,7,8,9,10))                               # Comment out after initial run
+filtered_ndvi_brick[is.na(ndvi_brick_qc_high_quality)] = NA                                     # Comment out after initial run
+```
+
+
+# Use these leaflet maps below to compare the filtered_ndvi_brick data we created to the filtered data we created 2 cells above where we did 1 selected layer (raster_layer) instead of the whole netcdf.
+```{r}
+# unfiltered ndvi data
+leaflet() %>% addTiles() %>% addRasterImage(subset(ndvi_brick, raster_layer))
+# filtered ndvi data based on highest quality pixels
+leaflet() %>% addTiles() %>% addRasterImage(subset(filtered_ndvi_brick, raster_layer))
+```
+
 
 ### Getting raster for NDVI from netcdf using lat/lon and NDVI
 ```{r}
@@ -119,10 +224,15 @@ v6_QA = raster(t(v6_QA[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_
 
 
 ### Reading in netcdf as Brick and extracting using pixels
-this cell won't run. proof of concept for using Raster brick and netcdf to speed up app
+this cell won't run.  Just an example of how the app will plot the data
 ```{r}
-test_brick = brick(filepath)
-test_pixel = readOGR('./downloads/test_shp') 
+library(rgdal)
+library(plotly)
+# Raw ndvi data (all time layers)
+test_brick = brick(filepaths[1])
+# Filtered ndvi data (only first 10 time layers)
+# test_brick = filtered_ndvi_brick
+test_pixel = readOGR('./Downloads/test_shp/') 
 
 ndvi_under_pixels = extract(test_brick, test_pixel)
 px1 = ndvi_under_pixels[[1]][1,]
@@ -132,320 +242,38 @@ px3 = ndvi_under_pixels[[3]][1,]
 dates = as.Date(names(px1),format='X%Y.%m.%d')
 test_df = data.frame(date = dates, pixel_1=px1, pixel_2=px2, pixel_3=px3)
 test_p = plot_ly(
-    data = test_df,
-    x = ~ date,
-    y = ~ px1,
-    showlegend = FALSE,
-    type = 'scatter',
-    mode = 'lines'
+    data = test_df
   ) %>%
-      add_trace(
-      data = test_df,
+  add_trace(
+      x = ~ date,
+      y = ~ px1,
+      mode = "markers",
+      type = "scatter",
+      marker = list(color = "red", symbol = "circle"),
+      name = "pixel 1",
+      showlegend = TRUE
+    ) %>%
+  add_trace(
       x = ~ date,
       y = ~ px2,
-      mode = "lines",
+      mode = "markers",
       type = "scatter",
-      lines = list(color = "#7FFF00", symbol = "circle"),
-      name = "SOS (10%)",
+      marker = list(color = "blue", symbol = "circle"),
+      name = "pixel 2",
+      showlegend = TRUE
+    ) %>%
+  add_trace(
+      x = ~ date,
+      y = ~ px3,
+      mode = "markers",
+      type = "scatter",
+      marker = list(color = "green", symbol = "circle"),
+      name = "pixel 3",
       showlegend = TRUE
     ) 
+test_df
 test_p
 ```
-
-
-
-### Get lookup table for the netcdf (quality table)
-```{r}
-download_this_file = quality_lookup_id
-# # retrieve the filename from the file_id
-bundle = fromJSON(bundle_response)$files
-filename = bundle[[1]]$file_name
-# create a destination directory to store the file in
-dest_dir = get_download_folder()
-filepath = paste(dest_dir, filename, sep = '')
-# suppressWarnings(dir.create(dirname(filepath)))
-# write the file to disk using the destination directory and file name 
-response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, '/', download_this_file, sep = ""),
-                      write_disk(filepath, overwrite = TRUE), progress())
-v6_QA_lut = read.csv(filepath)
-v6_QA_lut
-```
-
-
-### Clipping the Landcover tif to the same coordinates as the netcdf
-```{r}
-us_pth = './www/uslandcover_modis.tif'
-site_lon = -68.2608
-site_lat = 44.3769
-
-us_r   = raster(us_pth)
-print (unique(values(us_r)))
-resolution = res(us_r)[1]
-
-height = 2
-width  = 2
-e      = as(extent(site_lon - width, site_lon + width, site_lat - height, site_lat + height), 'SpatialPolygons')
-crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
-lct_r_original      = crop(us_r, e)
-unique(values(lct_r_original))
-leaflet('map') %>% addTiles() %>% addRasterImage(lct_r_original, opacity = .7)
-```
-
-### 
-```{r}
-lct_forest = c(1,2,3,4,5,17)
-lct_r_forest = lct_r_original
-lct_r_forest[!lct_r_forest %in% lct_forest,] = NA 
-lct_r_forest
-sort(unique(values(lct_r_forest)), decreasing = FALSE)
-leaflet('map') %>% addTiles() %>% addRasterImage(lct_r_forest, opacity = .7)
-
-```
-### Build color pallet for pft raster based on values available
-```{r}
-
-build_pft_palette = function(raster_){
-  colors = c()
-  color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
-                                 '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
-  v = unique(values(raster_))
-  remove = c(NA)
-  v = v [! v %in% remove]
-  v = sort(v, decreasing = FALSE)
-  print (v)
-  for (x in v){
-    colors = c(colors, color_list[x])
-  }
-  return (colors)
-}
-
-c3 = build_pft_palette(lct_r_forest)
-leaflet('map') %>% addTiles() %>% addRasterImage(lct_r_original, col = c3, opacity = .7)
-
-```
-
-
-
-### Only using data that is good enough quality
-```{r}
-modland = c('VI produced, good quality', 'VI produced, but check other QA')
-v6_QA_lut = v6_QA_lut[v6_QA_lut$MODLAND %in% modland,]
-
-# Include better quality VI usefulness
-VIU = c("Lowest quality","Quality so low that it is not useful","L1B data faulty","Not useful for any other reason/not processed")
-v6_QA_lut = v6_QA_lut[!v6_QA_lut$VI.Usefulness %in% VIU,]
-
-# Exclude climatology or high aerosol
-AQ = c('Low','Average')
-v6_QA_lut = v6_QA_lut[v6_QA_lut$Aerosol.Quantity %in% AQ,]
-
-# Include where adjacent cloud, mixed clouds, or possible shadow were not detected
-v6_QA_lut = v6_QA_lut[v6_QA_lut$Adjacent.cloud.detected == 'No',]
-v6_QA_lut = v6_QA_lut[v6_QA_lut$Mixed.Clouds == 'No', ]
-v6_QA_lut = v6_QA_lut[v6_QA_lut$Possible.shadow == 'No',]
-v6_QA_lut
-
-```
-
-```{r}
-# Visualize a basic plot:
-plot(v6_NDVI_original)
-leaflet('map') %>% addTiles() %>% addRasterImage(v6_NDVI_original, opacity = .8)
-```
-
-#
-```{r}
-# Import additional colormaps
-library(RColorBrewer)
-
-# Create custom colormap
-YlGn = brewer.pal(9, "YlGn")
-
-# Plot the unfiltered data for time step 1, using a colormap and setting a custom linear stretch
-leaflet('map') %>% addTiles() %>% addRasterImage(v6_NDVI_original, col = YlGn, opacity = .8)
-```
-
-```{r}
-v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
-v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-
-# See how many time steps the file contains
-dim(v6_NDVI)
-```
-
-
-```{r}
-invisible(library(rworldmap))
-data(countriesLow)
-# Define a function to apply scale factor
-apply_sf = function(x){as.integer(x*10000)}
-
-# Loop through all timesteps (observations) in the file, mask out poor quality and exclude non-forest pixels
-for (i in 1:ndvi_output$dim$time$len){
-  v6_NDVI_1 = raster(t(v6_NDVI[,,i]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-  v6_QA_1 = raster(t(v6_QA[,,i]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-  
-  # Apply QA mask to the NDVI data
-  v6_NDVI_1[!v6_QA_1 %in% v6_QA_mask,]= NA
-  rm(v6_QA_1)
-  
-  # Next, apply LCT mask to the NDVI data
-  v6_NDVI_1[!resampled_lct %in% lct_forest,]= NA
-  v6_NDVI_1= calc(v6_NDVI_1, apply_sf)
-  v6_NDVI[,,i] = t(v6_NDVI_1[,,1])
-  rm(v6_NDVI_1)
-}
-rm(resampled_lct, v6_QA)
-
-par(mfrow=c(2,3),oma = c(0, 0, 3, 0))
-#title(, line = 0.21)
-image(raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn,  xlab = 'Longitude', ylab = 'Latitude', main = '07-12-2005')
-rect(par("usr")[1],par("usr")[3],par("usr")[2],par("usr")[4],col = "lightblue")
-plot(countriesLow,col = 'white', add = TRUE)
-image(raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn, add = T)
-plot(countriesLow, add = T)
-image(raster(t(v6_NDVI[,,2]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn,xlab = '', ylab = '', xaxt='n', yaxt='n', main ='07-28-2005')
-rect(par("usr")[1],par("usr")[3],par("usr")[2],par("usr")[4],col = "lightblue")
-plot(countriesLow,col = 'white', add = TRUE)
-image(raster(t(v6_NDVI[,,2]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn, add = T)
-plot(countriesLow, add = T)
-image(raster(t(v6_NDVI[,,3]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn,xlab = '', ylab = '',xaxt='n', yaxt='n', main ='08-13-2005')
-rect(par("usr")[1],par("usr")[3],par("usr")[2],par("usr")[4],col = "lightblue")
-plot(countriesLow,col = 'white', add = TRUE)
-image(raster(t(v6_NDVI[,,3]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn, add = T)
-plot(countriesLow, add = T)
-image(raster(t(v6_NDVI[,,4]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn,  xlab = '', ylab = '', xaxt='n', yaxt='n', main = '08-29-2005')
-rect(par("usr")[1],par("usr")[3],par("usr")[2],par("usr")[4],col = "lightblue")
-plot(countriesLow,col = 'white', add = TRUE)
-image(raster(t(v6_NDVI[,,4]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn, add = T)
-plot(countriesLow, add = T)
-image(raster(t(v6_NDVI[,,5]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn,xlab = '', ylab = '', xaxt='n', yaxt='n', main ='09-14-2005')
-rect(par("usr")[1],par("usr")[3],par("usr")[2],par("usr")[4],col = "lightblue")
-plot(countriesLow,col = 'white', add = TRUE)
-image(raster(t(v6_NDVI[,,5]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn, add = T)
-plot(countriesLow, add = T)
-image(raster(t(v6_NDVI[,,6]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn,xlab = '', ylab = '',xaxt='n', yaxt='n', main ='09-30-2005')
-rect(par("usr")[1],par("usr")[3],par("usr")[2],par("usr")[4],col = "lightblue")
-plot(countriesLow,col = 'white', add = TRUE)
-image(raster(t(v6_NDVI[,,6]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      ,zlim=c(-200,10000),  col = YlGn, add = T)
-plot(countriesLow, add = T)
-mtext('MODIS Version 6 Enhanced Vegetation Index (NDVI): 07-12-2005 to 09-30-2005', outer = TRUE, cex = 1.5)
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r}
-lon     = ncvar_get(ndvi_output, varid = "lon")
-lat     = ncvar_get(ndvi_output, varid = "lat")
-lat = rev(lat)
-time    = ncvar_get(ndvi_output, varid = "time")
-ndvi    = ncvar_get(ndvi_output, varid='_250m_16_days_NDVI')
-ndvi = ndvi[ , , 1]
-# ndvi_VI = ncvar_get(ndvi_output, varid='_250m_16_days_VI_Quality')   # this fails in binder.. not sure why
-```
-
-
-
-```{r}
-image(lon,lat,ndvi)
-
-leaflet('map') %>% addTiles()
-
-```
-
-
-### Read in the netcdf(that we just downloaded above) to R
-```{r}
-library(sp)
-library(raster)
-
-netCDF_file = filepath
-netCDF_file
-
-plot(ndvi)
-```
-
-
-### function used in the application to download a netcdf
-```{r}
-# Downloads the netcdf from a task id
-download_bundle_file = function(site_task_id_, ft){
-  response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
-  bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
-  document = jsonlite::fromJSON(txt=bundle_response)
-  files = document$files
-  if (ft == 'nc'){
-    netcdf    = subset(files, file_type == 'nc')
-    download_this_file = netcdf$file_id
-    file_name = netcdf$file_name
-  }else if(ft == 'qa_csv'){
-    csvs      = subset(files, file_type == 'csv')
-    qa_csv    = csvs[grep('Quality-lookup', csvs$file_name), ]$file_id
-    download_this_file = qa_csv
-    file_name = qa_csv$file_name
-  }
-  dest_dir = './www/'
-  filepath = paste(dest_dir, file_name, sep = '')
-  response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, '/', download_this_file, sep = ""),
-                 write_disk(filepath, overwrite = TRUE), progress())
-  return (filepath)
-}
-file = download_bundle_file(site_task_id, 'nc')
-```
-
-### function used in app to delete the downloaded netcdf based on site_task_id
-```{r}
-# Deletes the netcdf from input filepath
-delete_file = function(filepath_){
-  if (file.exists(filepath_)) file.remove(filepath_)
-}
-delete_file(file)
-```
-
-
-
-
-
-
 
 
 
