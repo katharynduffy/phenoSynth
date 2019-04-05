@@ -1,49 +1,60 @@
 
 # Builds a dataframe from a list of lat/lngs and the netcdf from AppEEARS with the 6 layers
 get_tds_modis_df = function(lats_, lngs_, netcdf_){
-    lat_td = ncvar_get(netcdf_, "lat")
-    lon_td = ncvar_get(netcdf_, "lon")
-    time_td = ncvar_get(netcdf_, 'time')
+  print ('START EXTRACTION OF TDS')
+  lat_td = ncvar_get(netcdf_, "lat")
+  lon_td = ncvar_get(netcdf_, "lon")
+  time_td = ncvar_get(netcdf_, 'time')
+  
+  start_date = as.Date('2001-01-01')
+  
+  crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
+  
+  # Date Values as Integers after start date (2001-01-01)
+  OGD_var = ncvar_get(netcdf_, "Onset_Greenness_Decrease")[1,,,]
+  OGI_var = ncvar_get(netcdf_, "Onset_Greenness_Increase")[1,,,]
+  OGMa_var = ncvar_get(netcdf_, "Onset_Greenness_Maximum")[1,,,]
+  OGMi_var = ncvar_get(netcdf_, "Onset_Greenness_Minimum")[1,,,]
+  
+  # Integer Values from 0 to 1
+  EVI_OGMa_var = ncvar_get(netcdf_, "NBAR_EVI_Onset_Greenness_Maximum")[1,,,]
+  EVI_OGMi_var = ncvar_get(netcdf_, "NBAR_EVI_Onset_Greenness_Minimum")[1,,,]
+  
+  OGD_df = NULL
+  OGI_df = NULL
+  OGMa_df = NULL
+  OGMi_df = NULL
+  EVI_OGMa_df = NULL
+  EVI_OGMi_df = NULL
+  
+  # Loop through each lat/lon which is the center of each selected pixel in app
+  for (x in c(1:length(lats_))){
+    this_pixel_ll = c(lngs_[x], lats_[x])
+    xy              = data.frame(matrix(this_pixel_ll, ncol=2))
+    colnames(xy)    = c('lon', 'lat')
+    coordinates(xy) = ~ lon + lat
+    proj4string(xy) = crs
     
-    start_date = as.Date('2001-01-01')
+    #-----------------------------Onset_Greenness_Decrease-----------------------------
+    OGD_data = c()
+    for (layer in c(1:dim(OGD_var)[3])){
+      layer_raster = raster(t(OGD_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
+      values_under_polygon = extract(layer_raster, xy)
+      OGD_data = c(OGD_data, values_under_polygon)
+    }
+    OGD_data = OGD_data[!is.na(OGD_data)]
+    OGD_data = OGD_data[order(OGD_data)]
+    date_data = start_date + as.integer(OGD_data)
     
-    crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
-    
-    # Date Values as Integers after start date (2001-01-01)
-    OGD_var = ncvar_get(netcdf_, "Onset_Greenness_Decrease")[1,,,]
-    OGI_var = ncvar_get(netcdf_, "Onset_Greenness_Increase")[1,,,]
-    OGMa_var = ncvar_get(netcdf_, "Onset_Greenness_Maximum")[1,,,]
-    OGMi_var = ncvar_get(netcdf_, "Onset_Greenness_Minimum")[1,,,]
-    
-    # Integer Values from 0 to 1
-    EVI_OGMa_var = ncvar_get(netcdf_, "NBAR_EVI_Onset_Greenness_Maximum")[1,,,]
-    EVI_OGMi_var = ncvar_get(netcdf_, "NBAR_EVI_Onset_Greenness_Minimum")[1,,,]
-    
-    OGD_df = NULL
-    OGI_df = NULL
-    OGMa_df = NULL
-    OGMi_df = NULL
-    EVI_OGMa_df = NULL
-    EVI_OGMi_df = NULL
-    
-    # Loop through each lat/lon which is the center of each selected pixel in app
-    for (x in c(1:length(lats_))){
-      this_pixel_ll = c(lngs_[x], lats_[x])
-      xy              = data.frame(matrix(this_pixel_ll, ncol=2))
-      colnames(xy)    = c('lon', 'lat')
-      coordinates(xy) = ~ lon + lat
-      proj4string(xy) = crs
-      
-      #-----------------------------Onset_Greenness_Decrease-----------------------------
-      OGD_data = c()
-      for (layer in c(1:dim(OGD_var)[3])){
-        layer_raster = raster(t(OGD_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
-        values_under_polygon = extract(layer_raster, xy)
-        OGD_data = c(OGD_data, values_under_polygon)
+    if (length(date_data)==0){
+      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Decrease', pixel = x, value = NA)
+      print (paste0('Empty list of data in Onset_Greenness_Decrease. Pixel: ', x))
+      if (is.null(OGD_df)){
+        OGD_df = df
+      }else {
+        OGD_df = rbind(OGD_df, df)
       }
-      OGD_data = OGD_data[!is.na(OGD_data)]
-      OGD_data = OGD_data[order(OGD_data)]
-      date_data = start_date + as.integer(OGD_data)
+    }else {
       if (is.null(OGD_df)){
         df = data.frame(dates = date_data, layer = 'Onset_Greenness_Decrease', pixel = x, value = NA)
         OGD_df = df
@@ -51,16 +62,28 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_){
         df = data.frame(dates = date_data, layer = 'Onset_Greenness_Decrease', pixel = x, value = NA)
         OGD_df = rbind(OGD_df, df)
       }
-      #-----------------------------Onset_Greenness_Increase-----------------------------
-      OGI_data = c()
-      for (layer in c(1:dim(OGI_var)[3])){
-        layer_raster = raster(t(OGI_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
-        values_under_polygon = extract(layer_raster, xy)
-        OGI_data = c(OGI_data, values_under_polygon)
+    }
+    pixel_df = df
+    #-----------------------------Onset_Greenness_Increase-----------------------------
+    OGI_data = c()
+    for (layer in c(1:dim(OGI_var)[3])){
+      layer_raster = raster(t(OGI_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
+      values_under_polygon = extract(layer_raster, xy)
+      OGI_data = c(OGI_data, values_under_polygon)
+    }
+    OGI_data = OGI_data[!is.na(OGI_data)]
+    OGI_data = OGI_data[order(OGI_data)]
+    date_data = start_date + as.integer(OGI_data)
+    
+    if (length(date_data)==0){
+      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Increase', pixel = x, value = NA)
+      print (paste0('Empty list of data in Onset_Greenness_Increase. Pixel: ', x))
+      if (is.null(OGI_df)){
+        OGI_df = df
+      }else {
+        OGI_df = rbind(OGI_df, df)
       }
-      OGI_data = OGI_data[!is.na(OGI_data)]
-      OGI_data = OGI_data[order(OGI_data)]
-      date_data = start_date + as.integer(OGI_data)
+    }else {
       if (is.null(OGI_df)){
         df = data.frame(dates = date_data, layer = 'Onset_Greenness_Increase', pixel = x, value = NA)
         OGI_df = df
@@ -68,26 +91,38 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_){
         df = data.frame(dates = date_data, layer = 'Onset_Greenness_Increase', pixel = x, value = NA)
         OGI_df = rbind(OGI_df, df)
       }
-      #-----------------------------Onset_Greenness_Maximum-----------------------------
-      OGMa_data = c()
-      EVI_OGMa_data = c()
-      for (layer in c(1:dim(OGMa_var)[3])){
-        layer_raster = raster(t(OGMa_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
-        values_under_polygon = extract(layer_raster, xy)
-        OGMa_data = c(OGMa_data, values_under_polygon)
-        
-        layer_raster = raster(t(EVI_OGMa_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
-        values_under_polygon = extract(layer_raster, xy)
-        EVI_OGMa_data = c(EVI_OGMa_data, values_under_polygon)
+    }
+    pixel_df = rbind(pixel_df, df)
+    #-----------------------------Onset_Greenness_Maximum-----------------------------
+    OGMa_data = c()
+    EVI_OGMa_data = c()
+    for (layer in c(1:dim(OGMa_var)[3])){
+      layer_raster = raster(t(OGMa_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
+      values_under_polygon = extract(layer_raster, xy)
+      OGMa_data = c(OGMa_data, values_under_polygon)
+      
+      layer_raster = raster(t(EVI_OGMa_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
+      values_under_polygon = extract(layer_raster, xy)
+      EVI_OGMa_data = c(EVI_OGMa_data, values_under_polygon)
+    }
+    
+    # Remove NA values from dates and y-values lists
+    OGMa_data_1 = OGMa_data[!is.na(OGMa_data)]
+    EVI_OGMa_data_1 =EVI_OGMa_data[!is.na(OGMa_data)]
+    EVI_OGMa_data = EVI_OGMa_data_1[!is.na(EVI_OGMa_data_1)]
+    OGMa_data = OGMa_data_1[!is.na(EVI_OGMa_data_1)]
+    
+    date_data = start_date + as.integer(OGMa_data)
+    
+    if (length(date_data)==0){
+      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Maximum', pixel = x, value = NA)
+      print (paste0('Empty list of data in Onset_Greenness_Maximum. Pixel: ', x))
+      if (is.null(OGMa_df)){
+        OGMa_df = df
+      }else {
+        OGMa_df = rbind(OGMa_df, df)
       }
-      # Transition dates x (time)
-      OGMa_data = OGMa_data[!is.na(OGMa_data)]
-      OGMa_data = OGMa_data[order(OGMa_data)]
-      date_data = start_date + as.integer(OGMa_data)
-      
-      # Transition date y (value 0-1)
-      EVI_OGMa_data = EVI_OGMa_data[!is.na(EVI_OGMa_data)]
-      
+    }else {
       if (is.null(OGMa_df)){
         df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = x, value = EVI_OGMa_data)
         OGMa_df = df
@@ -95,26 +130,38 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_){
         df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = x, value = EVI_OGMa_data)
         OGMa_df = rbind(OGMa_df, df)
       }
-      #-----------------------------Onset_Greenness_Minimum-----------------------------
-      OGMi_data = c()
-      EVI_OGMi_data = c()
-      for (layer in c(1:dim(OGMi_var)[3])){
-        layer_raster = raster(t(OGMi_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
-        values_under_polygon = extract(layer_raster, xy)
-        OGMi_data = c(OGMi_data, values_under_polygon)
-        
-        layer_raster = raster(t(EVI_OGMi_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
-        values_under_polygon = extract(layer_raster, xy)
-        EVI_OGMi_data = c(EVI_OGMi_data, values_under_polygon)
+    }
+    pixel_df = rbind(pixel_df, df)
+    #-----------------------------Onset_Greenness_Minimum-----------------------------
+    OGMi_data = c()
+    EVI_OGMi_data = c()
+    for (layer in c(1:dim(OGMi_var)[3])){
+      layer_raster = raster(t(OGMi_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
+      values_under_polygon = extract(layer_raster, xy)
+      OGMi_data = c(OGMi_data, values_under_polygon)
+      
+      layer_raster = raster(t(EVI_OGMi_var[,,layer]), xmn=min(lon_td), xmx=max(lon_td), ymn=min(lat_td), ymx=max(lat_td), crs=crs)
+      values_under_polygon = extract(layer_raster, xy)
+      EVI_OGMi_data = c(EVI_OGMi_data, values_under_polygon)
+    }
+    
+    # Remove NA values from dates and y-values lists
+    OGMi_data_1 = OGMi_data[!is.na(OGMi_data)]
+    EVI_OGMi_data_1 =EVI_OGMi_data[!is.na(OGMi_data)]
+    EVI_OGMi_data = EVI_OGMi_data_1[!is.na(EVI_OGMi_data_1)]
+    OGMi_data = OGMi_data_1[!is.na(EVI_OGMi_data_1)]
+    
+    date_data = start_date + as.integer(OGMi_data)
+    
+    if (length(date_data)==0){
+      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Minimum', pixel = x, value = NA)
+      print (paste0('Empty list of data in Onset_Greenness_Minimum. Pixel: ', x))
+      if (is.null(OGMi_df)){
+        OGMi_df = df
+      }else {
+        OGMi_df = rbind(OGMi_df, df)
       }
-      # Transition dates x (time)
-      OGMi_data = OGMi_data[!is.na(OGMi_data)]
-      OGMi_data = OGMi_data[order(OGMi_data)]
-      date_data = start_date + as.integer(OGMi_data)
-      
-      # Transition date y (value 0-1)
-      EVI_OGMi_data = EVI_OGMi_data[!is.na(EVI_OGMi_data)]
-      
+    }else {
       if (is.null(OGMi_df)){
         df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = x, value = EVI_OGMi_data)
         OGMi_df = df
@@ -123,9 +170,15 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_){
         OGMi_df = rbind(OGMi_df, df)
       }
     }
-    final_df = rbind(OGI_df, OGD_df, OGMa_df, OGMi_df)
-    return (final_df)
-  }# END BUILD TRANSITION DATE DATAFRAME FOR MODIS DATA
+    pixel_df = rbind(pixel_df, df)
+    if (length(pixel_df)==0){
+      print ('Might raise error')
+    }
+  }
+  final_df = rbind(OGI_df, OGD_df, OGMa_df, OGMi_df)
+  print ('START EXTRACTION OF TDS')
+  return (final_df)
+}# END BUILD TRANSITION DATE DATAFRAME FOR MODIS DATA
 
 
 # Grabs the list of 3_day or 1_day csv data from phenocam website with spring and fall

@@ -1,12 +1,10 @@
 
 gcc_plot = function(gcc, spring, fall){
-  
   unix = "1970-01-01"
   spring[, 2:9] = apply(spring[, 2:9], 2, function(x)
     as.character(as.Date(x, origin = unix)))
   fall[, 2:9] = apply(fall[, 2:9], 2, function(x)
     as.character(as.Date(x, origin = unix)))
-  
   
   print ('adding GCC')
   p = plot_ly(
@@ -131,11 +129,6 @@ gcc_plot = function(gcc, spring, fall){
                  yend = ~ threshold_10,
                  line = list(color = "#8B6508"),
                  name = "EOS (10%) - CI"
-    ) %>%
-    layout(xaxis = list(title = "Date")) #%>%
-    # add_annotations(text = 'GCC',
-    #                 xanchor= 'middle',
-    #                 yanchor= 'top',
-    #                 showarrow = FALSE)
+    )
   return (p)
 }

@@ -24,11 +24,6 @@ server = function(input, output, session) {
   modis   = reactiveValues(data = data.frame(),
                            cached_ndvi = list())
 
-  layers  = reactiveValues(evi_MOD13Q1_v6  = FALSE,
-                           td_MCD12Q2_v5   = FALSE,
-                           ndvi_MOD13Q1_v6 = FALSE,
-                           gcc_Phenocam    = FALSE)
-
   data    = reactiveValues(
                       draw_mode = FALSE,
                       run   = 0,
@@ -607,6 +602,7 @@ server = function(input, output, session) {
     
     # ------------------PLOT GCC------------------------------------
     if ('GCC' %in% selected_data){
+      print ('Plotting GCC')
       gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
     } #END GCC PLOT
     
@@ -624,12 +620,15 @@ server = function(input, output, session) {
       
       tds_modis_df = get_tds_modis_df(lats, lngs, data$tds_nc)
       
-      EVI_OGMa = subset(tds_modis_df, tds_modis_df$layer == 'NBAR_EVI_Onset_Greenness_Maximum')
-      EVI_OGMi = subset(tds_modis_df, tds_modis_df$layer == 'NBAR_EVI_Onset_Greenness_Minimum')
       OGD      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Decrease')
       OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
       OGMa     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Maximum')
       OGMi     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Minimum')
+      
+      print (OGD)
+      print (OGI)
+      print (OGMa)
+      print (OGMi)
     } # END TRANSITION DATE EXTRATION FOR PIXELS
     
     # ------------------PLOT NDVI------------------------------------
@@ -637,8 +636,9 @@ server = function(input, output, session) {
 
         sm_pixels = data$pixel_sps_250m
         lg_pixels = data$pixel_sps_500m
+        
+        print ('Plotting NDVI')
 
-        print (selected_pixel_type)
 
         if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
           print ('No pixels selected')
@@ -667,8 +667,7 @@ server = function(input, output, session) {
                 type = 'scatter',
                 mode = 'markers',
                 name = paste0(num,'_px_NDVI_250m'),
-                marker = list(color = cs[num]),
-                line = list(color = cs[num])
+                marker = list(color = cs[num])
               )
             }
           } else if (selected_pixel_type == '500m'){
@@ -696,7 +695,6 @@ server = function(input, output, session) {
                     type = 'scatter',
                     mode = 'markers',
                     name = paste0(num,'_',letter,'_px_NDVI_500m'),
-                    line = list(color = cs[((num-1)*4)+num_quad]),
                     marker = list(color = cs[((num-1)*4)+num_quad])
                   )
               }
@@ -711,6 +709,8 @@ server = function(input, output, session) {
       
       sm_pixels = data$pixel_sps_250m
       lg_pixels = data$pixel_sps_500m
+      
+      print ('Plotting EVI')
       
       selected_pixel_type = input$pixelTypes
       
@@ -730,8 +730,6 @@ server = function(input, output, session) {
           px = evi_under_pixel[[num]][1,]
           dates = as.Date(names(px),format='X%Y.%m.%d')
           evi_brick_df = data.frame(date = dates, pixel = px)
-          y_max = subset(EVI_OGMa, EVI_OGMa$pixel == num)
-          y_max_values = y_max$value
           # add smoothing
           
           evi_p = evi_p %>%
@@ -750,7 +748,7 @@ server = function(input, output, session) {
               add_markers(
                 data = subset(OGMa,OGMa$pixel==num),
                 x = ~ dates,
-                y = ~value,
+                y = ~ value,
                 showlegend = TRUE,
                 type = 'scatter',
                 mode = 'markers',
@@ -770,7 +768,7 @@ server = function(input, output, session) {
               add_markers(
                 data = subset(OGI,OGI$pixel==num),
                 x = ~ dates,
-                y = .5,
+                y = .25,
                 showlegend = TRUE,
                 type = 'scatter',
                 mode = 'markers',
@@ -780,7 +778,7 @@ server = function(input, output, session) {
               add_markers(
                 data = subset(OGD,OGD$pixel==num),
                 x = ~ dates,
-                y = .5,
+                y = .25,
                 showlegend = TRUE,
                 type = 'scatter',
                 mode = 'markers',
@@ -816,21 +814,24 @@ server = function(input, output, session) {
           }
         }
       } #END 500M LOOP
-    }
+      }
+      print ('END EVI PLOT')
   } #END EVI PLOT
 
 
     # ------------------COMPILING PLOT ------------------------------------
     if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
-      
+      print ('Compiling plot')
       if ('Transition Dates' %in% selected_data){
         plot_list = vector('list', length(selected_data)-1)
       }else {
         plot_list = vector('list', length(selected_data))
-        }
+      }
+      print (plot_list)
       count = 0
       for (i in selected_data){
         count = count + 1
+        print (i)
         if (i == 'GCC'){
           plot_list[[count]] = gcc_p
         }
@@ -841,10 +842,15 @@ server = function(input, output, session) {
           plot_list[[count]] = evi_p
         }
       }
+      
+      print ('Compiling intermediate plot')
+      print (plot_list)
+      print ('test1')
+      print (length(plot_list))
       intermediate_p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE) %>%
         layout(title='PhenoSynth Plots')
       
-      
+      print ('Compiling final plot')
       # Removing unwanted mode bar options on plotly plot
       final_plot = intermediate_p %>% config(displaylogo = FALSE,
                                  modeBarButtonsToRemove = list(
@@ -857,6 +863,7 @@ server = function(input, output, session) {
                                  ))
       
       
+    print ('Rendering plotly')
     # Rendering plotly plot to UI called 'data_plot'
     output$data_plot = renderPlotly({
       final_plot
@@ -933,7 +940,15 @@ server = function(input, output, session) {
     site_data      = get_site_info(site)
     selected_data  = input$dataTypes_get
     data_options   = c('NDVI', 'EVI', 'GCC', 'Transition Dates')
+    
     file_path      = paste0('./www/site_data/', site, '/data_layers/')
+    ndvi_filepath = paste0(file_path,'ndvi/')
+    evi_filepath = paste0(file_path,'evi/')
+    tds_filepath = paste0(file_path,'tds/')
+    gcc_filepath = paste0(file_path,'gcc/')
+    
+    temp_nc_ndvi = './www/deleteme/ndvi/'
+    
     freq           = as.numeric(substring(input$phenocamFrequency, 1, 1))
     percentile_gcc = 90 
     
@@ -953,78 +968,171 @@ server = function(input, output, session) {
       main_site = paste0(main, '/', site)
       if (!file.exists(main_site)){
         dir.create(file.path(main_site))
-        dir.create(file.path(paste0(main_site, '/', 'data_layers')))
+      }
+      if (!file.exists(file_path)){
+        dir.create(file.path(file_path))
+      }
+      if (!file.exists(ndvi_filepath) & 'NDVI' %in% selected_data){
+        print ('building ndvi folder')
+        dir.create(file.path(ndvi_filepath))
+      }
+      if (!file.exists(evi_filepath) & 'EVI' %in% selected_data){
+        dir.create(file.path(evi_filepath))
+      }
+      if (!file.exists(tds_filepath) & 'Transition Dates' %in% selected_data){
+        dir.create(file.path(tds_filepath))
+      }
+      if (!file.exists(gcc_filepath) & 'GCC' %in% selected_data){
+        dir.create(file.path(gcc_filepath))
       }
     }
 
 
-      # Import [NDVI] netcdf(ndvi) and csv(qa)
+      # Import [NDVI] 
       #------------------------------------------------------------------------
     if (data_options[1] %in% selected_data){
-      withProgress(message = 'Importing NDVI', value = 0, {
-      incProgress(.1)
-      
-      appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
+      # withProgress(message = 'Importing NDVI', value = 0, {
       print ('Importing NDVI')
-      ndvi_filepath    = paste0(file_path, 'ndvi', '_', 'MOD13Q1_006', '.nc')
-      ndvi_qa_filepath = paste0(file_path, 'ndvi_qa_', '_', 'MOD13Q1_006', '.csv')
-      incProgress(.1)
-
+      appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
+      
       if (input$localDownload){
-        if (!file.exists(ndvi_filepath))    {download_bundle_file(appeears$ndvi$task_id, ndvi_filepath, 'nc')}
-        if (!file.exists(ndvi_qa_filepath)) {download_bundle_file(appeears$ndvi$task_id, ndvi_qa_filepath, 'qa_csv')}
-
-        ndvi_output    = nc_open(ndvi_filepath)
-        ndvi_brick     = raster::brick(ndvi_filepath, varname='_250m_16_days_NDVI')
-        v6_QA_lut      = read.csv(ndvi_qa_filepath)
-
-      }else{
-        if (file.exists(ndvi_filepath))    {
-          ndvi_output    = nc_open(ndvi_filepath)
-          ndvi_brick     = raster::brick(ndvi_filepath, varname='_250m_16_days_NDVI')
+        if (length(list.files(ndvi_filepath))==0){
+          ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, ndvi_filepath)
+        }else {
+          ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
           }
-        else{
-          temp_nc = './www/deleteme.nc'
-          download_bundle_file(appeears$ndvi$task_id, temp_nc, 'nc')
-          ndvi_output    = nc_open(temp_nc)
-          ndvi_brick     = raster::brick(temp_nc, varname='_250m_16_days_NDVI')
-          delete_file(temp_nc)
-        }
-        if (file.exists(ndvi_qa_filepath)) {v6_QA_lut      = read.csv(ndvi_qa_filepath)}
-        else {
-          temp_qa = './www/deletemetoo.nc'
-          download_bundle_file(appeears$ndvi$task_id, temp_qa, 'qa_csv')
-          v6_QA_lut      = read.csv(temp_qa)
-          delete_file(temp_qa)
-        }
+        
+        ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
+        ndvi_path = paste0(ndvi_filepath, ndvi_name)
+        
+        ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
+        ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
+        
+        ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
+        ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
+        ndvi_qc_csv   = read.csv(ndvi_qc_path)
+        
+      }else{
+        print ('select download locally')
+        # if (length(list.files(ndvi_filepath))==0){
+        #   dir.create(file.path('./www/deleteme/'))
+        #   dir.create(file.path('./www/deleteme/ndvi/'))
+        #   ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, temp_nc_ndvi)
+        #   
+        #   ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
+        #   ndvi_path = paste0(temp_nc_ndvi, ndvi_name)
+        #   
+        #   ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
+        #   ndvi_qc_path = paste0(temp_nc_ndvi, ndvi_qc_name)
+        #   
+        #   print (ndvi_path)
+        #   print (ndvi_qc_path)
+        #   
+        #   ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
+        #   ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
+        #   ndvi_qc_csv   = read.csv(ndvi_qc_path)
+        #   
+        #   for (file in ndvi_bundle_df$file_name){
+        #     file.remove(paste0('./www/deleteme/ndvi/', file))
+        #   }
+        #   file.remove(file.path('./www/deleteme/ndvi/'))
+        #   file.remove(file.path('./www/deleteme/'))
+        #   
+        # }else {
+        #   ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
+        # 
+        #   ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
+        #   ndvi_path = paste0(ndvi_filepath, ndvi_name)
+        #   
+        #   ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
+        #   ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
+        #   
+        #   ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
+        #   ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
+        #   ndvi_qc_csv   = read.csv(ndvi_qc_path)
+        # }
       }
-
       # Add ndvi_nc file to memory
-      data$ndvi_site_nc = ndvi_output
-      data$ndvi_brick   = ndvi_brick
-
-      # netcdf manipulation
-      v6_NDVI = ncvar_get(ndvi_output, "_250m_16_days_NDVI")
-      v6_QA   = ncvar_get(ndvi_output, "_250m_16_days_VI_Quality")
-
-      # Set lat and lon arrays for NDVI data
-      lat_NDVI = ncvar_get(ndvi_output, "lat")
-      lon_NDVI = ncvar_get(ndvi_output, "lon")
-      incProgress(.3)
-
-      # Grab the fill value and set to NA
-      fillvalue = ncatt_get(ndvi_output, "_250m_16_days_NDVI", "_FillValue")
-      v6_NDVI[v6_NDVI == fillvalue$value] = NA
-
-      data$ndvi_nc = v6_NDVI
-
-      # Define the coordinate referense system proj.4 string
-      crs = CRS("+proj=longlat +datum=WGS84")
+      data$ndvi_brick    = ndvi_brick
+      data$ndvi_qc_brick = ndvi_qc_brick
+      data$ndvi_qc_csv   = ndvi_qc_csv
 
       # Grab first observation of NDVI and Quality datasets
-      v6_NDVI = raster(t(v6_NDVI[,,1]), xmn=min(lon_NDVI), xmx=max(lon_NDVI), ymn=min(lat_NDVI), ymx=max(lat_NDVI), crs=crs)
-      data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, v6_NDVI)
+      raster_1_brick_ndvi = raster(subset(ndvi_brick, 1))
+      data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, raster_1_brick_ndvi)
       build_raster_grid(data$r_ndvi_cropped, map = 'map')
+
+      shinyjs::show(id = 'highlightPixelModeNDVI')
+      shinyjs::show(id = 'highlightPixelMode')
+      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
+
+      data$layers_df$ndvi_MOD13Q1_v6 = TRUE
+      shinyjs::show(id = 'plotRemoteData')
+      
+      # }) #END WITH PROGRESS BAR
+    } #END IMPORT NDVI
+
+
+      # Import [Transition Dates] netcdfs
+      #------------------------------------------------------------------------
+    if ('Transition Dates' %in% selected_data){
+      # withProgress(message = 'Importing Transition Dates', value = 0, {
+      print ('Importing Transition Dates')
+      appeears$tds  = get_appeears_task(site, type = 'tds')
+      
+      if (input$localDownload){
+        if (length(list.files(tds_filepath))==0){
+          tds_bundle_df = download_bundle_file(appeears$tds$task_id, tds_filepath)
+        }else {
+          tds_bundle_df = get_appeears_bundle_df(appeears$tds$task_id)
+          }
+        
+        tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name
+        tds_path = paste0(tds_filepath, tds_name)
+        data$tds_nc    = nc_open(tds_path)
+      }
+      data$layers_df$td_MCD12Q2_v5 = TRUE
+      shinyjs::show(id = 'plotRemoteData')
+      # }) #END WITH PROGRESS BAR
+    } #END IMPORT TRANSITION DATES
+
+
+    #   # Import [EVI] netcdf(evi) and csv(qa)
+    #   #------------------------------------------------------------------------
+    if ('EVI' %in% selected_data){
+      print ('Importing EVI')
+      
+      appeears$evi  = get_appeears_task(site, type = 'evi')
+      
+      if (input$localDownload){
+        if (length(list.files(evi_filepath))==0){
+          evi_bundle_df = download_bundle_file(appeears$evi$task_id, evi_filepath)
+        }else {
+          evi_bundle_df = get_appeears_bundle_df(appeears$evi$task_id)
+          }
+        print (evi_bundle_df)
+        evi_name = subset(evi_bundle_df, file_type == 'nc')$file_name
+        evi_path = paste0(evi_filepath, evi_name)
+        
+        evi_qc_name = evi_bundle_df[grep('Quality-lookup', evi_bundle_df$file_name),]$file_name
+        evi_qc_path = paste0(evi_filepath, evi_qc_name)
+        
+        evi_brick    = raster::brick(evi_path, varname='_250m_16_days_EVI')
+        evi_qc_brick = raster::brick(evi_path, varname='_250m_16_days_VI_Quality')
+        evi_qc_csv   = read.csv(evi_qc_path)
+      }
+      
+      # Add evi_nc file to memory
+      data$evi_brick    = evi_brick
+      data$evi_qc_brick = evi_qc_brick
+      data$evi_qc_csv   = evi_qc_csv
+      
+      if ('NDVI' %!in% selected_data){
+        # Grab first observation of evi and Quality datasets
+        raster_1_brick_evi = raster(subset(evi_brick, 1))
+        data$r_evi_cropped = crop_raster(site_data$Lat, site_data$Lon, raster_1_brick_evi)
+        build_raster_grid(data$r_evi_cropped, map = 'map')
+      }
       
       shinyjs::show(id = 'highlightPixelModeNDVI')
       shinyjs::show(id = 'highlightPixelMode')
@@ -1032,135 +1140,19 @@ server = function(input, output, session) {
       
       data$layers_df$ndvi_MOD13Q1_v6 = TRUE
       shinyjs::show(id = 'plotRemoteData')
-      }) #END WITH PROGRESS BAR
-    } #END IMPORT NDVI
-
-
-      # Import [Transition Dates] netcdfs
-      #------------------------------------------------------------------------
-    if (data_options[4] %in% selected_data){
-      withProgress(message = 'Importing Transition Dates', value = 0, {
-      incProgress(.2)
-      appeears$tds  = get_appeears_task(site, type = 'tds')
-
-      print ('Importing Transition Dates')
-      ndvi_filepath    = paste0(file_path, 'td', '_', 'MCD12Q2_005', '.nc')
-
-      if (input$localDownload){
-        if (!file.exists(ndvi_filepath)) {download_bundle_file(appeears$tds$task_id, ndvi_filepath, 'nc')}
-        data$tds_nc = nc_open(ndvi_filepath)
-
-      }else{
-        if (file.exists(ndvi_filepath)) {data$tds_nc = nc_open(ndvi_filepath)}
-        else{
-          temp_nc = './www/deleteme.nc'
-          file_ndvi      = download_bundle_file(appeears$ndvi$task_id, temp_nc, 'nc')
-          data$tds_nc    = nc_open(temp_nc)
-          delete_file(temp_nc)
-        }
-      }
-      incProgress(.2)
-
-      # # # Grab the fill value and set to NA
-      # fillvalue = ncatt_get(modis_td, "Onset_Greenness_Decrease", "_FillValue")
-      # OGD_var[OGD_var == fillvalue$value] = NA
-      
-      incProgress(.2)
-      
-      data$layers_df$td_MCD12Q2_v5 = TRUE
-      shinyjs::show(id = 'plotRemoteData')
-      
-      
-
-      }) #END WITH PROGRESS BAR
-    } #END IMPORT TRANSITION DATES
-
-
-    #   # Import [EVI] netcdf(evi) and csv(qa)
-    #   #------------------------------------------------------------------------
-    if (data_options[2] %in% selected_data){
-      print ('Importing EVI')
-      evi_filepath    = paste0(file_path, 'evi', '_', 'MCD12Q2_005', '.nc')
-      evi_qa_filepath = paste0(file_path, 'evi_qa', '_', 'MCD12Q2_005', '.nc')
-      
-      appeears$evi  = get_appeears_task(site, type = 'evi')
-      
-      if (input$localDownload){
-        if (!file.exists(evi_filepath))    {download_bundle_file(appeears$evi$task_id, evi_filepath, 'nc')}
-        if (!file.exists(evi_qa_filepath)) {download_bundle_file(appeears$evi$task_id, evi_qa_filepath, 'qa_csv')}
-        
-        evi_output      = nc_open(evi_filepath)
-        evi_brick       = raster::brick(evi_filepath, varname='_250m_16_days_EVI')
-        evi_QA_lut      = read.csv(evi_qa_filepath)
-        
-      }else{
-        if (file.exists(evi_filepath))    {
-          evi_output    = nc_open(evi_filepath)
-          evi_brick       = raster::brick(evi_filepath, varname='_250m_16_days_EVI')
-          }
-        else{
-          temp_nc = './www/deleteme.nc'
-          download_bundle_file(appeears$evi$task_id, temp_nc, 'nc')
-          evi_output    = nc_open(temp_nc)
-          evi_brick       = raster::brick(temp_nc, varname='_250m_16_days_EVI')
-          delete_file(temp_nc)
-        }
-        if (file.exists(evi_qa_filepath)) {v6_QA_lut      = read.csv(evi_qa_filepath)}
-        else {
-          temp_qa = './www/deletemetoo.nc'
-          download_bundle_file(appeears$evi$task_id, temp_qa, 'qa_csv')
-          v6_QA_lut      = read.csv(temp_qa)
-          delete_file(temp_qa)
-        }
-      }
-      
-      # Add evi ndvi_nc file to memory
-      data$evi_site_nc = evi_output
-      data$evi_brick   = evi_brick
-      
-      # netcdf manipulation
-      v6_evi = ncvar_get(evi_output, "_250m_16_days_EVI")
-      v6_QA_evi   = ncvar_get(evi_output, "_250m_16_days_VI_Quality")
-      
-      # Set lat and lon arrays for NDVI data
-      lat_evi = ncvar_get(evi_output, "lat")
-      lon_evi = ncvar_get(evi_output, "lon")
-      incProgress(.3)
-      
-      # Grab the fill value and set to NA
-      fillvalue = ncatt_get(evi_output, "_250m_16_days_EVI", "_FillValue")
-      v6_evi[v6_evi == fillvalue$value] = NA
-      
-      data$evi_nc = v6_evi
-      
-      # Define the coordinate referense system proj.4 string
-      crs = CRS("+proj=longlat +datum=WGS84")
-      
-      # Grab first observation of NDVI and Quality datasets
-      v6_evi = raster(t(v6_evi[,,1]), xmn=min(lon_evi), xmx=max(lon_evi), ymn=min(lat_evi), ymx=max(lat_evi), crs=crs)
-      data$grid_250 = crop_raster(site_data$Lat, site_data$Lon, v6_evi)
-      build_raster_grid(data$grid_250, map = 'map')
-      
-      shinyjs::show(id = 'highlightPixelModeNDVI')
-      shinyjs::show(id = 'highlightPixelMode')
-      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
-      
-      data$layers_df$evi_MOD13Q1_v6 = TRUE
-      shinyjs::show(id = 'plotRemoteData')
     } #END IMPORT EVI
     
 
     # Import [GCC] splined Data from phenocam (csv)
     #------------------------------------------------------------------------
     if (data_options[3] %in% selected_data){
-      unix = "1970-01-01"
       # withProgress(message = 'Importing GCC', value = 0, {
+      file_path = gcc_filepath
       print ('Importing Phenocam GCC')
       pft_long = input$pftSelection
       pft = strsplit(pft_long, '_')[[1]][1]
       pft_abb = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
-      # incProgress(.2)
-      layers$gcc_Phenocam = TRUE
+
       gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(freq,'_day'), '.csv')
       spring_filepath = paste0(file_path, 'gcc', '_',paste0(freq,'_day_spring_tds'), '.csv')
       fall_filepath   = paste0(file_path, 'gcc', '_',paste0(freq,'_day_fall_tds'), '.csv')
@@ -1199,13 +1191,13 @@ server = function(input, output, session) {
           phenocam$fall   = phenocam$data[[3]]
         }
       }
-      # incProgress(.2)
+
       data$layers_df$gcc_Phenocam = TRUE
       shinyjs::show(id = 'plotRemoteData')
-      data$imported_types = selected_data
       # }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
 
+    data$imported_types = selected_data
     start_site = as.character(site_data$date_first)
     end_site   = as.character(site_data$date_last)
 
@@ -1233,7 +1225,6 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'buildingPlot')
     shinyjs::hide(id = 'doneBuildingPlot')
     shinyjs::show(id = 'pixelTypes')
-    # shinyjs::hide(id = 'plotDataButton')
     sm_pixels = data$pixel_sps_250m
     lg_pixels = data$pixel_sps_500m
     
@@ -1275,17 +1266,6 @@ server = function(input, output, session) {
     } else {
       shinyjs::hide(id = 'plotDataButton')
     }
-    #   shinyjs::hide(id = 'pixelTypes')}
-    # if (!is.null(types)){
-    #   shinyjs::show(id = 'plotDataButton')
-    #   shinyjs::hide(id = 'dataDateRange')
-    #   # shinyjs::show(id = 'dataDateRange')
-    # }else if(types == 'No Data Available'){
-    #   print ('hiding plot data button')
-    #   shinyjs::hide(id = 'plotDataButton')
-    # }else{
-    #   shinyjs::hide(id = 'plotDataButton')
-    #   shinyjs::hide(id = 'dataDateRange')}
   })
 
   output$downloadDataButton <- downloadHandler(

@@ -20,26 +20,31 @@ get_site_from_task = function(task_name_, name_length){
 }
 
 
-# Downloads file from bundle (whichever ft is set to (only nc and qa_csv))
-download_bundle_file = function(site_task_id_, filepath_,  ft){
-  
-  print (site_task_id_)
+# Downloads full bundle of data from AppEEARS for site_task_id_
+download_bundle_file = function(site_task_id_, filepath_){
+  files = get_appeears_bundle_df(site_task_id_)
+  # Loop through all files in document and download
+  for (file in files$file_id){
+    download_this_file = file
+    filename = subset(files, files$file_id == file)$file_name
+    # create a destination directory to store the file in
+    filepath = paste(filepath_, filename, sep = '')
+    print (filepath)
+    # write the file to disk using the destination directory and file name
+    response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, '/', download_this_file, sep = ""),
+                   write_disk(filepath, overwrite = TRUE), progress())
+  }
+  # Return dataframe of files
+  return (files)
+}
+
+# Returns a AppEEARS task id bundle dataframe
+get_appeears_bundle_df = function(site_task_id_){
   response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
   bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
   document = jsonlite::fromJSON(txt=bundle_response)
   files = document$files
-  
-  if (ft == 'nc'){
-    netcdf    = subset(files, file_type == 'nc')
-    download_this_file = netcdf$file_id
-  }else if(ft == 'qa_csv'){
-    csvs      = subset(files, file_type == 'csv')
-    download_this_file = csvs[grep('Quality-lookup', csvs$file_name), ]$file_id
-  }
-  print (filepath_)
-  response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, '/', download_this_file, sep = ""),
-                 write_disk(filepath_, overwrite = TRUE), progress())
-  return (filepath_)
+  return (files)
 }
 
 
