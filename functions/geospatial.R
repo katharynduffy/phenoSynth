@@ -97,6 +97,7 @@ build_raster_grid = function(raster_, map_ = NULL){
   }else{
     print ('already a sp object')
   }
+  is_not_null = function(x) ! is.null(x)
   if (is_not_null(map_)){
     print ('Adding Raster grid to map')
     leafletProxy(map_) %>% addPolylines(data = sp_lines, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid') %>%
@@ -107,7 +108,10 @@ build_raster_grid = function(raster_, map_ = NULL){
       hideGroup('500m Highlighted Pixels') %>%
       showGroup('500m Highlighted Pixels') %>%
       hideGroup('250m Highlighted Pixels') %>%
-      showGroup('250m Highlighted Pixels')}
+      showGroup('250m Highlighted Pixels')
+  }else{
+      return (sp_lines)
+    }
 }
 
 

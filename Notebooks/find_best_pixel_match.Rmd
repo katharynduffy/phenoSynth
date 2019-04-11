@@ -1,0 +1,328 @@
+---
+title: "find_best_pixel_match.Rmd"
+author: "K. Enns"
+date: "4/10/2019"
+output: html_document
+---
+
+### Notebook used to test methods to extract best matching pixel for NDVI/EVI to GCC from phenocam
+
+Setup EVI, NDVI, Transition Dates, and GCC
+
+
+Check to see if AppEEARS is up
+```{r}
+library(httr)
+library(jsonlite)
+library(raster)
+library(plotly)
+library(sp)
+
+site_task_id = 'e106f82f-7191-4050-a8af-f142e2f981d3'
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, sep = ""))
+response
+```
+
+```{r}
+#------------------------------------------------------------------------------------------
+# Add your file path to phenosynth here:
+# '/path/to/folder/with/app/phenosynth'
+file_root = '/path/to/folder/with/app/phenosynth'
+#------------------------------------------------------------------------------------------
+
+test_download_dir = paste0(file_root, '/www/downloads_test')
+if (!file.exists(test_download_dir)){
+  dir.create(file.path(test_download_dir))
+}
+
+
+# Load in dataframe with cached AppEEARS tasks
+appeears_tasks_ndvi     = readRDS(file = paste0(file_root,'/www/cache_df_ndvi.df'))
+# Load in df with cached AppEEARS Transition Dates (dts)
+appeears_tasks_tds      = readRDS(file = paste0(file_root,'/www/cache_df_tds.df'))
+# Load in df with cached AppEEARS EVI data
+appeears_tasks_evi      = readRDS(file = paste0(file_root,'/www/cache_df_evi.df'))
+
+# Grab acadia tasks for ndvi/evi/tds from cached AppEEARS dataframes
+ndvi_task = appeears_tasks_ndvi[grep('acadia' ,appeears_tasks_ndvi$task_name),]
+tds_task  = appeears_tasks_tds[grep('acadia' ,appeears_tasks_tds$task_name),]
+evi_task  = appeears_tasks_evi[grep('acadia' ,appeears_tasks_evi$task_name),]
+
+# Store the ID's specific to acadia and their data layer
+ndvi_task_id = ndvi_task$task_id
+tds_task_id  = tds_task$task_id
+evi_task_id  = evi_task$task_id
+
+# Get bundle responses for ndvi
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", ndvi_task_id, sep = ""))
+ndvi_bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=ndvi_bundle_response)
+ndvi_files = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_ndvi'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_ndvi')))
+}
+
+# Get bundle responses for transition dates
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", tds_task_id, sep = ""))
+tds_bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=tds_bundle_response)
+tds_files = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_tds'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_tds')))
+}
+
+# Get bundle responses for evi
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", evi_task_id, sep = ""))
+evi_bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=evi_bundle_response)
+evi_files = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_evi'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_evi')))
+}
+
+# Download ndvi
+ndvi_filepaths = c()
+for (file in ndvi_files$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(ndvi_bundle_response)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+
+  filepath = paste0(test_download_dir, '/acadia_ndvi/',filename)
+  print (filepath)
+  ndvi_filepaths = c(ndvi_filepaths, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download  NDVI-------
+  # write the file to disk using the destination directory and file name
+  response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", ndvi_task_id, '/', 
+                       download_this_file, sep = ""),
+                 write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+
+# Download transition dates
+tds_filepaths = c()
+for (file in tds_files$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(tds_bundle_response)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+  filepath = paste0(test_download_dir, '/acadia_tds/',filename)
+  print (filepath)
+  tds_filepaths = c(tds_filepaths, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download transition dates-------
+  # write the file to disk using the destination directory and file name
+  response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", tds_task_id, '/', 
+                       download_this_file, sep = ""),
+                 write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+
+# Download evi
+evi_filepaths = c()
+for (file in evi_files$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(evi_bundle_response)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+  filepath = paste0(test_download_dir, '/acadia_evi/',filename)
+  print (filepath)
+  evi_filepaths = c(evi_filepaths, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download EVI-------
+  # write the file to disk using the destination directory and file name
+  response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", evi_task_id, '/', 
+                       download_this_file, sep = ""),
+                 write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+
+# Download gcc (Add gcc download here)
+```
+
+
+Extract raster from netcdf file (either ndvi or evi)
+```{r}
+ndvi_name = subset(ndvi_files, file_type == 'nc')$file_name
+ndvi_path   = paste0(test_download_dir, '/acadia_ndvi/', ndvi_name)
+ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
+ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
+ndvi_raster = raster::subset(ndvi_brick, 1)
+library(leaflet)
+leaflet() %>% addTiles() %>% addRasterImage(ndvi_raster)
+```
+
+Crop raster to lat/lon of acadia site
+```{r}
+source(paste0(file_root, '/functions/geospatial.R'))
+acadia_lat = 44.3769444444
+acadia_lng = -68.2608333333
+cropped_ndvi = crop_raster(acadia_lat, acadia_lng, ndvi_raster)
+ndvi_grid    = build_raster_grid(cropped_ndvi)
+leaflet() %>% addTiles() %>% addRasterImage(cropped_ndvi) %>%
+  addPolylines(data = ndvi_grid, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid')
+```
+
+Extract all the pixel center points and create a dataframe with id/lat/lng 
+```{r}
+# Values needed to calculate center pixels to use on analysis of netcdf data
+r_         = cropped_ndvi
+xmin       = xmin(extent(r_))
+xmax       = xmax(extent(r_))
+ymin       = ymin(extent(r_))
+ymax       = ymax(extent(r_))
+nrows      = nrow(r_)
+ncols      = ncol(r_)
+resolution = res(r_)[1]
+
+lngs = c()
+lats = c()
+lng_start = xmin + .5*(resolution)
+lat_start = ymax + .5*(resolution)
+for (row in c(1:nrows)){
+  for (col in c(1:ncols)){
+    lng = lng_start + (resolution)*(col-1)
+    lat = lat_start - (resolution)*(row)
+    lngs = c(lngs,lng)
+    lats = c(lats,lat)
+  }
+}
+pixel_ids = c(1:(ncols*nrows))
+all_site_pixels_df = data.frame(pixel_id=pixel_ids, lat = lats, lng = lngs, site='acadia')
+all_site_pixels_df
+```
+
+Check to make sure we are using the correct lats/lngs for the site
+```{r}
+leaflet() %>% addTiles() %>% addRasterImage(cropped_ndvi) %>% addCircleMarkers(lat = lats, lng = lngs, radius = 1, weight=3, opacity = 1, color='black') %>% 
+  addPolylines(data = ndvi_grid, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid')
+```
+
+
+Build a dataframe for each pixel (test on 1:10)
+```{r}
+data_length = 429
+ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
+ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
+ndvi_dates = as.Date(names(ndvi_brick),format='X%Y.%m.%d')[1:data_length]
+
+evi_brick     = raster::brick(evi_filepaths[1], varname='_250m_16_days_EVI')
+evi_qc_brick  = raster::brick(evi_filepaths[1], varname='_250m_16_days_VI_Quality')
+evi_dates = as.Date(names(evi_brick),format='X%Y.%m.%d')[1:data_length]
+
+crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
+
+# Build a spatial point
+pixel_df = data.frame()
+for (id in all_site_pixels_df$pixel_id[1:20]){
+  print (id)
+  selected_row = subset(all_site_pixels_df, pixel_id == id)
+  this_pixel_ll = c(selected_row$lng, selected_row$lat)
+  print (this_pixel_ll)
+  xy              = data.frame(matrix(this_pixel_ll, ncol=2))
+  colnames(xy)    = c('lon', 'lat')
+  coordinates(xy) = ~ lon + lat
+  proj4string(xy) = crs
+  
+  ndvi    = raster::extract(ndvi_brick, xy)[1,][1:data_length]
+  ndvi_qc = raster::extract(ndvi_qc_brick, xy)[1,][1:data_length]
+  
+  evi     = raster::extract(evi_brick, xy)[1,][1:data_length]
+  evi_qc  = raster::extract(evi_qc_brick, xy)[1,][1:data_length]
+  
+  if (length(pixel_df) == 0){
+    pixel_df = data.frame(pixel_id = id, 
+                          ndvi_dates = ndvi_dates, ndvi = ndvi, ndvi_qc = ndvi_qc, 
+                          evi_dates = evi_dates, evi = evi, evi_qc = evi_qc)
+  }else {
+    pixel_df = rbind(pixel_df, data.frame(pixel_id = id, 
+                          ndvi_dates = ndvi_dates, ndvi = ndvi, ndvi_qc = ndvi_qc, 
+                          evi_dates = evi_dates, evi = evi, evi_qc = evi_qc))
+  }
+}
+# Remove the row names
+rownames(pixel_df) = NULL
+# Finish the dataframe by filtering anything that isn't the 'Highest Quality' of data
+pixel_df$ndvi_filtered = ifelse(pixel_df$ndvi_qc == 2112 | pixel_df$ndvi_qc == 2114, pixel_df$ndvi, 'NA')
+pixel_df$evi_filtered  = ifelse(pixel_df$evi_qc  == 2112 | pixel_df$evi_qc  == 2114, pixel_df$evi,  'NA')
+pixel_df
+```
+
+
+```{r}
+for (pixel in c(1:20)){
+  this_pixel  = subset(pixel_df, pixel_id == pixel)
+  filtered_evi_dim = dim(subset(this_pixel, evi_filtered != 'NA'))[1]
+  print (paste0('pixel:', pixel,'. Percentage of EVI data for pixel that is High Quality: ', filtered_evi_dim/429*100, '%' ))
+  filtered_evi_dim = dim(subset(this_pixel, ndvi_filtered != 'NA'))[1]
+  print (paste0('pixel:', pixel,'. Percentage of NDVI data for pixel that is High Quality: ', filtered_evi_dim/429*100, '%' ))
+}
+
+```
+
+
+plot filtered and unfiltered data
+```{r}
+
+selected_pixel_id = 2
+# # Plot data for ndvi under said point
+ndvi_p = plot_ly() %>%
+  add_markers(
+  data = subset(pixel_df, pixel_id == selected_pixel_id),
+  x = ~ ndvi_dates,
+  y = ~ ndvi,
+  showlegend = TRUE,
+  type = 'scatter',
+  mode = 'markers'
+) %>% add_markers(
+    data = subset(pixel_df, pixel_id == selected_pixel_id),
+  x = ~ ndvi_dates,
+  y = ~ ndvi_filtered,
+  showlegend = TRUE,
+  type = 'scatter',
+  mode = 'markers'
+)
+ndvi_p
+```
+
+
+
+Filter the NDVI data [test cell]
+```{r}
+# Quality lookup
+ndvi_quality_lookup = read.csv(ndvi_filepaths[2])
+print (unique(ndvi_quality_lookup$VI.Usefulness))
+high_quality = subset(ndvi_quality_lookup, VI.Usefulness == 'Highest quality')
+high_quality_land = subset(high_quality, Land.Water.Mask == 'Land (Nothing else but land)')
+high_quality_land
+
+pixel_df_test = pixel_df
+pixel_df_test$ndvi_filtered = ifelse(pixel_df_test$ndvi_qc == 2112 | pixel_df_test$ndvi_qc == 2114, pixel_df_test$ndvi, NULL)
+pixel_df_test
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

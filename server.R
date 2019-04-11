@@ -1001,7 +1001,6 @@ server = function(input, output, session) {
         }else {
           ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
           }
-        
         ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
         ndvi_path = paste0(ndvi_filepath, ndvi_name)
         
