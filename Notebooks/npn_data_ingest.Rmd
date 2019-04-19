@@ -1,0 +1,180 @@
+---
+title: "npn_data_ingest.Rmd"
+author: "K. Enns"
+date: "4/12/2019"
+output: html_document
+---
+
+
+```{r}
+devtools::install_github('usa-npn/rnpn')
+library(rnpn)
+library(leaflet)
+library(raster)
+library(sp)
+```
+
+
+```{r}
+# all_species = npn_species()
+layers = npn_get_layer_details()
+names(layers)
+layers
+```
+```{r}
+average_leaf_prism_raster = npn_download_geospatial('si-x:arnoldred_leaf_prism', '1900-11-01')
+
+leaflet() %>% addTiles() %>% addRasterImage(average_leaf_prism_raster)
+
+
+```
+
+
+```{r}
+# build dates list
+dates = c()
+files_ = c()
+average_leaf_prism_brick = raster::brick()
+for (x in c(1:37)){
+  year = 1981 + x - 1
+  date = paste0(as.character(year),'-12-31')
+  dates = c(dates, date)
+  file_ = paste0('/Users/Kenns/Downloads/test_npn/average_leaf_prism', date)
+  files_ = c(files_, file_)
+  npn_download_geospatial('si-x:average_leaf_prism', date, output_path = file_)
+  this_date_raster = raster::raster(file_)
+  average_leaf_prism_brick = raster::addLayer(average_leaf_prism_brick, this_date_raster)
+  # file.remove(file_)
+}
+dates
+average_leaf_prism_brick
+dim(average_leaf_prism_brick)
+
+for (f in files_){
+  # file.remove(f)
+  print (f)
+}
+
+average_leaf_prism_raster_1 = npn_download_geospatial('si-x:average_leaf_prism', '1981-12-31')
+
+#Qc sanity check to make sure the order of the created raster brick is from 1981 to current
+leaflet() %>% addTiles() %>% addRasterImage(subset(average_leaf_prism_brick, 1))
+leaflet() %>% addTiles() %>% addRasterImage(average_leaf_prism_raster_1)
+
+library(ncdf4)
+#save out brick
+test_ = raster::writeRaster(average_leaf_prism_brick,
+                            '/users/kenns/projects/r/apis/phenosynth/www/site_data/average_leaf_prism_brick.nc', 
+                            format = 'CDF', overwrite=TRUE)
+
+#read in brick
+testme = raster::brick('/users/kenns/downloads/test_npn/average_leaf_prism_brick.nc')
+
+```
+
+
+start up find_best_pixel_match.Rmd notebook and run through all cells 
+  need variable : all_site_pixels_df
+```{r}
+
+npn_df = all_site_pixels_df
+npn_df$average_leaf_prism = 'NA'
+
+
+for (id in npn_df$pixel_id[1:1344]){
+  print (id)
+  selected_row = subset(all_site_pixels_df, pixel_id == id)
+  this_pixel_ll = c(selected_row$lng, selected_row$lat)
+  print (this_pixel_ll)
+  xy              = data.frame(matrix(this_pixel_ll, ncol=2))
+  colnames(xy)    = c('lon', 'lat')
+  coordinates(xy) = ~ lon + lat
+  proj4string(xy) = crs
+  
+  average_leaf_index    = raster::extract(average_leaf_prism_raster, xy)
+  
+
+  
+  
+  # if (length(pixel_df) == 0){
+  #   pixel_df = data.frame(pixel_id = id, 
+  #                         ndvi_dates = ndvi_dates, ndvi = ndvi, ndvi_qc = ndvi_qc, 
+  #                         evi_dates = evi_dates, evi = evi, evi_qc = evi_qc)
+  # }else {
+  #   pixel_df = rbind(pixel_df, data.frame(pixel_id = id, 
+  #                         ndvi_dates = ndvi_dates, ndvi = ndvi, ndvi_qc = ndvi_qc, 
+  #                         evi_dates = evi_dates, evi = evi, evi_qc = evi_qc))
+  # }
+}
+
+```
+
+
+
+
+
+
+
+```{r}
+#grab table info for all species
+all_species = npn_species()
+all_species_types = npn_species_types()
+
+npn_download_individual_phenometrics(request_source = 'kenns@usgs',
+                                     years          = ,
+                                     )
+
+#Might be most valuable
+example = npn_download_site_phenometrics(request_source = 'kenns@usgs',
+                               years = c(2017),
+                               species_types = c('Deciduous'),
+                               coords = c(40.37694, -69.26083, 50.000, -67.26083))
+
+
+layers = npn_get_layer_details()
+npn_get_modis_data()
+
+
+raster_1 = npn_download_geospatial('si-x:average_leaf_ncep_historic', '2016-12-31')
+
+
+raster_2 = npn_download_geospatial('si-x:zabelli_leaf_ncep', '2017-12-01')
+
+
+raster_3 = npn_download_geospatial('si-x:average_leaf_ncep', '2017-11-01')
+
+
+raster_4 = npn_download_geospatial('si-x:average_leaf_prism', '2000-11-01')
+raster_5 = npn_download_geospatial('si-x:average_leaf_prism', '2002-11-01')
+raster_6 = npn_download_geospatial('si-x:average_leaf_prism', '2004-11-01')
+raster_7 = npn_download_geospatial('si-x:average_leaf_prism', '2006-11-01')
+raster_8 = npn_download_geospatial('si-x:average_leaf_prism', '2008-11-01')
+raster_9 = npn_download_geospatial('si-x:average_leaf_prism', '2010-11-01')
+raster_10 = npn_download_geospatial('si-x:average_leaf_prism', '2012-11-01')
+raster_11 = npn_download_geospatial('si-x:average_leaf_prism', '2014-11-01')
+raster_12 = npn_download_geospatial('si-x:average_leaf_prism', '2016-11-01')
+raster_13 = npn_download_geospatial('si-x:average_leaf_prism', '2018-11-01')
+
+leaflet('map') %>% addTiles() %>% addRasterImage(raster_1, group = '1') %>%
+  addRasterImage(raster_2, group = '2') %>%
+  addRasterImage(raster_3, group = '3') %>%
+  addRasterImage(raster_4, group = '4') %>%
+  addRasterImage(raster_5, group = '5') %>%
+  addRasterImage(raster_6, group = '6') %>%
+  addRasterImage(raster_7, group = '7') %>%
+  addRasterImage(raster_8, group = '8') %>%
+  addRasterImage(raster_9, group = '9') %>%
+  addRasterImage(raster_10, group = '10') %>%
+  addRasterImage(raster_11, group = '11') %>%
+  addRasterImage(raster_12, group = '12') %>%
+  addRasterImage(raster_13, group = '13') %>%
+  addLayersControl(
+    baseGroups    = c("1", "2", '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'),
+    position      = c("topleft"),
+    options       = layersControlOptions(collapsed = TRUE))
+
+
+assign('kyle', 'john')
+get('kyle')
+
+```
