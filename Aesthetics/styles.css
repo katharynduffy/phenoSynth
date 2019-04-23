@@ -6,11 +6,46 @@
   width:280px;
 }*/
 
+/*SETTING STANDARD WIDTH OF UNDERLYING ELEMENTS TO 100% WIDTH AND HEIGHT*/
+html, body, .col-sm-8, .tab-content, .tab-pane {
+  width:100%;
+  height:100%;
+  padding: 0px;
+}
+.container-fluid {
+  width:100%;
+  height:100%;
+  padding:0px;
+}
+/**/
+
+/*Change Padding for header*/
+.navbar-header{
+  padding-left:5%;
+}
+.navbar.navbar-default.navbar-static-top {
+  margin: 0;
+  width:100%;
+  position:fixed;
+}
+/**/
+
+/*changing height of dataplot*/
+#data_plot {
+  height: 100%;
+}
+/**/
+
+.leaflet-top.leaflet-left {
+  margin-top: 25px;
+}
+
 #row1 {
   height:15%;
   background-color:grey;
 }
 
+/*Front Page CSS to make BS modal look like a landing page*/
 #frontPage .modal-dialog {
   width: 100%;
   height: 100%;
@@ -61,6 +96,7 @@
   height:20%;
   text-align: center;
 }
+/**/
 
 #currentImage, #modisLegend {
   width:375px;
@@ -102,10 +138,6 @@
 
 .leaflet-right .leaflet-control {
   margin-right: 130px;
-}
-
-.navbar {
-  height:40;
 }
 
 .img {

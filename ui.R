@@ -7,7 +7,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
                          checkboxInput("localDownload", "Download Data Locally", value = TRUE),
-                         selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates'), c('GCC', 'NDVI', 'EVI', 'Transition Dates')),
+                         selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
                          selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '3 day', c('1 day', '3 day')),
                          actionButton('getDataButton', 'Get Data'),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")))
@@ -16,7 +16,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
-                         selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI'), c('GCC', 'NDVI', 'EVI', 'Transition Dates')),
+                         selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
                          selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
                          sliderInput('dataDateRange', 'Date start to end',
                                      min = as.Date('2000-01-01'),
@@ -31,7 +31,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                        "Download Data from Plot", "downloadData",
                        tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                        size = "medium",
-                       selectInput('dataTypes_download', 'Data Types',selected = 'All Data', multiple = TRUE, c('All Data', 'Transition Dates', 'EVI', 'NDVI', 'GCC')),
+                       selectInput('dataTypes_download', 'Data Types',selected = 'All Data', multiple = TRUE, c('All Data', 'Transition Dates', 'EVI', 'NDVI', 'GCC', 'NPN')),
                        downloadButton('downloadDataButton', 'Download'),
                        tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")))
                ,
@@ -130,11 +130,12 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
 
            tabPanel('Phenocam Metadata',
                     tableOutput("phenoTable")
-                    
                    ),
 
            tabPanel('Plot Data', value = 'PlotPanel',
-                    plotlyOutput("data_plot", height = 600, width = 1300, inline =TRUE),
+                    plotlyOutput("data_plot", height = '100%'),
+                    fluidRow(column(12, 
+                             dataTableOutput("npnDf"))),
                     # verbatimTextOutput("event_plot")
                     actionButton('downloadData', 'Download Dataframe')
                     

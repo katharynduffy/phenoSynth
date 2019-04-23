@@ -477,11 +477,6 @@ server = function(input, output, session) {
     site       = input$site
     site_data  = get_site_info(site)
     data$all_data = data.frame()
-    data$layers_df = setNames(data.frame(matrix(ncol = 5, nrow = 0)), 
-                                                   c("Site", "evi_MOD13Q1_v6", 'td_MCD12Q2_v5', 'ndvi_MOD13Q1_v6', 'gcc_Phenocam'))
-    data$layers_df = rbind(data$layers_df, 
-                      data.frame(Site= site, evi_MOD13Q1_v6=FALSE, td_MCD12Q2_v5 =FALSE, 
-                                 ndvi_MOD13Q1_v6=FALSE, gcc_Phenocam=FALSE))
 
     data$global_pth = './www/global_landcover_2016.tif'
     global_r   = raster::raster(data$global_pth)
@@ -531,7 +526,6 @@ server = function(input, output, session) {
         clearImages() %>%
         addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
         addRasterImage(rc, opacity = .2, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
-
         addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover') %>%
         addLegend(values = c(1,2), position = 'bottomright', title = 'Vegetation Cover Agreement',
                   colors = c('green', 'grey'), labels = c('ROI-Match', 'No-Match')) %>%
@@ -559,14 +553,13 @@ server = function(input, output, session) {
 
         leafletProxy('map') %>%
           clearImages() %>%
-
           addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
           addRasterImage(rc, opacity = .35, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
-
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels'),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE))
+        
     }
   })
 
@@ -605,6 +598,14 @@ server = function(input, output, session) {
       print ('Plotting GCC')
       gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
     } #END GCC PLOT
+    
+    # ------------------PLOT NPN------------------------------------
+    if ('NPN' %in% selected_data){
+      print ('Plotting NPN')
+
+      # What does this look like #
+      
+    } #END NPN PLOT
     
     # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
     if ('Transition Dates' %in% selected_data){
@@ -822,11 +823,16 @@ server = function(input, output, session) {
     # ------------------COMPILING PLOT ------------------------------------
     if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
       print ('Compiling plot')
+      print (selected_data)
+      vector_length = length(selected_data)
       if ('Transition Dates' %in% selected_data){
-        plot_list = vector('list', length(selected_data)-1)
-      }else {
-        plot_list = vector('list', length(selected_data))
+        vector_length = vector_length - 1
       }
+      if('NPN' %in% selected_data){
+        vector_length = vector_length - 1
+      }
+      
+      plot_list = vector('list', vector_length)
       print (plot_list)
       count = 0
       for (i in selected_data){
@@ -844,9 +850,6 @@ server = function(input, output, session) {
       }
       
       print ('Compiling intermediate plot')
-      print (plot_list)
-      print ('test1')
-      print (length(plot_list))
       intermediate_p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE) %>%
         layout(title='PhenoSynth Plots')
       
@@ -860,17 +863,23 @@ server = function(input, output, session) {
                                    'hoverClosestCartesian',
                                    'hoverCompareCartesian',
                                    'toggleSpikelines'
-                                 ))
+                                 )) %>%
+        layout(height = 250* vector_length, width = 1300, inline = TRUE)
       
+      # add table for npn gridded tds
+      output$npnDf <- renderDataTable(
+        cams_,
+        options = list(pageLength = 3)
+      )
       
-    print ('Rendering plotly')
-    # Rendering plotly plot to UI called 'data_plot'
-    output$data_plot = renderPlotly({
-      final_plot
-    })
-    
-    print (paste0(data_type_selected, ' Plotting Completed'))
-    updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+      print ('Rendering plotly')
+      # Rendering plotly plot to UI called 'data_plot'
+      output$data_plot = renderPlotly({
+        final_plot
+      })
+      
+      print (paste0(data_type_selected, ' Plotting Completed'))
+      updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
     }
     
   }) #END PLOTTING DATA OBSERVER
@@ -939,7 +948,7 @@ server = function(input, output, session) {
     site           = input$site
     site_data      = get_site_info(site)
     selected_data  = input$dataTypes_get
-    data_options   = c('NDVI', 'EVI', 'GCC', 'Transition Dates')
+    data_options   = c('NDVI', 'EVI', 'GCC', 'Transition Dates', 'NPN')
     
     file_path      = paste0('./www/site_data/', site, '/data_layers/')
     ndvi_filepath = paste0(file_path,'ndvi/')
@@ -960,42 +969,59 @@ server = function(input, output, session) {
     print (selected_data)
 
     # Set up directories to store data if in Download local data mode
-    if (input$localDownload){
-      main = './www/site_data'
-      if (!file.exists(main)){
-        dir.create(file.path(main))
-      }
-      main_site = paste0(main, '/', site)
-      if (!file.exists(main_site)){
-        dir.create(file.path(main_site))
-      }
-      if (!file.exists(file_path)){
-        dir.create(file.path(file_path))
-      }
-      if (!file.exists(ndvi_filepath) & 'NDVI' %in% selected_data){
-        print ('building ndvi folder')
-        dir.create(file.path(ndvi_filepath))
-      }
-      if (!file.exists(evi_filepath) & 'EVI' %in% selected_data){
-        dir.create(file.path(evi_filepath))
-      }
-      if (!file.exists(tds_filepath) & 'Transition Dates' %in% selected_data){
-        dir.create(file.path(tds_filepath))
-      }
-      if (!file.exists(gcc_filepath) & 'GCC' %in% selected_data){
-        dir.create(file.path(gcc_filepath))
-      }
+    main = './www/site_data'
+    npn_grid_dir  = './www/npn_grid_data'
+    if (!file.exists(main)){
+      dir.create(file.path(main))
     }
+    if (!file.exists(npn_grid_dir)){
+      dir.create(npn_grid_dir)
+    }
+    main_site = paste0(main, '/', site)
+    if (!file.exists(main_site)){
+      dir.create(file.path(main_site))
+    }
+    if (!file.exists(file_path)){
+      dir.create(file.path(file_path))
+    }
+    if (!file.exists(ndvi_filepath) & 'NDVI' %in% selected_data){
+      print ('building ndvi folder')
+      dir.create(file.path(ndvi_filepath))
+    }
+    if (!file.exists(evi_filepath) & 'EVI' %in% selected_data){
+      dir.create(file.path(evi_filepath))
+    }
+    if (!file.exists(tds_filepath) & 'Transition Dates' %in% selected_data){
+      dir.create(file.path(tds_filepath))
+    }
+    if (!file.exists(gcc_filepath) & 'GCC' %in% selected_data){
+      dir.create(file.path(gcc_filepath))
+    }
+    
+    
+    
+      # Import [NPN]
+    if ('NPN' %in% selected_data){
+      npn_file_name = paste0(npn_grid_dir, '/average_leaf_prism_brick.nc')
+      if (length(list.files(npn_grid_dir))==0){
+        data$npn_brick = download_npn_brick(tmp_name = paste0(npn_grid_dir,'/deleteme_npn_grid_'),
+                                            out_file = npn_file_name,
+                                            layer    = 'si-x:average_leaf_prism')
+      }else {
+        data$npn_brick = raster::brick(npn_file_name)
+      }
+
+    } #END IMPORT NPN
 
 
       # Import [NDVI] 
       #------------------------------------------------------------------------
-    if (data_options[1] %in% selected_data){
+    if ('NDVI' %in% selected_data){
       # withProgress(message = 'Importing NDVI', value = 0, {
       print ('Importing NDVI')
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       
-      if (input$localDownload){
+      # if (input$localDownload){
         if (length(list.files(ndvi_filepath))==0){
           ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, ndvi_filepath)
         }else {
@@ -1011,46 +1037,9 @@ server = function(input, output, session) {
         ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
         ndvi_qc_csv   = read.csv(ndvi_qc_path)
         
-      }else{
-        print ('select download locally')
-        # if (length(list.files(ndvi_filepath))==0){
-        #   dir.create(file.path('./www/deleteme/'))
-        #   dir.create(file.path('./www/deleteme/ndvi/'))
-        #   ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, temp_nc_ndvi)
-        #   
-        #   ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
-        #   ndvi_path = paste0(temp_nc_ndvi, ndvi_name)
-        #   
-        #   ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
-        #   ndvi_qc_path = paste0(temp_nc_ndvi, ndvi_qc_name)
-        #   
-        #   print (ndvi_path)
-        #   print (ndvi_qc_path)
-        #   
-        #   ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
-        #   ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
-        #   ndvi_qc_csv   = read.csv(ndvi_qc_path)
-        #   
-        #   for (file in ndvi_bundle_df$file_name){
-        #     file.remove(paste0('./www/deleteme/ndvi/', file))
-        #   }
-        #   file.remove(file.path('./www/deleteme/ndvi/'))
-        #   file.remove(file.path('./www/deleteme/'))
-        #   
-        # }else {
-        #   ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
-        # 
-        #   ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
-        #   ndvi_path = paste0(ndvi_filepath, ndvi_name)
-        #   
-        #   ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
-        #   ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
-        #   
-        #   ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
-        #   ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
-        #   ndvi_qc_csv   = read.csv(ndvi_qc_path)
-        # }
-      }
+      # }else{
+      #   print ('select download locally')
+      # }
       # Add ndvi_nc file to memory
       data$ndvi_brick    = ndvi_brick
       data$ndvi_qc_brick = ndvi_qc_brick
@@ -1065,7 +1054,6 @@ server = function(input, output, session) {
       shinyjs::show(id = 'highlightPixelMode')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
 
-      data$layers_df$ndvi_MOD13Q1_v6 = TRUE
       shinyjs::show(id = 'plotRemoteData')
       
       # }) #END WITH PROGRESS BAR
@@ -1079,7 +1067,7 @@ server = function(input, output, session) {
       print ('Importing Transition Dates')
       appeears$tds  = get_appeears_task(site, type = 'tds')
       
-      if (input$localDownload){
+      # if (input$localDownload){
         if (length(list.files(tds_filepath))==0){
           tds_bundle_df = download_bundle_file(appeears$tds$task_id, tds_filepath)
         }else {
@@ -1089,8 +1077,7 @@ server = function(input, output, session) {
         tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name
         tds_path = paste0(tds_filepath, tds_name)
         data$tds_nc    = nc_open(tds_path)
-      }
-      data$layers_df$td_MCD12Q2_v5 = TRUE
+      # }
       shinyjs::show(id = 'plotRemoteData')
       # }) #END WITH PROGRESS BAR
     } #END IMPORT TRANSITION DATES
@@ -1103,7 +1090,7 @@ server = function(input, output, session) {
       
       appeears$evi  = get_appeears_task(site, type = 'evi')
       
-      if (input$localDownload){
+      # if (input$localDownload){
         if (length(list.files(evi_filepath))==0){
           evi_bundle_df = download_bundle_file(appeears$evi$task_id, evi_filepath)
         }else {
@@ -1119,7 +1106,7 @@ server = function(input, output, session) {
         evi_brick    = raster::brick(evi_path, varname='_250m_16_days_EVI')
         evi_qc_brick = raster::brick(evi_path, varname='_250m_16_days_VI_Quality')
         evi_qc_csv   = read.csv(evi_qc_path)
-      }
+      # }
       
       # Add evi_nc file to memory
       data$evi_brick    = evi_brick
@@ -1137,14 +1124,13 @@ server = function(input, output, session) {
       shinyjs::show(id = 'highlightPixelMode')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
-      data$layers_df$ndvi_MOD13Q1_v6 = TRUE
       shinyjs::show(id = 'plotRemoteData')
     } #END IMPORT EVI
     
 
     # Import [GCC] splined Data from phenocam (csv)
     #------------------------------------------------------------------------
-    if (data_options[3] %in% selected_data){
+    if ('GCC' %in% selected_data){
       # withProgress(message = 'Importing GCC', value = 0, {
       file_path = gcc_filepath
       print ('Importing Phenocam GCC')
@@ -1155,7 +1141,7 @@ server = function(input, output, session) {
       gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(freq,'_day'), '.csv')
       spring_filepath = paste0(file_path, 'gcc', '_',paste0(freq,'_day_spring_tds'), '.csv')
       fall_filepath   = paste0(file_path, 'gcc', '_',paste0(freq,'_day_fall_tds'), '.csv')
-      if (input$localDownload){
+      # if (input$localDownload){
         if (file.exists(gcc_filepath)){
           phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
           phenocam$spring = read.csv(spring_filepath, header = TRUE)
@@ -1175,23 +1161,22 @@ server = function(input, output, session) {
           write.csv(phenocam$spring, file = spring_filepath)
           write.csv(phenocam$fall,   file = fall_filepath)
         }
-      } else{
-        if (file.exists(gcc_filepath)){
-          phenocam$gcc = read.csv(gcc_filepath, header = TRUE)
-        } else{
-          phenocam$data = get_site_roi_csvs(name        = site,
-                                            roi_files_  = roi_files,
-                                            frequency_  = freq,
-                                            percentile_ = percentile_gcc,
-                                            roi_type_   = pft_abb)
-          
-          phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring = phenocam$data[[2]]
-          phenocam$fall   = phenocam$data[[3]]
-        }
-      }
+      # } else{
+      #   if (file.exists(gcc_filepath)){
+      #     phenocam$gcc = read.csv(gcc_filepath, header = TRUE)
+      #   } else{
+      #     phenocam$data = get_site_roi_csvs(name        = site,
+      #                                       roi_files_  = roi_files,
+      #                                       frequency_  = freq,
+      #                                       percentile_ = percentile_gcc,
+      #                                       roi_type_   = pft_abb)
+      #     
+      #     phenocam$gcc    = phenocam$data[[1]]
+      #     phenocam$spring = phenocam$data[[2]]
+      #     phenocam$fall   = phenocam$data[[3]]
+      #   }
+      # }
 
-      data$layers_df$gcc_Phenocam = TRUE
       shinyjs::show(id = 'plotRemoteData')
       # }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
