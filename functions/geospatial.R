@@ -116,9 +116,7 @@ build_raster_grid = function(raster_, map_ = NULL){
 
 
 # Creates boundary box for clipping rasters using lat/lon from phenocam site
-crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL){
-  height = .03
-  width  = .05
+crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL, height=.03, width=.05){
   e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
   crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
   r        = raster::crop(r_, e, snap='near')
