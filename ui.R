@@ -134,10 +134,12 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
 
            tabPanel('Plot Data', value = 'PlotPanel',
                     plotlyOutput("data_plot", height = '100%'),
-                    fluidRow(column(12, 
-                             dataTableOutput("npnDf"))),
-                    # verbatimTextOutput("event_plot")
-                    actionButton('downloadData', 'Download Dataframe')
+                    hr(),
+                    actionButton('downloadData', 'Download Dataframe'),
+                    hr(),
+                    h2('Selected Pixel Data'),
+                    br(),
+                    dataTableOutput('plotTable')
                     
            ),
 

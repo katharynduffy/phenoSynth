@@ -576,20 +576,18 @@ server = function(input, output, session) {
   # Button that plots selected Data Types
   observeEvent(input$plotDataButton, {
     shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
-    gcc_p = 'none'
-    ndvi_p = 'none'
-    evi_p = 'none'
+    
+    # Selected pixels
+    sm_pixels = data$pixel_sps_250m
+    lg_pixels = data$pixel_sps_500m
+    
+    print (sm_pixels)
+    print (lg_pixels)
 
     # Inputs from popup
-    data_type_selected  = input$dataTypes_plot
-    pixel_size_selected = input$pixelTypes
-
-    site          = input$site
-    site_data     = get_site_info(site)
     selected_data = input$dataTypes_plot
-    
-    
     selected_pixel_type = input$pixelTypes
+    
     print (paste0('Plotting: ', selected_data))
     
     
@@ -602,45 +600,38 @@ server = function(input, output, session) {
     # ------------------PLOT NPN------------------------------------
     if ('NPN' %in% selected_data){
       print ('Plotting NPN')
-
+      ############################
       # What does this look like #
-      
+      #     ?????????????????    #
+      ############################
     } #END NPN PLOT
     
     # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
     if ('Transition Dates' %in% selected_data){
+      
+      # Extracting lat/lng values for selected 250m or 500m pixels
       if(selected_pixel_type == '250m'){
         pixels = subset(data$pixel_df, data$pixel_df$Type == '250m')
       }else if(selected_pixel_type =='500m'){
         pixels = subset(data$pixel_df, data$pixel_df$Type == '500m')
       }
+      # Inputs of pixels required for get_tds_modis_df function to extract Transition date data
       lats = pixels$Lat
       lngs = pixels$Lon
-      print (lats)
-      print (lngs)
       
       tds_modis_df = get_tds_modis_df(lats, lngs, data$tds_nc)
-      
+      # Transition date data under selected pixels
       OGD      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Decrease')
       OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
       OGMa     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Maximum')
       OGMi     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Minimum')
-      
-      print (OGD)
-      print (OGI)
-      print (OGMa)
-      print (OGMi)
+
     } # END TRANSITION DATE EXTRATION FOR PIXELS
     
     # ------------------PLOT NDVI------------------------------------
     if ('NDVI' %in% selected_data){
-
-        sm_pixels = data$pixel_sps_250m
-        lg_pixels = data$pixel_sps_500m
-        
         print ('Plotting NDVI')
-
-
+      
         if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
           print ('No pixels selected')
           ndvi_p = plot_ly()
@@ -705,14 +696,9 @@ server = function(input, output, session) {
       } #END NDVI PLOT
     
     # ------------------PLOT EVI------------------------------------
-    # Will add transition date points to pixels if Transition dates are selected
     if ('EVI' %in% selected_data){
       
-      sm_pixels = data$pixel_sps_250m
-      lg_pixels = data$pixel_sps_500m
-      
       print ('Plotting EVI')
-      
       selected_pixel_type = input$pixelTypes
       
       if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
@@ -726,7 +712,6 @@ server = function(input, output, session) {
         cs  = get_custom_color_list(length(evi_under_pixel))
         
         evi_p = plot_ly()
-        
         for (num in c(1:length(evi_under_pixel))){
           px = evi_under_pixel[[num]][1,]
           dates = as.Date(names(px),format='X%Y.%m.%d')
@@ -744,6 +729,7 @@ server = function(input, output, session) {
               name = paste0(num,'_px_EVI_250m'),
               marker = list(color = cs[num])
             ) 
+          # Add transition date points to pixels if Transition dates are selected
           if ('Transition Dates' %in% selected_data){
             evi_p = evi_p %>% 
               add_markers(
@@ -867,9 +853,15 @@ server = function(input, output, session) {
         layout(height = 250* vector_length, width = 1300, inline = TRUE)
       
       # add table for npn gridded tds
-      output$npnDf <- renderDataTable(
-        cams_,
-        options = list(pageLength = 3)
+      if(selected_pixel_type == '250m'){
+        plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
+      }else if(selected_pixel_type =='500m'){
+        plotTable = subset(data$pixel_df, data$pixel_df$Type == '500m')
+      }
+      output$plotTable <- DT::renderDataTable(
+        plotTable %>% select(Site, Type, Lat, Lon),
+        filter = 'top',
+        options = list(autoWidth = TRUE, scrollY = TRUE)
       )
       
       print ('Rendering plotly')
@@ -878,7 +870,7 @@ server = function(input, output, session) {
         final_plot
       })
       
-      print (paste0(data_type_selected, ' Plotting Completed'))
+      print (paste0(selected_data, ' Plotting Completed'))
       updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
     }
     
