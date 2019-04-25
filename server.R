@@ -593,8 +593,10 @@ server = function(input, output, session) {
     
     # ------------------PLOT GCC------------------------------------
     if ('GCC' %in% selected_data){
+      withProgress(message = 'Building GCC Plot', value = .1, {
       print ('Plotting GCC')
       gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
+      }) #END WITH PROGRESS BAR
     } #END GCC PLOT
     
     # ------------------PLOT NPN------------------------------------
@@ -608,7 +610,7 @@ server = function(input, output, session) {
     
     # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
     if ('Transition Dates' %in% selected_data){
-      
+      withProgress(message = 'Compiling Transition Dates', value = .1, {
       # Extracting lat/lng values for selected 250m or 500m pixels
       if(selected_pixel_type == '250m'){
         pixels = subset(data$pixel_df, data$pixel_df$Type == '250m')
@@ -619,85 +621,88 @@ server = function(input, output, session) {
       lats = pixels$Lat
       lngs = pixels$Lon
       
-      tds_modis_df = get_tds_modis_df(lats, lngs, data$tds_nc)
+      tds_modis_df = get_tds_modis_df(lats, lngs, data$tds_nc,progress_bar=TRUE)
       # Transition date data under selected pixels
       OGD      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Decrease')
       OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
       OGMa     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Maximum')
       OGMi     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Minimum')
-
+      }) #END WITH PROGRESS BAR
     } # END TRANSITION DATE EXTRATION FOR PIXELS
     
     # ------------------PLOT NDVI------------------------------------
     if ('NDVI' %in% selected_data){
-        print ('Plotting NDVI')
-      
-        if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
-          print ('No pixels selected')
-          ndvi_p = plot_ly()
-        }else{
+      withProgress(message = 'Building NDVI Plot', value = .1, {
+      print ('Plotting NDVI')
+    
+      if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
+        print ('No pixels selected')
+        ndvi_p = plot_ly()
+      }else{
 
-          if(selected_pixel_type == '250m'){
-            ndvi_brick = data$ndvi_brick
-            ndvi_under_pixel = extract(ndvi_brick, sm_pixels)
-            cs  = get_custom_color_list(length(ndvi_under_pixel))
-            ndvi_p = plot_ly()
+        if(selected_pixel_type == '250m'){
+          ndvi_brick = data$ndvi_brick
+          ndvi_under_pixel = extract(ndvi_brick, sm_pixels)
+          cs  = get_custom_color_list(length(ndvi_under_pixel))
+          ndvi_p = plot_ly()
+          
+          for (num in c(1:length(ndvi_under_pixel))){
+            incProgress(amount = (1/length(ndvi_under_pixel))*.8)
+            px = ndvi_under_pixel[[num]][1,]
+            dates = as.Date(names(px),format='X%Y.%m.%d')
+            ndvi_brick_df = data.frame(date = dates, pixel = px)
             
-            for (num in c(1:length(ndvi_under_pixel))){
-              px = ndvi_under_pixel[[num]][1,]
+            # add smoothing function
+            
+            ndvi_p = ndvi_p %>%
+              add_markers(
+              data = ndvi_brick_df,
+              x = ~ date,
+              y = ~ pixel,
+              showlegend = TRUE,
+              type = 'scatter',
+              mode = 'markers',
+              name = paste0(num,'_px_NDVI_250m'),
+              marker = list(color = cs[num])
+            )
+          }
+        } else if (selected_pixel_type == '500m'){
+          ndvi_brick = data$ndvi_brick
+          ndvi_under_pixel = extract(ndvi_brick, lg_pixels)
+          values_in_pixel = dim(ndvi_under_pixel[[1]])[[1]]
+          cs  = get_custom_color_list(length(ndvi_under_pixel)*values_in_pixel)
+          print (cs)
+          ndvi_p = plot_ly()
+          
+          for (num in c(1:length(ndvi_under_pixel))){
+            
+            for (num_quad in c(1:values_in_pixel)){
+              px = ndvi_under_pixel[[num]][num_quad,]
               dates = as.Date(names(px),format='X%Y.%m.%d')
               ndvi_brick_df = data.frame(date = dates, pixel = px)
               
-              # add smoothing function
-              
+              letter = c('A', 'B', 'C', 'D')[num_quad]
               ndvi_p = ndvi_p %>%
                 add_markers(
-                data = ndvi_brick_df,
-                x = ~ date,
-                y = ~ pixel,
-                showlegend = TRUE,
-                type = 'scatter',
-                mode = 'markers',
-                name = paste0(num,'_px_NDVI_250m'),
-                marker = list(color = cs[num])
-              )
-            }
-          } else if (selected_pixel_type == '500m'){
-            ndvi_brick = data$ndvi_brick
-            ndvi_under_pixel = extract(ndvi_brick, lg_pixels)
-            values_in_pixel = dim(ndvi_under_pixel[[1]])[[1]]
-            cs  = get_custom_color_list(length(ndvi_under_pixel)*values_in_pixel)
-            print (cs)
-            ndvi_p = plot_ly()
-            
-            for (num in c(1:length(ndvi_under_pixel))){
-              
-              for (num_quad in c(1:values_in_pixel)){
-                px = ndvi_under_pixel[[num]][num_quad,]
-                dates = as.Date(names(px),format='X%Y.%m.%d')
-                ndvi_brick_df = data.frame(date = dates, pixel = px)
-                
-                letter = c('A', 'B', 'C', 'D')[num_quad]
-                ndvi_p = ndvi_p %>%
-                  add_markers(
-                    data = ndvi_brick_df,
-                    x = ~ date,
-                    y = ~ pixel,
-                    showlegend = TRUE,
-                    type = 'scatter',
-                    mode = 'markers',
-                    name = paste0(num,'_',letter,'_px_NDVI_500m'),
-                    marker = list(color = cs[((num-1)*4)+num_quad])
-                  )
+                  data = ndvi_brick_df,
+                  x = ~ date,
+                  y = ~ pixel,
+                  showlegend = TRUE,
+                  type = 'scatter',
+                  mode = 'markers',
+                  name = paste0(num,'_',letter,'_px_NDVI_500m'),
+                  marker = list(color = cs[((num-1)*4)+num_quad])
+                )
               }
             }
           }
         }
+        })# END WITH PROGRESS BAR
       } #END NDVI PLOT
     
     # ------------------PLOT EVI------------------------------------
     if ('EVI' %in% selected_data){
-      
+      withProgress(message = 'Building EVI Plot', value = .1, {
       print ('Plotting EVI')
       selected_pixel_type = input$pixelTypes
       
@@ -713,6 +718,7 @@ server = function(input, output, session) {
         
         evi_p = plot_ly()
         for (num in c(1:length(evi_under_pixel))){
+          incProgress(amount = (1/length(evi_under_pixel))*.8)
           px = evi_under_pixel[[num]][1,]
           dates = as.Date(names(px),format='X%Y.%m.%d')
           evi_brick_df = data.frame(date = dates, pixel = px)
@@ -803,11 +809,13 @@ server = function(input, output, session) {
       } #END 500M LOOP
       }
       print ('END EVI PLOT')
+      }) #END WITH PROGRESS BAR
   } #END EVI PLOT
 
 
     # ------------------COMPILING PLOT ------------------------------------
     if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
+      withProgress(message = 'Compiling All Plots', value = .3, {
       print ('Compiling plot')
       print (selected_data)
       vector_length = length(selected_data)
@@ -872,8 +880,8 @@ server = function(input, output, session) {
       
       print (paste0(selected_data, ' Plotting Completed'))
       updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
-    }
-    
+        }) #END WITH PROGRESS BAR
+      }
   }) #END PLOTTING DATA OBSERVER
 
 
@@ -994,44 +1002,51 @@ server = function(input, output, session) {
     
       # Import [NPN]
     if ('NPN' %in% selected_data){
+      withProgress(message = 'Importing NPN', value = .1, {
+        
       npn_file_name = paste0(npn_grid_dir, '/average_leaf_prism_brick.nc')
       if (length(list.files(npn_grid_dir))==0){
+        setProgress(value = .2, detail = 'Downloading NPN')
         data$npn_brick = download_npn_brick(tmp_name = paste0(npn_grid_dir,'/deleteme_npn_grid_'),
                                             out_file = npn_file_name,
                                             layer    = 'si-x:average_leaf_prism')
       }else {
+        setProgress(value = .1, detail = 'Importing NPN')
         data$npn_brick = raster::brick(npn_file_name)
       }
-
+      
+      }) #END WITH PROGRESS BAR
     } #END IMPORT NPN
 
 
       # Import [NDVI] 
       #------------------------------------------------------------------------
     if ('NDVI' %in% selected_data){
-      # withProgress(message = 'Importing NDVI', value = 0, {
+      withProgress(message = 'Importing NDVI', value = .1, {
+        
       print ('Importing NDVI')
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       
-      # if (input$localDownload){
-        if (length(list.files(ndvi_filepath))==0){
-          ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, ndvi_filepath)
-        }else {
-          ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
-          }
-        ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
-        ndvi_path = paste0(ndvi_filepath, ndvi_name)
-        
-        ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
-        ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
-        
-        ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
-        ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
-        ndvi_qc_csv   = read.csv(ndvi_qc_path)
-        
-      # }else{
-      #   print ('select download locally')
-      # }
+      if (length(list.files(ndvi_filepath))==0){
+        setProgress(value = .1, detail = 'Downloading NDVI')
+        ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, ndvi_filepath)
+        setProgress(value = .8, detail = 'NDVI Downloaded')
+      }else {
+        setProgress(value = .1, detail = 'Importing NDVI')
+        ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
+        setProgress(value = .8, detail = 'NDVI Imported')
+      }
+      
+      ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
+      ndvi_path = paste0(ndvi_filepath, ndvi_name)
+      
+      ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
+      ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
+      
+      ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
+      ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
+      ndvi_qc_csv   = read.csv(ndvi_qc_path)
+
       # Add ndvi_nc file to memory
       data$ndvi_brick    = ndvi_brick
       data$ndvi_qc_brick = ndvi_qc_brick
@@ -1048,14 +1063,14 @@ server = function(input, output, session) {
 
       shinyjs::show(id = 'plotRemoteData')
       
-      # }) #END WITH PROGRESS BAR
+      }) #END WITH PROGRESS BAR
     } #END IMPORT NDVI
 
 
       # Import [Transition Dates] netcdfs
       #------------------------------------------------------------------------
     if ('Transition Dates' %in% selected_data){
-      # withProgress(message = 'Importing Transition Dates', value = 0, {
+      withProgress(message = 'Importing Transition Dates', value = 0, {
       print ('Importing Transition Dates')
       appeears$tds  = get_appeears_task(site, type = 'tds')
       
@@ -1071,22 +1086,27 @@ server = function(input, output, session) {
         data$tds_nc    = nc_open(tds_path)
       # }
       shinyjs::show(id = 'plotRemoteData')
-      # }) #END WITH PROGRESS BAR
+      }) #END WITH PROGRESS BAR
     } #END IMPORT TRANSITION DATES
 
 
     #   # Import [EVI] netcdf(evi) and csv(qa)
     #   #------------------------------------------------------------------------
     if ('EVI' %in% selected_data){
+      withProgress(message = 'Importing NDVI', value = .1, {
       print ('Importing EVI')
       
       appeears$evi  = get_appeears_task(site, type = 'evi')
       
       # if (input$localDownload){
         if (length(list.files(evi_filepath))==0){
+          setProgress(value = .1, detail = 'Downloading NDVI')
           evi_bundle_df = download_bundle_file(appeears$evi$task_id, evi_filepath)
+          setProgress(value = .1, detail = 'NDVI Downloaded')
         }else {
+          setProgress(value = .1, detail = 'Importing NDVI')
           evi_bundle_df = get_appeears_bundle_df(appeears$evi$task_id)
+          setProgress(value = .1, detail = 'NDVI Imported')
           }
         print (evi_bundle_df)
         evi_name = subset(evi_bundle_df, file_type == 'nc')$file_name
@@ -1117,13 +1137,15 @@ server = function(input, output, session) {
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
       shinyjs::show(id = 'plotRemoteData')
+      }) #END WITH PROGRESS BAR
     } #END IMPORT EVI
     
 
     # Import [GCC] splined Data from phenocam (csv)
     #------------------------------------------------------------------------
     if ('GCC' %in% selected_data){
-      # withProgress(message = 'Importing GCC', value = 0, {
+      withProgress(message = 'Importing GCC', value = .1, {
+        
       file_path = gcc_filepath
       print ('Importing Phenocam GCC')
       pft_long = input$pftSelection
@@ -1133,44 +1155,32 @@ server = function(input, output, session) {
       gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(freq,'_day'), '.csv')
       spring_filepath = paste0(file_path, 'gcc', '_',paste0(freq,'_day_spring_tds'), '.csv')
       fall_filepath   = paste0(file_path, 'gcc', '_',paste0(freq,'_day_fall_tds'), '.csv')
-      # if (input$localDownload){
-        if (file.exists(gcc_filepath)){
-          phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
-          phenocam$spring = read.csv(spring_filepath, header = TRUE)
-          phenocam$fall   = read.csv(fall_filepath, header = TRUE)
-        }else{
-          phenocam$data = get_site_roi_csvs(name        = site,
-                                            roi_files_  = roi_files,
-                                            frequency_  = freq,
-                                            percentile_ = percentile_gcc,
-                                            roi_type_   = pft_abb)
-          
-          phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring = phenocam$data[[2]]
-          phenocam$fall   = phenocam$data[[3]]
-          
-          write.csv(phenocam$gcc,    file = gcc_filepath)
-          write.csv(phenocam$spring, file = spring_filepath)
-          write.csv(phenocam$fall,   file = fall_filepath)
-        }
-      # } else{
-      #   if (file.exists(gcc_filepath)){
-      #     phenocam$gcc = read.csv(gcc_filepath, header = TRUE)
-      #   } else{
-      #     phenocam$data = get_site_roi_csvs(name        = site,
-      #                                       roi_files_  = roi_files,
-      #                                       frequency_  = freq,
-      #                                       percentile_ = percentile_gcc,
-      #                                       roi_type_   = pft_abb)
-      #     
-      #     phenocam$gcc    = phenocam$data[[1]]
-      #     phenocam$spring = phenocam$data[[2]]
-      #     phenocam$fall   = phenocam$data[[3]]
-      #   }
-      # }
+
+      if (file.exists(gcc_filepath)){
+        setProgress(value = .5, detail = 'Importing GCC CSV')
+        phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
+        phenocam$spring = read.csv(spring_filepath, header = TRUE)
+        phenocam$fall   = read.csv(fall_filepath, header = TRUE)
+      }else{
+        setProgress(value = .2, detail = 'Downloading GCC data')
+        phenocam$data = get_site_roi_csvs(name        = site,
+                                          roi_files_  = roi_files,
+                                          frequency_  = freq,
+                                          percentile_ = percentile_gcc,
+                                          roi_type_   = pft_abb)
+        setProgress(value = .2, detail = 'GCC data Downloaded')
+        
+        phenocam$gcc    = phenocam$data[[1]]
+        phenocam$spring = phenocam$data[[2]]
+        phenocam$fall   = phenocam$data[[3]]
+        
+        write.csv(phenocam$gcc,    file = gcc_filepath)
+        write.csv(phenocam$spring, file = spring_filepath)
+        write.csv(phenocam$fall,   file = fall_filepath)
+      }
 
       shinyjs::show(id = 'plotRemoteData')
-      # }) #END WITH PROGRESS BAR
+      }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
 
     data$imported_types = selected_data

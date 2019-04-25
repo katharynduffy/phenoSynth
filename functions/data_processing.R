@@ -1,6 +1,6 @@
 
 # Builds a dataframe from a list of lat/lngs and the netcdf from AppEEARS with the 6 layers
-get_tds_modis_df = function(lats_, lngs_, netcdf_){
+get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
   print ('START EXTRACTION OF TDS')
   lat_td = ncvar_get(netcdf_, "lat")
   lon_td = ncvar_get(netcdf_, "lon")
@@ -29,6 +29,9 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_){
   
   # Loop through each lat/lon which is the center of each selected pixel in app
   for (x in c(1:length(lats_))){
+    if (progress_bar == TRUE){
+      incProgress(amount = (1/length(lats_))*.8)
+    }
     this_pixel_ll = c(lngs_[x], lats_[x])
     xy              = data.frame(matrix(this_pixel_ll, ncol=2))
     colnames(xy)    = c('lon', 'lat')
