@@ -867,7 +867,7 @@ server = function(input, output, session) {
         plotTable = subset(data$pixel_df, data$pixel_df$Type == '500m')
       }
       output$plotTable <- DT::renderDataTable(
-        plotTable %>% select(Site, Type, Lat, Lon),
+        plotTable %>% select(Site, Id, Type, Lat, Lon),
         filter = 'top',
         options = list(autoWidth = TRUE, scrollY = TRUE)
       )
@@ -1093,20 +1093,20 @@ server = function(input, output, session) {
     #   # Import [EVI] netcdf(evi) and csv(qa)
     #   #------------------------------------------------------------------------
     if ('EVI' %in% selected_data){
-      withProgress(message = 'Importing NDVI', value = .1, {
+      withProgress(message = 'Importing EVI', value = .1, {
       print ('Importing EVI')
       
       appeears$evi  = get_appeears_task(site, type = 'evi')
       
       # if (input$localDownload){
         if (length(list.files(evi_filepath))==0){
-          setProgress(value = .1, detail = 'Downloading NDVI')
+          setProgress(value = .1, detail = 'Downloading EVI')
           evi_bundle_df = download_bundle_file(appeears$evi$task_id, evi_filepath)
-          setProgress(value = .1, detail = 'NDVI Downloaded')
+          setProgress(value = .1, detail = 'EVI Downloaded')
         }else {
-          setProgress(value = .1, detail = 'Importing NDVI')
+          setProgress(value = .1, detail = 'Importing EVI')
           evi_bundle_df = get_appeears_bundle_df(appeears$evi$task_id)
-          setProgress(value = .1, detail = 'NDVI Imported')
+          setProgress(value = .1, detail = 'EVI Imported')
           }
         print (evi_bundle_df)
         evi_name = subset(evi_bundle_df, file_type == 'nc')$file_name
