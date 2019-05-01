@@ -51,6 +51,7 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
 
 
 
+
 .leaflet-top.leaflet-left {
   margin-top: 25px;
 }
@@ -66,6 +67,10 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   height: 100%;
   margin: 0px 0px 0px 0px;
   background: grey;
+}
+
+#frontPage img {
+  width:200px;
 }
 
 #frontPage .modal-content{
