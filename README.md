@@ -13,7 +13,7 @@ The following command will check for all the required R packages, install them i
 
 library(shiny)
 
-runGitHub("phenoRemote", "katharynduffy")
+runGitHub("phenoSynth", "katharynduffy")
 
 ```
 
@@ -28,4 +28,4 @@ Please hang in there with us while we get these off the ground and let us know i
 
 The R package has been developed and maintained by [Katharyn Duffy and Kyle Enns for APIS Case 2](https://esto.nasa.gov/files/solicitations/AIST_16/ROSES2016_AIST_A41_awards.html#Jeffrey) since June, 2018.
 
-Most recent release is available from: https://github.com/katharynduffy/phenoRemote
+Most recent release is available from: https://github.com/katharynduffy/phenoSynth
