@@ -113,26 +113,26 @@ server = function(input, output, session) {
 
   # Open landing page and initialze application
   observe({ 
-    showModal(tags$div(id = 'frontPage', modalDialog(
-      tags$div(id = 'row1'),
-      h1('Welcome to Phenosynth'),
-      fluidRow(
-        column(6, align='center', offset = 3,
-               p('PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.'))),
-      fluidRow(
-        img(src='phenoSynth.png')),
-      # tags$div(id = 'frontPageData',
-      #          fluidRow(
-      #            column(12, align="center", offset = 0,
-      #                   selectInput('frontPageDataSelection', 'Choose Your Data (click in box) - Phenocam is always included', multiple = TRUE, 
-      #                               c('Modis Ndvi', 'Landsat Phenometrics')),
-      #                   tags$style(type='text/css', "#frontPageData { vertical-align: middle; height: 50px; width: 100%; font-size: 15px;}"))
-      #          )),
-      fluidRow(
-        column(4, align='center', offset = 4,
-               p('Once you have your choices pop up in the input above, press the button below to enter into the Shiny Application Interface'))),
-      footer = modalButton('Enter Phenosynth')
-    )))
+    # showModal(tags$div(id = 'frontPage', modalDialog(
+    #   tags$div(id = 'row1'),
+    #   h1('Welcome to Phenosynth'),
+    #   fluidRow(
+    #     column(6, align='center', offset = 3,
+    #            p('PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.'))),
+    #   fluidRow(
+    #     img(src='phenoSynth.png')),
+    #   # tags$div(id = 'frontPageData',
+    #   #          fluidRow(
+    #   #            column(12, align="center", offset = 0,
+    #   #                   selectInput('frontPageDataSelection', 'Choose Your Data (click in box) - Phenocam is always included', multiple = TRUE, 
+    #   #                               c('Modis Ndvi', 'Landsat Phenometrics')),
+    #   #                   tags$style(type='text/css', "#frontPageData { vertical-align: middle; height: 50px; width: 100%; font-size: 15px;}"))
+    #   #          )),
+    #   fluidRow(
+    #     column(4, align='center', offset = 4,
+    #            p('Once you have your choices pop up in the input above, press the button below to enter into the Shiny Application Interface'))),
+    #   footer = modalButton('Enter Phenosynth')
+    # )))
     switch_to_explorer_panel()
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
