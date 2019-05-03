@@ -6,6 +6,15 @@
   width:280px;
 }*/
 
+/* PhenoSynth LOGO */
+#phenoSynthLogo{
+  position: fixed;
+  bottom:0;
+  right:0;
+  width:100px;
+  z-index:2000;
+}
+
 /*SETTING STANDARD WIDTH OF UNDERLYING ELEMENTS TO 100% WIDTH AND HEIGHT*/
 html, body, .col-sm-8, .tab-content, .tab-pane {
   width:100%;

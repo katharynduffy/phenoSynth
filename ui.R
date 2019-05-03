@@ -2,6 +2,7 @@
 # Initiate the UI
 ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                mainPanel(
+                 img(src='phenoSynth.png', id = 'phenoSynthLogo'),
                  bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
