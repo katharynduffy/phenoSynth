@@ -180,24 +180,6 @@ server = function(input, output, session) {
     })
   })
 
-  # Turn off 500m highlighted pixels if 250m highlighted pixels
-  observe({
-    a = input$highlightPixelMode
-    if (a == TRUE){
-      leafletProxy('map') %>% showGroup('500m Highlighted Pixels')
-      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = FALSE)
-    }
-  })
-
-  # Turn off 250m highlighted pixels if 500m highlighted pixels
-  observe({
-    b = input$highlightPixelModeNDVI
-    if(b == TRUE){
-      leafletProxy('map') %>% showGroup('250m Highlighted Pixels')
-      updateCheckboxInput(session, 'highlightPixelMode', value = FALSE)
-    }
-  })
-
   # Event occurs when drawing a new feature starts
   observeEvent(input$map_draw_new_feature, {
       # Leaflet ID to add to the shapefile dataframe
@@ -491,7 +473,6 @@ server = function(input, output, session) {
 
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
     switch_to_analyzer_panel()
-    # updateCheckboxInput(session, 'highlightPixelMode', value = TRUE)
 
     veg_idx       = is.element(roi_files$site, site)
     veg_match     = roi_files[veg_idx,]
@@ -582,10 +563,7 @@ server = function(input, output, session) {
     
     # Selected pixels
     sm_pixels = data$pixel_sps_250m
-    lg_pixels = data$pixel_sps_500m
-    
     print (sm_pixels)
-    print (lg_pixels)
     
     # Empty dataframes to use for plotting
     pixel_data_df = data
@@ -622,11 +600,8 @@ server = function(input, output, session) {
     if ('Transition Dates' %in% selected_data){
       withProgress(message = 'Compiling Transition Dates', value = .1, {
       # Extracting lat/lng values for selected 250m or 500m pixels
-      if(selected_pixel_type == '250m'){
-        pixels = subset(data$pixel_df, data$pixel_df$Type == '250m')
-      }else if(selected_pixel_type =='500m'){
-        pixels = subset(data$pixel_df, data$pixel_df$Type == '500m')
-      }
+      pixels = subset(data$pixel_df, data$pixel_df$Type == '250m')
+
       # Inputs of pixels required for get_tds_modis_df function to extract Transition date data
       lats = pixels$Lat
       lngs = pixels$Lon
@@ -645,50 +620,48 @@ server = function(input, output, session) {
       withProgress(message = 'Building NDVI Plot', value = .1, {
       print ('Plotting NDVI')
     
-      if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
+      if (is.null(sm_pixels@polygons[1][[1]])){
         print ('No pixels selected')
         ndvi_p = plot_ly()
       }else{
-
-        if(selected_pixel_type == '250m'){
-          ndvi_under_pixel = extract(data$ndvi_brick, sm_pixels)
-          qc_ndvi_under_pixel = extract(data$ndvi_qc_brick, sm_pixels)
-          cs  = get_custom_color_list(length(ndvi_under_pixel))
-          ndvi_p = plot_ly()
+        ndvi_under_pixel = extract(data$ndvi_brick, sm_pixels)
+        qc_ndvi_under_pixel = extract(data$ndvi_qc_brick, sm_pixels)
+        data$cs  = get_custom_color_list(length(ndvi_under_pixel))
+        ndvi_p = plot_ly()
+        
+        for (num in c(1:length(ndvi_under_pixel))){
+          incProgress(amount = (1/length(ndvi_under_pixel))*.8)
+          pixel_id = sm_pixels@polygons[[num]]@ID
+          ndvi = ndvi_under_pixel[[num]][1,]
+          ndvi_qc = qc_ndvi_under_pixel[[num]][1,]
+          dates = as.Date(names(ndvi),format='X%Y.%m.%d')
+          ndvi_brick_df = data.frame(date = dates, 
+                                     pixel = pixel_id, 
+                                     ndvi_raw = ndvi, 
+                                     ndvi_qc = ndvi_qc)
           
-          for (num in c(1:length(ndvi_under_pixel))){
-            incProgress(amount = (1/length(ndvi_under_pixel))*.8)
-            pixel_id = sm_pixels@polygons[[num]]@ID
-            ndvi = ndvi_under_pixel[[num]][1,]
-            ndvi_qc = qc_ndvi_under_pixel[[num]][1,]
-            dates = as.Date(names(ndvi),format='X%Y.%m.%d')
-            ndvi_brick_df = data.frame(date = dates, 
-                                       pixel = pixel_id, 
-                                       ndvi_raw = ndvi, 
-                                       ndvi_qc = ndvi_qc)
-            
-            
-            # Add ndvi_brick_df data (one pixel worth) to a larger df with all pixels and ndvi
-            if (num == 1){
-              ndvi_pixel_data_df = ndvi_brick_df
-            }else {
-              ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
-            }
-            
-            # Build NDVI plot
-            data$ndvi_p = ndvi_p %>%
-              add_markers(
-              data = ndvi_brick_df,
-              x = ~ date,
-              y = ~ ndvi_raw,
-              showlegend = TRUE,
-              type = 'scatter',
-              mode = 'markers',
-              name = paste0(num,'_px_NDVI_250m'),
-              marker = list(color = cs[num])
-              )
-            }
-        }
+          
+          # Add ndvi_brick_df data (one pixel worth) to a larger df with all pixels and ndvi
+          if (num == 1){
+            ndvi_pixel_data_df = ndvi_brick_df
+          }else {
+            ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
+          }
+          
+          # # Build NDVI plot
+          # data$ndvi_p = ndvi_p %>%
+          #   add_markers(
+          #   data = ndvi_brick_df,
+          #   x = ~ date,
+          #   y = ~ ndvi_raw,
+          #   showlegend = TRUE,
+          #   type = 'scatter',
+          #   mode = 'markers',
+          #   name = paste0(num,'_px_NDVI_250m'),
+          #   marker = list(color = cs[num])
+          #   )
+          }
+          
         ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 2114, 
                                                   ndvi_pixel_data_df$ndvi_raw, NA)
         data$ndvi_pixels = ndvi_pixel_data_df
@@ -700,201 +673,176 @@ server = function(input, output, session) {
     if ('EVI' %in% selected_data){
       withProgress(message = 'Building EVI Plot', value = .1, {
       print ('Plotting EVI')
-      selected_pixel_type = input$pixelTypes
       
-      if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
+      if (is.null(sm_pixels@polygons[1][[1]])){
         print ('No pixels selected')
         evi_p = plot_ly()
       }else{
       
-      if(selected_pixel_type == '250m'){
-        evi_under_pixel = extract(data$evi_brick, sm_pixels)
-        qc_evi_under_pixel = extract(data$evi_qc_brick, sm_pixels)
-        cs  = get_custom_color_list(length(evi_under_pixel))
-        evi_p = plot_ly()
+      evi_under_pixel = extract(data$evi_brick, sm_pixels)
+      qc_evi_under_pixel = extract(data$evi_qc_brick, sm_pixels)
+      data$cs  = get_custom_color_list(length(evi_under_pixel))
+      evi_p = plot_ly()
+      
+      for (num in c(1:length(evi_under_pixel))){
+        incProgress(amount = (1/length(evi_under_pixel))*.8)
+        pixel_id = sm_pixels@polygons[[num]]@ID
+        evi = evi_under_pixel[[num]][1,]
+        evi_qc = qc_evi_under_pixel[[num]][1,]
+        dates = as.Date(names(evi),format='X%Y.%m.%d')
+        evi_brick_df = data.frame(date = dates, 
+                                   pixel = pixel_id, 
+                                   evi_raw = evi, 
+                                   evi_qc = evi_qc)
         
-        for (num in c(1:length(evi_under_pixel))){
-          incProgress(amount = (1/length(evi_under_pixel))*.8)
-          pixel_id = sm_pixels@polygons[[num]]@ID
-          evi = evi_under_pixel[[num]][1,]
-          evi_qc = qc_evi_under_pixel[[num]][1,]
-          dates = as.Date(names(evi),format='X%Y.%m.%d')
-          evi_brick_df = data.frame(date = dates, 
-                                     pixel = pixel_id, 
-                                     evi_raw = evi, 
-                                     evi_qc = evi_qc)
-          
-          # Add evi_brick_df data (one pixel worth) to a larger df with all pixels and evi
-          if (num == 1){
-            evi_pixel_data_df = evi_brick_df
-          }else {
-            evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
-          }
-          
-          evi_p = evi_p %>%
-            add_markers(
-              data = evi_brick_df,
-              x = ~ date,
-              y = ~ pixel,
-              showlegend = TRUE,
-              type = 'scatter',
-              mode = 'markers',
-              name = paste0(num,'_px_EVI_250m'),
-              marker = list(color = cs[num])
-            ) 
-          # Add transition date points to pixels if Transition dates are selected
-          if ('Transition Dates' %in% selected_data){
-            evi_p = evi_p %>% 
-              add_markers(
-                data = subset(OGMa,OGMa$pixel==num),
-                x = ~ dates,
-                y = ~ value,
-                showlegend = TRUE,
-                type = 'scatter',
-                mode = 'markers',
-                marker = list(color = cs[num], size= 10, symbol=2),
-                name = paste0(num,'_px_Onset_Greenness_Maximum') 
-              ) %>% 
-              add_markers(
-                data = subset(OGMi,OGMi$pixel==num),
-                x = ~ dates,
-                y = ~ value,
-                showlegend = TRUE,
-                type = 'scatter',
-                mode = 'markers',
-                marker = list(color = cs[num], size= 10, symbol=25),
-                name = paste0(num,'_px_Onset_Greenness_Minimum') 
-              ) %>% 
-              add_markers(
-                data = subset(OGI,OGI$pixel==num),
-                x = ~ dates,
-                y = .25,
-                showlegend = TRUE,
-                type = 'scatter',
-                mode = 'markers',
-                marker = list(color = cs[num], size= 10, symbol=5),
-                name = paste0(num,'_px_Onset_Greenness_Increase') 
-              ) %>% 
-              add_markers(
-                data = subset(OGD,OGD$pixel==num),
-                x = ~ dates,
-                y = .25,
-                showlegend = TRUE,
-                type = 'scatter',
-                mode = 'markers',
-                marker = list(color = cs[num], size= 10, symbol=6),
-                name = paste0(num,'_px_Onset_Greenness_Decrease') 
-              )
-          }
+        # Add evi_brick_df data (one pixel worth) to a larger df with all pixels and evi
+        if (num == 1){
+          evi_pixel_data_df = evi_brick_df
+        }else {
+          evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
+        }
+        
+        # evi_p = evi_p %>%
+        #   add_markers(
+        #     data = evi_brick_df,
+        #     x = ~ date,
+        #     y = ~ pixel,
+        #     showlegend = TRUE,
+        #     type = 'scatter',
+        #     mode = 'markers',
+        #     name = paste0(num,'_px_EVI_250m'),
+        #     marker = list(color = cs[num])
+        #   )
+        # # Add transition date points to pixels if Transition dates are selected
+        # if ('Transition Dates' %in% selected_data){
+        #   evi_p = evi_p %>%
+        #     add_markers(
+        #       data = subset(OGMa,OGMa$pixel==num),
+        #       x = ~ dates,
+        #       y = ~ value,
+        #       showlegend = TRUE,
+        #       type = 'scatter',
+        #       mode = 'markers',
+        #       marker = list(color = cs[num], size= 10, symbol=2),
+        #       name = paste0(num,'_px_Onset_Greenness_Maximum')
+        #     ) %>%
+        #     add_markers(
+        #       data = subset(OGMi,OGMi$pixel==num),
+        #       x = ~ dates,
+        #       y = ~ value,
+        #       showlegend = TRUE,
+        #       type = 'scatter',
+        #       mode = 'markers',
+        #       marker = list(color = cs[num], size= 10, symbol=25),
+        #       name = paste0(num,'_px_Onset_Greenness_Minimum')
+        #     ) %>%
+        #     add_markers(
+        #       data = subset(OGI,OGI$pixel==num),
+        #       x = ~ dates,
+        #       y = .25,
+        #       showlegend = TRUE,
+        #       type = 'scatter',
+        #       mode = 'markers',
+        #       marker = list(color = cs[num], size= 10, symbol=5),
+        #       name = paste0(num,'_px_Onset_Greenness_Increase')
+        #     ) %>%
+        #     add_markers(
+        #       data = subset(OGD,OGD$pixel==num),
+        #       x = ~ dates,
+        #       y = .25,
+        #       showlegend = TRUE,
+        #       type = 'scatter',
+        #       mode = 'markers',
+        #       marker = list(color = cs[num], size= 10, symbol=6),
+        #       name = paste0(num,'_px_Onset_Greenness_Decrease')
+        #     )
+        # }
+        
           } #END 250M LOOP
         evi_pixel_data_df$evi_filtered = ifelse(evi_pixel_data_df$evi_qc == 2112 | evi_pixel_data_df$evi_qc == 2114, 
                                                 evi_pixel_data_df$evi_raw, NA)
         data$evi_pixels = evi_pixel_data_df
-      }
+
       }
       print ('END EVI PLOT')
       }) #END WITH PROGRESS BAR
   } #END EVI PLOT
 
 
-    # ------------------COMPILING PLOT ------------------------------------
-    if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
-      withProgress(message = 'Compiling All Plots', value = .3, {
-      print ('Compiling plot')
-      print (selected_data)
-      vector_length = length(selected_data)
-      if ('Transition Dates' %in% selected_data){
-        vector_length = vector_length - 1
-      }
-      if('NPN' %in% selected_data){
-        vector_length = vector_length - 1
-      }
-      
-      plot_list = vector('list', vector_length)
-      print (plot_list)
-      count = 0
-      for (i in selected_data){
-        count = count + 1
-        print (i)
-        if (i == 'GCC'){
-          plot_list[[count]] = gcc_p
-        }
-        if (i =='NDVI'){
-          plot_list[[count]] = ndvi_p
-        }
-        if (i == 'EVI'){
-          plot_list[[count]] = evi_p
-        }
-      }
-      
-      print ('Compiling intermediate plot')
-      intermediate_p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE) %>%
-        layout(title='PhenoSynth Plots')
-      
-      print ('Compiling final plot')
-      # Removing unwanted mode bar options on plotly plot
-      final_plot = intermediate_p %>% config(displaylogo = FALSE,
-                                 modeBarButtonsToRemove = list(
-                                   'sendDataToCloud',
-                                   'autoScale2d',
-                                   'resetScale2d',
-                                   'hoverClosestCartesian',
-                                   'hoverCompareCartesian',
-                                   'toggleSpikelines'
-                                 )) %>%
-        layout(height = 250* vector_length, width = 1300, inline = TRUE)
-      
-      # add table for npn gridded tds
-      if(selected_pixel_type == '250m'){
-        data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
-      }else if(selected_pixel_type =='500m'){
-        data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '500m')
-      }
-      
-      # Note:
-      # this table will end up outside of this plotting observer.  The observer will just build out the
-      #   dataframe for all of the pixels and their data
-      # output$plotTable <- DT::renderDataTable(
-      #   plotTable %>% select(Site, Id, Type, Lat, Lon),
-      #   filter = 'top',
-      #   options = list(autoWidth = TRUE, scrollY = TRUE)
-      # )
-      
-      print ('Rendering plotly')
-      # Rendering plotly plot to UI called 'data_plot'
-      # Note: 
-      # This plot will also end up outside of this plotting observer.  This allows it to be reactive with the
-      #    dataframe changes in the plotting page
-      
-      
-      # output$data_plot = renderPlotly({
-      #   final_plot
-      # })
-      
-      print (paste0(selected_data, ' Plotting Completed'))
-      updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
-        }) #END WITH PROGRESS BAR
-      }
+    # # ------------------COMPILING PLOT ------------------------------------
+    # if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
+    #   withProgress(message = 'Compiling All Plots', value = .3, {
+    #   print ('Compiling plot')
+    #   print (selected_data)
+    #   vector_length = length(selected_data)
+    #   if ('Transition Dates' %in% selected_data){
+    #     vector_length = vector_length - 1
+    #   }
+    #   if('NPN' %in% selected_data){
+    #     vector_length = vector_length - 1
+    #   }
+    #   
+    #   plot_list = vector('list', vector_length)
+    #   print (plot_list)
+    #   count = 0
+    #   for (i in selected_data){
+    #     count = count + 1
+    #     print (i)
+    #     if (i == 'GCC'){
+    #       plot_list[[count]] = gcc_p
+    #     }
+    #     if (i =='NDVI'){
+    #       plot_list[[count]] = ndvi_p
+    #     }
+    #     if (i == 'EVI'){
+    #       plot_list[[count]] = evi_p
+    #     }
+    #   }
+    #   
+    #   print ('Compiling intermediate plot')
+    #   intermediate_p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE) %>%
+    #     layout(title='PhenoSynth Plots')
+    #   
+    #   print ('Compiling final plot')
+    #   # Removing unwanted mode bar options on plotly plot
+    #   final_plot = intermediate_p %>% config(displaylogo = FALSE,
+    #                              modeBarButtonsToRemove = list(
+    #                                'sendDataToCloud',
+    #                                'autoScale2d',
+    #                                'resetScale2d',
+    #                                'hoverClosestCartesian',
+    #                                'hoverCompareCartesian',
+    #                                'toggleSpikelines'
+    #                              )) %>%
+    #     layout(height = 250* vector_length, width = 1300, inline = TRUE)
+    #   
+    #   # add table for npn gridded tds
+    #   if(selected_pixel_type == '250m'){
+    #     data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
+    #   }else if(selected_pixel_type =='500m'){
+    #     data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '500m')
+    #   }
+    #   
+    #   updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+    #     }) #END WITH PROGRESS BAR
+    #   }
+    updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
   }) #END PLOTTING DATA OBSERVER
   
   
   
-  
-  
   output$plotTable <- DT::renderDataTable(
-    data$plotTable %>% select(Site, Pixel, Type, Lat, Lon),
-    filter = 'top',
-    options = list(autoWidth = TRUE, scrollY = TRUE)
-  )
+    subset(data$pixel_df, data$pixel_df$Type == '250m') %>% 
+      select(Site, Pixel, Type, Lat, Lon),
+      filter = 'top',
+      options = list(autoWidth = TRUE, scrollY = TRUE))
 
-  
-  
   
   
   # Observer to track currently selected data from Plotting Dataframe on plat panel page
   output$data_plot <- renderPlotly({
-    
     selected_data = input$dataTypes_plot
+    data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
 
     s <- req(input$plotTable_rows_all)
     sd = data$plotTable[s, , drop = FALSE]
@@ -1172,10 +1120,7 @@ server = function(input, output, session) {
             if (!is.null(click)) {
               lon_ = click$lng
               lat_ = click$lat
-
-              if (input$highlightPixelMode == TRUE){
-                showpos(x = lon_ , y = lat_, site, data$r_landcover, '500m')
-              }else if(input$highlightPixelModeNDVI == TRUE){
+              if(input$highlightPixelModeNDVI == TRUE){
                 showpos(x = lon_ , y = lat_, site, data$r_ndvi_cropped, '250m')
               }}}
           if (dim(data$pixel_df)[1] == 0){
@@ -1314,7 +1259,6 @@ server = function(input, output, session) {
       build_raster_grid(data$r_ndvi_cropped, map = 'map')
 
       shinyjs::show(id = 'highlightPixelModeNDVI')
-      shinyjs::show(id = 'highlightPixelMode')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
 
       shinyjs::show(id = 'plotRemoteData')
@@ -1389,7 +1333,6 @@ server = function(input, output, session) {
       }
       
       shinyjs::show(id = 'highlightPixelModeNDVI')
-      shinyjs::show(id = 'highlightPixelMode')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
       shinyjs::show(id = 'plotRemoteData')
@@ -1468,14 +1411,10 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'doneBuildingPlot')
     shinyjs::show(id = 'pixelTypes')
     sm_pixels = data$pixel_sps_250m
-    lg_pixels = data$pixel_sps_500m
     
     types = data$imported_types
-    print (types)
-    
-    print (sm_pixels)
-    print (lg_pixels)
-    if (is.null(sm_pixels@polygons[1][[1]]) & is.null(lg_pixels@polygons[1][[1]])){
+
+    if (is.null(sm_pixels@polygons[1][[1]])){
       print ('no pixels selected')
       shinyjs::hide(id = 'pixelTypes')
       if ('GCC' %in% types){
@@ -1485,15 +1424,17 @@ server = function(input, output, session) {
         updateSelectInput(session, 'dataTypes_plot', choices ='No Data Available')
       }
       
-    }else if (is.null(sm_pixels@polygons[1][[1]])){
-      updateSelectInput(session, 'pixelTypes', choices = c('500m'))
-      updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
-    }else if (is.null(lg_pixels@polygons[1][[1]])){
-      updateSelectInput(session, 'pixelTypes', choices = c('250m'))
-      updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
-    }else{
-      updateSelectInput(session, 'pixelTypes', choices = c('250m', '500m'))
-      updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
+      ## --remove me -- ##
+    # }else if (is.null(sm_pixels@polygons[1][[1]])){
+    #   updateSelectInput(session, 'pixelTypes', choices = c('500m'))
+    #   updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
+    # }else if (is.null(lg_pixels@polygons[1][[1]])){
+    #   updateSelectInput(session, 'pixelTypes', choices = c('250m'))
+    #   updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
+    # }else{
+    #   updateSelectInput(session, 'pixelTypes', choices = c('250m', '500m'))
+    #   updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
+      
     }
   })
   
@@ -1598,10 +1539,7 @@ server = function(input, output, session) {
 
        }else{
          # Draw the pixel polygon on the leaflet map
-         if (input$highlightPixelMode){
-           leafletProxy("map") %>%
-             addPolygons(datalon, datalat, layerId = id_, weight = 4, opacity = .95, color = 'red', group = '500m Highlighted Pixels', fillOpacity = .1)
-         }else if (input$highlightPixelModeNDVI){
+         if (input$highlightPixelModeNDVI){
            leafletProxy("map") %>%
              addPolygons(datalon, datalat, layerId = id_, weight = 4,  opacity = .95, color = 'blue', group = '250m Highlighted Pixels', fillOpacity = .1)
          }

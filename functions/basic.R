@@ -23,7 +23,6 @@ switch_to_explorer_panel = function(map_ = 'map'){
   shinyjs::hide(id = 'showHidePlot')
   shinyjs::hide(id = 'modisLegend')
   shinyjs::hide(id = 'plotpanel')
-  shinyjs::hide(id = 'highlightPixelMode')
   shinyjs::hide(id = 'highlightPixelModeNDVI')
   shinyjs::hide(id = 'plotPixelsNDVI')
   shinyjs::hide(id = 'getData')
