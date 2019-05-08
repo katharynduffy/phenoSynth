@@ -134,7 +134,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                    ),
 
            tabPanel('Plot Data', value = 'PlotPanel',
-                    plotlyOutput("data_plot", height = '100%'),
+                    plotlyOutput("data_plot", width='100%', height = 'auto'),
                     hr(),
                     actionButton('downloadData', 'Download Dataframe'),
                     hr(),

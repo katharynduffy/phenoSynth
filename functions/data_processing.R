@@ -1,3 +1,34 @@
+# Adds a title to a plotly plot
+add_title_to_plot = function(df,
+                             title_ = 'NDVI Plot(High Quality data)'){
+  
+  df_ = df %>% add_annotations(
+    text = title_,
+    x = 0.5,
+    y = 1,
+    yref = "paper",
+    xref = "paper",
+    yanchor = "bottom",
+    showarrow = FALSE,
+    font = list(size = 15)) %>%
+    layout(
+      showlegend = TRUE,
+      shapes = list(
+        type = "rect",
+        x0 = 0,
+        x1 = 1,
+        xref = "paper",
+        y0 = 0,
+        y1 = 25,
+        yanchor = 1,
+        yref = "paper",
+        ysizemode = "pixel",
+        fillcolor = toRGB("gray80"),
+        line = list(color = "transparent")))
+  return (df_)
+}
+
+
 
 # Builds a dataframe from a list of lat/lngs and the netcdf from AppEEARS with the 6 layers
 get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
