@@ -28,6 +28,7 @@ server = function(input, output, session) {
                       draw_mode = FALSE,
                       run   = 0,
                       names = c(),
+                      plot_data_table = FALSE,
                       df    = data.frame(),
                       all_data = data.frame(),
                       veg_types = c(),
@@ -134,7 +135,7 @@ server = function(input, output, session) {
     #   footer = modalButton('Enter Phenosynth')
     # )))
     switch_to_explorer_panel()
-    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     panel$mode = 'explorer'
@@ -570,7 +571,7 @@ server = function(input, output, session) {
     print ('Switching to Explorer Mode')
     panel$mode = 'explorer'
     switch_to_explorer_panel()
-    data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
   })
@@ -585,6 +586,9 @@ server = function(input, output, session) {
     
     print (sm_pixels)
     print (lg_pixels)
+    
+    # Empty dataframes to use for plotting
+    pixel_data_df = data
 
     # Inputs from popup
     selected_data = input$dataTypes_plot
@@ -598,6 +602,7 @@ server = function(input, output, session) {
       withProgress(message = 'Building GCC Plot', value = .1, {
       print ('Plotting GCC')
       gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
+      data$gcc_p = gcc_p
       }) #END WITH PROGRESS BAR
     } #END GCC PLOT
     
@@ -605,8 +610,11 @@ server = function(input, output, session) {
     if ('NPN' %in% selected_data){
       print ('Plotting NPN')
       ############################
-      # What does this look like #
-      #     ?????????????????    #
+      # Add the NPN data into the 
+      # Dataframe which has all 
+      # of the selected pixels
+      # and all their corresponding 
+      # data
       ############################
     } #END NPN PLOT
     
@@ -643,61 +651,47 @@ server = function(input, output, session) {
       }else{
 
         if(selected_pixel_type == '250m'){
-          ndvi_brick = data$ndvi_brick
-          ndvi_under_pixel = extract(ndvi_brick, sm_pixels)
+          ndvi_under_pixel = extract(data$ndvi_brick, sm_pixels)
+          qc_ndvi_under_pixel = extract(data$ndvi_qc_brick, sm_pixels)
           cs  = get_custom_color_list(length(ndvi_under_pixel))
           ndvi_p = plot_ly()
           
           for (num in c(1:length(ndvi_under_pixel))){
             incProgress(amount = (1/length(ndvi_under_pixel))*.8)
-            px = ndvi_under_pixel[[num]][1,]
-            dates = as.Date(names(px),format='X%Y.%m.%d')
-            ndvi_brick_df = data.frame(date = dates, pixel = px)
+            pixel_id = sm_pixels@polygons[[num]]@ID
+            ndvi = ndvi_under_pixel[[num]][1,]
+            ndvi_qc = qc_ndvi_under_pixel[[num]][1,]
+            dates = as.Date(names(ndvi),format='X%Y.%m.%d')
+            ndvi_brick_df = data.frame(date = dates, 
+                                       pixel = pixel_id, 
+                                       ndvi_raw = ndvi, 
+                                       ndvi_qc = ndvi_qc)
             
-            # add smoothing function
             
-            ndvi_p = ndvi_p %>%
+            # Add ndvi_brick_df data (one pixel worth) to a larger df with all pixels and ndvi
+            if (num == 1){
+              ndvi_pixel_data_df = ndvi_brick_df
+            }else {
+              ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
+            }
+            
+            # Build NDVI plot
+            data$ndvi_p = ndvi_p %>%
               add_markers(
               data = ndvi_brick_df,
               x = ~ date,
-              y = ~ pixel,
+              y = ~ ndvi_raw,
               showlegend = TRUE,
               type = 'scatter',
               mode = 'markers',
               name = paste0(num,'_px_NDVI_250m'),
               marker = list(color = cs[num])
-            )
-          }
-        } else if (selected_pixel_type == '500m'){
-          ndvi_brick = data$ndvi_brick
-          ndvi_under_pixel = extract(ndvi_brick, lg_pixels)
-          values_in_pixel = dim(ndvi_under_pixel[[1]])[[1]]
-          cs  = get_custom_color_list(length(ndvi_under_pixel)*values_in_pixel)
-          print (cs)
-          ndvi_p = plot_ly()
-          
-          for (num in c(1:length(ndvi_under_pixel))){
-            
-            for (num_quad in c(1:values_in_pixel)){
-              px = ndvi_under_pixel[[num]][num_quad,]
-              dates = as.Date(names(px),format='X%Y.%m.%d')
-              ndvi_brick_df = data.frame(date = dates, pixel = px)
-              
-              letter = c('A', 'B', 'C', 'D')[num_quad]
-              ndvi_p = ndvi_p %>%
-                add_markers(
-                  data = ndvi_brick_df,
-                  x = ~ date,
-                  y = ~ pixel,
-                  showlegend = TRUE,
-                  type = 'scatter',
-                  mode = 'markers',
-                  name = paste0(num,'_',letter,'_px_NDVI_500m'),
-                  marker = list(color = cs[((num-1)*4)+num_quad])
-                )
-              }
+              )
             }
-          }
+        }
+        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 2114, 
+                                                  ndvi_pixel_data_df$ndvi_raw, NA)
+        data$ndvi_pixels = ndvi_pixel_data_df
         }
         })# END WITH PROGRESS BAR
       } #END NDVI PLOT
@@ -714,17 +708,28 @@ server = function(input, output, session) {
       }else{
       
       if(selected_pixel_type == '250m'){
-        evi_brick = data$evi_brick
-        evi_under_pixel = extract(evi_brick, sm_pixels)
+        evi_under_pixel = extract(data$evi_brick, sm_pixels)
+        qc_evi_under_pixel = extract(data$evi_qc_brick, sm_pixels)
         cs  = get_custom_color_list(length(evi_under_pixel))
-        
         evi_p = plot_ly()
+        
         for (num in c(1:length(evi_under_pixel))){
           incProgress(amount = (1/length(evi_under_pixel))*.8)
-          px = evi_under_pixel[[num]][1,]
-          dates = as.Date(names(px),format='X%Y.%m.%d')
-          evi_brick_df = data.frame(date = dates, pixel = px)
-          # add smoothing
+          pixel_id = sm_pixels@polygons[[num]]@ID
+          evi = evi_under_pixel[[num]][1,]
+          evi_qc = qc_evi_under_pixel[[num]][1,]
+          dates = as.Date(names(evi),format='X%Y.%m.%d')
+          evi_brick_df = data.frame(date = dates, 
+                                     pixel = pixel_id, 
+                                     evi_raw = evi, 
+                                     evi_qc = evi_qc)
+          
+          # Add evi_brick_df data (one pixel worth) to a larger df with all pixels and evi
+          if (num == 1){
+            evi_pixel_data_df = evi_brick_df
+          }else {
+            evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
+          }
           
           evi_p = evi_p %>%
             add_markers(
@@ -781,34 +786,11 @@ server = function(input, output, session) {
                 name = paste0(num,'_px_Onset_Greenness_Decrease') 
               )
           }
-        } #END 250M LOOP
-      } else if (selected_pixel_type == '500m'){
-        evi_brick = data$evi_brick
-        evi_under_pixel = extract(evi_brick, lg_pixels)
-        values_in_pixel = dim(evi_under_pixel[[1]])[[1]]
-        cs  = get_custom_color_list(length(evi_under_pixel)*values_in_pixel)
-        evi_p = plot_ly()
-        
-        for (num in c(1:length(evi_under_pixel))){
-          for (num_quad in c(1:values_in_pixel)){
-            px = evi_under_pixel[[num]][num_quad,]
-            dates = as.Date(names(px),format='X%Y.%m.%d')
-            evi_brick_df = data.frame(date = dates, pixel = px)
-            
-            letter = c('A', 'B', 'C', 'D')[num_quad]
-            evi_p = evi_p %>%
-              add_markers(
-                data = evi_brick_df,
-                x = ~ date,
-                y = ~ pixel,
-                showlegend = TRUE,
-                type = 'scatter',
-                mode = 'markers',
-                name = paste0(num,'_',letter,'_px_EVI_500m'),
-                marker = list(color = cs[((num-1)*4)+num_quad]))
-          }
-        }
-      } #END 500M LOOP
+          } #END 250M LOOP
+        evi_pixel_data_df$evi_filtered = ifelse(evi_pixel_data_df$evi_qc == 2112 | evi_pixel_data_df$evi_qc == 2114, 
+                                                evi_pixel_data_df$evi_raw, NA)
+        data$evi_pixels = evi_pixel_data_df
+      }
       }
       print ('END EVI PLOT')
       }) #END WITH PROGRESS BAR
@@ -864,28 +846,300 @@ server = function(input, output, session) {
       
       # add table for npn gridded tds
       if(selected_pixel_type == '250m'){
-        plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
+        data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
       }else if(selected_pixel_type =='500m'){
-        plotTable = subset(data$pixel_df, data$pixel_df$Type == '500m')
+        data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '500m')
       }
-      output$plotTable <- DT::renderDataTable(
-        plotTable %>% select(Site, Id, Type, Lat, Lon),
-        filter = 'top',
-        options = list(autoWidth = TRUE, scrollY = TRUE)
-      )
+      
+      # Note:
+      # this table will end up outside of this plotting observer.  The observer will just build out the
+      #   dataframe for all of the pixels and their data
+      # output$plotTable <- DT::renderDataTable(
+      #   plotTable %>% select(Site, Id, Type, Lat, Lon),
+      #   filter = 'top',
+      #   options = list(autoWidth = TRUE, scrollY = TRUE)
+      # )
       
       print ('Rendering plotly')
       # Rendering plotly plot to UI called 'data_plot'
-      output$data_plot = renderPlotly({
-        final_plot
-      })
+      # Note: 
+      # This plot will also end up outside of this plotting observer.  This allows it to be reactive with the
+      #    dataframe changes in the plotting page
+      
+      
+      # output$data_plot = renderPlotly({
+      #   final_plot
+      # })
       
       print (paste0(selected_data, ' Plotting Completed'))
       updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
         }) #END WITH PROGRESS BAR
       }
   }) #END PLOTTING DATA OBSERVER
+  
+  
+  
+  
+  
+  output$plotTable <- DT::renderDataTable(
+    data$plotTable %>% select(Site, Pixel, Type, Lat, Lon),
+    filter = 'top',
+    options = list(autoWidth = TRUE, scrollY = TRUE)
+  )
 
+  
+  
+  
+  
+  # Observer to track currently selected data from Plotting Dataframe on plat panel page
+  output$data_plot <- renderPlotly({
+    
+    selected_data = input$dataTypes_plot
+
+    s <- req(input$plotTable_rows_all)
+    sd = data$plotTable[s, , drop = FALSE]
+
+    ndvi_pixel_data_df = data$ndvi_pixels
+    rownames(ndvi_pixel_data_df) = NULL
+    
+    evi_pixel_data_df = data$evi_pixels
+    rownames(evi_pixel_data_df) = NULL
+    
+    print (as_tibble(sd))
+    print (as_tibble(ndvi_pixel_data_df))
+    print (as_tibble(evi_pixel_data_df))
+
+    # #NDVI
+    p_ndvi = ndvi_pixel_data_df %>%
+      subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
+      select(pixel, date, ndvi_filtered) %>%
+      mutate(pixel = paste0('NDVI_', pixel), Date = date) %>%
+      arrange(pixel, Date) %>%
+      plot_ly(x = ~date,
+              y = ~ndvi_filtered) %>%
+      add_trace(
+        mode = 'markers',
+        type = "scatter",
+        color = ~pixel,
+        colors = rainbow(6),
+        marker = list(size = 5),
+        showlegend = TRUE,
+        legendgroup = ~pixel,
+        text = ~paste("Date: ", Date,
+                      '<br>Pixel: ', pixel,
+                      '<br>Data: ndvi')) %>%
+      layout(xaxis = list(title = "Date"),
+             yaxis = list(title = "Highest Quality NDVI")) %>%
+      add_annotations(
+        text = 'NDVI Plot (High Quality data)',
+        x = 0.5,
+        y = 1,
+        yref = "paper",
+        xref = "paper",
+        yanchor = "bottom",
+        showarrow = FALSE,
+        font = list(size = 15)) %>%
+      layout(
+        showlegend = TRUE,
+        shapes = list(
+          type = "rect",
+          x0 = 0,
+          x1 = 1,
+          xref = "paper",
+          y0 = 0,
+          y1 = 25,
+          yanchor = 1,
+          yref = "paper",
+          ysizemode = "pixel",
+          fillcolor = toRGB("gray80"),
+          line = list(color = "transparent")))
+    
+    # #NDVI RAW
+    p_ndvi_raw = ndvi_pixel_data_df %>%
+      subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
+      select(pixel, date, ndvi_raw) %>%
+      mutate(pixel = paste0('NDVI_', pixel), Date = date) %>%
+      arrange(pixel, Date) %>%
+      plot_ly(x = ~date,
+              y = ~ndvi_raw) %>%
+      add_trace(
+        mode = 'markers',
+        type = "scatter",
+        color = ~pixel,
+        colors = rainbow(6),
+        marker = list(size = 5),
+        showlegend = TRUE,
+        legendgroup = ~pixel,
+        text = ~paste("Date: ", Date,
+                      '<br>Pixel: ', pixel,
+                      '<br>Data: ndvi')) %>%
+      layout(xaxis = list(title = "Date"),
+             yaxis = list(title = "Highest Quality NDVI")) %>%
+      add_annotations(
+        text = 'NDVI Plot (All data)',
+        x = 0.5,
+        y = 1,
+        yref = "paper",
+        xref = "paper",
+        yanchor = "bottom",
+        showarrow = FALSE,
+        font = list(size = 15)) %>%
+      layout(
+        showlegend = TRUE,
+        shapes = list(
+          type = "rect",
+          x0 = 0,
+          x1 = 1,
+          xref = "paper",
+          y0 = 0,
+          y1 = 25,
+          yanchor = 1,
+          yref = "paper",
+          ysizemode = "pixel",
+          fillcolor = toRGB("gray80"),
+          line = list(color = "transparent")))
+    
+    
+    # EVI
+    p_evi = evi_pixel_data_df %>%
+      subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
+      select(pixel, date, evi_filtered) %>%
+      mutate(pixel = paste0('EVI_', pixel), Date = date) %>%
+      arrange(pixel, Date) %>%
+      plot_ly(x = ~date,
+              y = ~evi_filtered) %>%
+      add_trace(
+        mode = 'markers',
+        type = "scatter",
+        color = ~pixel,
+        colors = rainbow(6),
+        marker = list(size = 5),
+        showlegend = TRUE,
+        legendgroup = ~pixel,
+        text = ~paste("Date: ", Date,
+                      '<br>Pixel: ', pixel,
+                      '<br>Data: EVI')) %>%
+      layout(xaxis = list(title = "Date"),
+             yaxis = list(title = "Highest Quality EVI"))  %>%
+      add_annotations(
+        text = 'EVI Plot',
+        x = 0.5,
+        y = 1,
+        yref = "paper",
+        xref = "paper",
+        yanchor = "bottom",
+        showarrow = FALSE,
+        font = list(size = 15)) %>%
+      layout(
+        showlegend = TRUE,
+        shapes = list(
+          type = "rect",
+          x0 = 0,
+          x1 = 1,
+          xref = "paper",
+          y0 = 0,
+          y1 = 25,
+          yanchor = 1,
+          yref = "paper",
+          ysizemode = "pixel",
+          fillcolor = toRGB("gray80"),
+          line = list(color = "transparent")))
+    
+    
+    
+    # EVI RAW
+    p_evi_raw = evi_pixel_data_df %>%
+      subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
+      select(pixel, date, evi_raw) %>%
+      mutate(pixel = paste0('EVI_', pixel), Date = date) %>%
+      arrange(pixel, Date) %>%
+      plot_ly(x = ~date,
+              y = ~evi_raw) %>%
+      add_trace(
+        mode = 'markers',
+        type = "scatter",
+        color = ~pixel,
+        colors = rainbow(6),
+        marker = list(size = 5),
+        showlegend = TRUE,
+        legendgroup = ~pixel,
+        text = ~paste("Date: ", Date,
+                      '<br>Pixel: ', pixel,
+                      '<br>Data: EVI')) %>%
+      layout(xaxis = list(title = "Date"),
+             yaxis = list(title = "Highest Quality EVI"))  %>%
+      add_annotations(
+        text = 'EVI Plot',
+        x = 0.5,
+        y = 1,
+        yref = "paper",
+        xref = "paper",
+        yanchor = "bottom",
+        showarrow = FALSE,
+        font = list(size = 15)) %>%
+      layout(
+        showlegend = TRUE,
+        shapes = list(
+          type = "rect",
+          x0 = 0,
+          x1 = 1,
+          xref = "paper",
+          y0 = 0,
+          y1 = 25,
+          yanchor = 1,
+          yref = "paper",
+          ysizemode = "pixel",
+          fillcolor = toRGB("gray80"),
+          line = list(color = "transparent")))
+    
+    # GCC
+    gcc_p = data$gcc_p %>%         
+      add_annotations(
+      text = 'GCC Plot',
+      x = 0.5,
+      y = 1,
+      yref = "paper",
+      xref = "paper",
+      yanchor = "bottom",
+      showarrow = FALSE,
+      font = list(size = 15)) %>%
+      layout(
+        showlegend = TRUE,
+        shapes = list(
+          type = "rect",
+          x0 = 0,
+          x1 = 1,
+          xref = "paper",
+          y0 = 0,
+          y1 = 25,
+          yanchor = 1,
+          yref = "paper",
+          ysizemode = "pixel",
+          fillcolor = toRGB("gray80"),
+          line = list(color = "transparent")))
+
+    # Build list of plots to show
+    plot_list_ = list(gcc_p, p_ndvi, p_ndvi_raw)
+    vector_length = 3
+
+    p = subplot(plot_list_, nrows = length(plot_list_), shareX = TRUE)
+    p  %>% config(displaylogo = FALSE,
+                  modeBarButtonsToRemove = list(
+                    'sendDataToCloud',
+                    'autoScale2d',
+                    'resetScale2d',
+                    'hoverClosestCartesian',
+                    'hoverCompareCartesian',
+                    'toggleSpikelines',
+                    'lasso2d',
+                    'select2d')) %>%
+      layout(height = 250* vector_length, inline = TRUE)
+  })
+  
+  
+  
+  
+  
 
 
   # Button that hides GCC Plot
@@ -938,7 +1192,7 @@ server = function(input, output, session) {
     for (id_ in ids){
       remove_polyline(id = id_, all = FALSE)
     }
-    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Id", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
     data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     shinyjs::hide(id = 'clearPixels')
@@ -1311,16 +1565,16 @@ server = function(input, output, session) {
 
        datalon = c(xclose, xfar, xfar, xclose ,xclose)
        datalat = c(yclose, yclose, yfar, yfar, yclose)
-       id_     = paste0(name, '_', row, '_', col, '_', vegindex)
+       id_     = paste0(row, '_', col)
        
        print (datalon)
        print (datalat)
        print (midcell)
 
        # Check to see if already drawn, and if so remove it from df and leaflet map
-       if (id_ %in% data$pixel_df$Id){
+       if (id_ %in% data$pixel_df$Pixel){
          remove_polyline(id = id_, all = FALSE)
-         data$pixel_df = subset(data$pixel_df, Id!=id_)
+         data$pixel_df = subset(data$pixel_df, Pixel!=id_)
 
          if (type_ == '500m'){
            # Remove polygon from data$pixel_sps_500m
@@ -1358,7 +1612,7 @@ server = function(input, output, session) {
          print (ps)
 
          # Build Dataframe   reactive value = data$pixel_df
-         data$pixel_df = rbind(data$pixel_df, data.frame(Id = id_, Site = name, Type = type_, Lat = midcelly, Lon = midcellx, pft = vegindex,
+         data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, Type = type_, Lat = midcelly, Lon = midcellx, pft = vegindex,
                                                          pt1_lat = datalat[1], pt1_lon = datalon[1],
                                                          pt2_lat = datalat[2], pt2_lon = datalon[2],
                                                          pt3_lat = datalat[3], pt3_lon = datalon[3],
