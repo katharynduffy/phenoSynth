@@ -34,9 +34,9 @@ phenocam$data = get_site_roi_csvs(name        = site,
                                           percentile_ = percentile_gcc,
                                           roi_type_   = roi_type_)
         
-        #phenocam$gcc    = phenocam$data[[1]]
-        #phenocam$spring = phenocam$data[[2]]
-        #phenocam$fall   = phenocam$data[[3]]
+        phenocam$gcc    = phenocam$data[[1]]
+        phenocam$spring = phenocam$data[[2]]
+        phenocam$fall   = phenocam$data[[3]]
 
 
 ```
