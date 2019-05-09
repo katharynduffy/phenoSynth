@@ -14,7 +14,7 @@ library(stats)
 ```{r}
 rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
 roi_files = rois$results
-df=fread(roi_files$one_day_summary[1])
+df=fread(roi_files$one_day_summary[572])
 df$date=as.Date(df$date)
 ```
 
@@ -59,3 +59,21 @@ csv=data.frame()
         csv=rbind(csv, c)}}
     
 ```
+
+```{r}
+site='acadia'
+percentile_gcc = 90
+roi_type_='DB'
+phenocam$data = get_site_roi_csvs(name        = site,
+                                          roi_files_  = roi_files,
+                                          frequency_  = 1,
+                                          percentile_ = percentile_gcc,
+                                          roi_type_   = roi_type_)
+        
+        #phenocam$gcc    = phenocam$data[[1]]
+        #phenocam$spring = phenocam$data[[2]]
+        #phenocam$fall   = phenocam$data[[3]]
+
+
+```
+

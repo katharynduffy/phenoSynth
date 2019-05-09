@@ -27,7 +27,7 @@ response
 #------------------------------------------------------------------------------------------
 # Add your file path to phenosynth here:
 # '/path/to/folder/with/app/phenosynth'
-file_root = '/path/to/folder/with/app/phenosynth'
+file_root = '/Users/kdw223/Research/PostDoc/phenoSynth'
 #------------------------------------------------------------------------------------------
 
 test_download_dir = paste0(file_root, '/www/downloads_test')
@@ -304,11 +304,13 @@ high_quality_land = subset(high_quality, Land.Water.Mask == 'Land (Nothing else 
 high_quality_land
 
 pixel_df_test = pixel_df
-pixel_df_test$ndvi_filtered = ifelse(pixel_df_test$ndvi_qc == 2112 | pixel_df_test$ndvi_qc == 2114, pixel_df_test$ndvi, NULL)
+pixel_df_test2$ndvi_filtered = pixel_df_test%>%filter(pixel_df_test$ndvi_qc == 2112 | pixel_df_test$ndvi_qc == 2114)
+#, pixel_df_test$ndvi, NULL)
 pixel_df_test
 ```
 
 
+Notes: remove entire rows with NA value for EVI/NDVI
 
 
 
