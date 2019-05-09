@@ -10,16 +10,10 @@ author: "K. Duffy"
 date: "September 19, 2018"
 output: html_document
 ---
-```{r}
-library(data.table)
-library(zoo)
-library(stats)
-```
 
+#Run global file first
 
 ```{r}
-rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
-roi_files = rois$results
 df=fread(roi_files$one_day_summary[572])
 df$date=as.Date(df$date)
 ```
