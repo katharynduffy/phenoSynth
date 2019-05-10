@@ -1,8 +1,41 @@
-##User Guide for PhenoSynth
+# User Guide for PhenoSynth
 
-ROI represents a region of interest determined during PhenoCam processing
-but does not necessarily represent the dominant vegetation at in the region.  
-For additional reference see xROI, a Shiny R package developed by Bijan
-Seyednasrollah : https://github.com/bnasr/xROI.git
+***
+### 1. Getting Started
 
-(will add more today/tomorrow)
+>To launch the phenoSynth App navigate to the [phenoSynth repository](https://github.com/katharynduffy/phenoSynth) and click on the phenoSynth logo:
+
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 11.29.42 AM.png)
+<br>
+\vspace{12pt}
+
+>Alternately, if you have Rstudio installed on your computer, you can clone or download the app as a .zip file as follow:
+
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 11.30.20 AM.png)
+
+<br>
+
+```
+git clone https://github.com/katharynduffy/phenoSynth.git
+```
+***
+\newpage
+
+### 2. Launching the App
+
+>If you decided to download or clone the app, launch it within RStudio by opening the global.R file and clicking the Run App button:
+
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 12.07.24 PM.png)
+
+<br>
+
+>Once the App has launched you should be directed to the site explorer interface:
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 12.23.32 PM.png)
+
+
+
+
