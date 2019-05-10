@@ -514,7 +514,7 @@ server = function(input, output, session) {
         addLegend(values = c(1,2), position = 'bottomright', title = 'Vegetation Cover Agreement',
                   colors = c('green', 'grey'), labels = c('ROI-Match', 'No-Match')) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                         overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels'),
+                         overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                          position = c("topleft"),
                          options = layersControlOptions(collapsed = FALSE))
     }
@@ -540,7 +540,7 @@ server = function(input, output, session) {
           addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
           addRasterImage(rc, opacity = .35, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                           overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels'),
+                           overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE))
         
