@@ -23,13 +23,13 @@ df
 
 
 ```{r}
-to_grab=roi_files
+to_grab=roi_files[572,]
 
 site=to_grab$site
 percentile_gcc = 90
 roi_type_=to_grab$roitype
 phenocam$data = get_site_roi_csvs(name        = site,
-                                          roi_files_  = to_grab,
+                                          roi_files_  = roi_files_,
                                           frequency_  = 1,
                                           percentile_ = percentile_gcc,
                                           roi_type_   = roi_type_)

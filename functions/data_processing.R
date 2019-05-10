@@ -305,7 +305,7 @@ get_site_roi_csvs = function(name, roi_files_, frequency_,
   return(list(plot_data, spring, fall, phenology_header))
 }
 
-# test = get_site_roi_csvs('acadia', roi_files, frequency_ = 3, metrics_ = c('gcc_90'), percentile_ = 90, roi_type_ = 'DB')
+#test = get_site_roi_csvs('acadia', roi_files, frequency_ = 3, metrics_ = c('gcc_90'), percentile_ = 90, roi_type_ = 'DB')
 # test = get_site_roi_csvs('arbutuslakeinlet', roi_files, frequency_ = 1, metrics_ = c('gcc_90'), percentile_ = 90, roi_type_ = 'EN')
 # test = get_site_roi_csvs('arbutuslakeinlet', roi_files, frequency_ = 3, metrics_ = c('gcc_90'), percentile_ = 90, roi_type_ = 'DB')
 
