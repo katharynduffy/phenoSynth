@@ -33,7 +33,7 @@ server = function(input, output, session) {
                       all_data = data.frame(),
                       veg_types = c(),
                       pixel_sps = SpatialPolygons(list()),
-                      pixel_sps_500m = SpatialPolygons(list()),
+                      #pixel_sps_500m = SpatialPolygons(list()),
                       pixel_sps_250m = SpatialPolygons(list()))
 
   # Empty reactive spdf
@@ -136,7 +136,7 @@ server = function(input, output, session) {
     # )))
     switch_to_explorer_panel()
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    data$pixel_sps_500m = SpatialPolygons(list())
+    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     panel$mode = 'explorer'
     data$df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
@@ -553,7 +553,7 @@ server = function(input, output, session) {
     panel$mode = 'explorer'
     switch_to_explorer_panel()
     data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    data$pixel_sps_500m = SpatialPolygons(list())
+    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
   })
 
@@ -1085,7 +1085,7 @@ server = function(input, output, session) {
       remove_polyline(id = id_, all = FALSE)
     }
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    data$pixel_sps_500m = SpatialPolygons(list())
+    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     shinyjs::hide(id = 'clearPixels')
   })
@@ -1481,7 +1481,7 @@ server = function(input, output, session) {
            lst_ = lst[-(pos)]
            data$pixel_sps_250m = data$pixel_sps_250m[lst_]
          }
-         print ('Dataframe of all highlighted pixels (250m + 500m)')
+         print ('Dataframe of all highlighted pixels (250m)')
          print (data$pixel_df)
 
        }else{
@@ -1527,7 +1527,7 @@ server = function(input, output, session) {
          print ((data$pixel_sps_500m))
          print ('250m Grid Sp Object info:')
          print ((data$pixel_sps_250m))
-         print ('Dataframe of all highlighted pixels (250m + 500m)')
+         print ('Dataframe of all highlighted pixels (250m)')
          print (data$pixel_df)
        }
      }

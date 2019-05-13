@@ -3,19 +3,23 @@
 ***
 ### 1. Getting Started
 
->To launch the phenoSynth App navigate to the [phenoSynth repository](https://github.com/katharynduffy/phenoSynth) and click on the phenoSynth logo:
+To launch the phenoSynth App navigate to the [phenoSynth repository](https://github.com/katharynduffy/phenoSynth) and click on the phenoSynth logo:
 
 
 ![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 11.29.42 AM.png)
 <br>
-\vspace{12pt}
 
->Alternately, if you have Rstudio installed on your computer, you can clone or download the app as a .zip file as follow:
+\vspace{24pt}
+
+Alternately, if you have Rstudio installed on your computer, you can clone or download the app as a .zip file like so:
 
 
 ![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 11.30.20 AM.png)
 
-<br>
+$~$
+
+
+Clone the github repo in your terminal like so: 
 
 ```
 git clone https://github.com/katharynduffy/phenoSynth.git
@@ -25,17 +29,29 @@ git clone https://github.com/katharynduffy/phenoSynth.git
 
 ### 2. Launching the App
 
->If you decided to download or clone the app, launch it within RStudio by opening the global.R file and clicking the Run App button:
+***
+
+$~$
+
+If you decided to download or clone the app, launch it within RStudio by opening the global.R file and clicking the Run App button:
 
 
 ![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 12.07.24 PM.png)
 
-<br>
+$~$
 
->Once the App has launched you should be directed to the site explorer interface:
+
+Once the App has launched you should be directed to the site explorer interface:
+
+$~$
+
 
 ![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 12.23.32 PM.png)
 
+
+***
+
+### 3. Navigating the App
 
 
 
