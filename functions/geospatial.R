@@ -102,7 +102,7 @@ build_raster_grid = function(raster_, map_ = NULL){
     print ('Adding Raster grid to map')
     leafletProxy(map_) %>% addPolylines(data = sp_lines, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid') %>%
       addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
-                       overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '500m Highlighted Pixels', '250m Highlighted Pixels', '250m MODIS Grid'),
+                       overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '250m MODIS Grid'),
                        position = c("topleft"),
                        options = layersControlOptions(collapsed = FALSE)) %>%
       hideGroup('500m Highlighted Pixels') %>%

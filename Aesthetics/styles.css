@@ -6,6 +6,17 @@
   width:280px;
 }*/
 
+#plotTheseBoxes{
+  margin-top: 55px;
+  margin-left: 30px;
+}
+
+#plotTheseBoxes h4{
+  height: 30px;
+  margin-bottom: 5px;
+}
+
+
 /* PhenoSynth LOGO */
 #phenoSynthLogo{
   position: fixed;
@@ -57,9 +68,6 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   height: 100%;
 }
 /**/
-
-
-
 
 .leaflet-top.leaflet-left {
   margin-top: 25px;

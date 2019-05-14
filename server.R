@@ -572,6 +572,39 @@ server = function(input, output, session) {
     selected_data = input$dataTypes_plot
     selected_pixel_type = input$pixelTypes
     
+    # plot_selected = c()
+    # if ('GCC' %in% selected_data){plot_selected = c(plot_selected, 'GCC')}
+    # if ('NDVI' %in% selected_data){plot_selected = c(plot_selected, 'hiq_ndvi', 'all_ndvi')}
+    # if ('EVI' %in% selected_data){plot_selected = c(plot_selected, 'hiq_evi', 'all_evi')}
+    # if ('Transition Dates' %in% selected_data){plot_selected = c(plot_selected, 'tds_sat')}
+    # updateCheckboxGroupInput(session, inputId = 'plotTheseBoxes', 
+    #                          choices  = plot_selected,
+    #                          selected = plot_selected,
+    #                          inline   = TRUE)
+    plot_selected = c()
+    plot_choices = list()
+    if ('GCC' %in% selected_data){
+      plot_choices[['GCC']] = 'GCC'
+      plot_selected = c(plot_selected, 'GCC')}
+    if ('NDVI' %in% selected_data){
+      plot_choices[['High Quality NDVI']] = 'hiq_ndvi'
+      plot_choices[['All NDVI']] = 'all_ndvi'
+      plot_selected = c(plot_selected, 'hiq_ndvi', 'all_ndvi')}
+    if ('EVI' %in% selected_data){
+      plot_choices[['High Quality EVI']] = 'hiq_evi'
+      plot_choices[['All EVI']] = 'all_evi'
+      plot_selected = c(plot_selected, 'hiq_evi', 'all_evi')}
+    if ('Transition Dates' %in% selected_data){
+      plot_choices[['Transition Dates (EVI/NDVI)']] = 'tds_sat'
+      plot_selected = c(plot_selected, 'tds_sat')}
+    
+    updateCheckboxGroupInput(session, inputId = 'plotTheseBoxes',
+                             choices  = plot_choices,
+                             selected = plot_selected,
+                             inline   = TRUE)
+    
+    
+    
     print (paste0('Plotting: ', selected_data))
     
     
@@ -842,7 +875,11 @@ server = function(input, output, session) {
   # Observer to track currently selected data from Plotting Dataframe on plat panel page
   output$data_plot <- renderPlotly({
     selected_data = input$dataTypes_plot
+    
+    selected_plots = input$plotTheseBoxes
     data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
+
+    print (selected_plots)
 
     s <- req(input$plotTable_rows_all)
     sd = data$plotTable[s, , drop = FALSE]
@@ -857,159 +894,169 @@ server = function(input, output, session) {
     print (as_tibble(ndvi_pixel_data_df))
     print (as_tibble(evi_pixel_data_df))
     
-    print (selected_data)
-    
-    # BUILD NDVI PLOTLY PLOTS
     if ('NDVI' %in% selected_data){
-      # NDVI
-      p_ndvi = ndvi_pixel_data_df %>%
-        subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
-        select(pixel, date, ndvi_filtered) %>%
-        mutate(pixel = paste0('NDVI_high_', pixel), Date = date) %>%
-        arrange(pixel, Date) %>%
-        plot_ly(x = ~date,
-                y = ~ndvi_filtered) %>%
-        add_trace(
-          mode = 'markers',
-          type = "scatter",
-          color = ~pixel,
-          colors = rainbow(6),
-          marker = list(size = 5),
-          showlegend = TRUE,
-          legendgroup = ~pixel,
-          text = ~paste("Date: ", Date,
-                        '<br>Pixel: ', pixel,
-                        '<br>Data: ndvi')) %>%
-        layout(xaxis = list(title = "Date"))
-      p_ndvi = add_title_to_plot(df = p_ndvi,
-                                 title_ = 'NDVI Plot (High Quality data)')
+      # NDVI HIGH QUALITY
+      if ('hiq_ndvi' %in% selected_plots){
+        p_ndvi = ndvi_pixel_data_df %>%
+          subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
+          select(pixel, date, ndvi_filtered) %>%
+          mutate(pixel = paste0('NDVI_high_', pixel), Date = date) %>%
+          arrange(pixel, Date) %>%
+          plot_ly(x = ~date,
+                  y = ~ndvi_filtered) %>%
+          add_trace(
+            mode = 'markers',
+            type = "scatter",
+            color = ~pixel,
+            colors = c('green', 'dark green'),
+            marker = list(size = 5),
+            showlegend = TRUE,
+            legendgroup = ~pixel,
+            text = ~paste("Date: ", Date,
+                          '<br>Pixel: ', pixel,
+                          '<br>Data: ndvi')) %>%
+          layout(xaxis = list(title = "Date"))
+        p_ndvi = add_title_to_plot(df = p_ndvi,
+                                   title_ = 'NDVI Plot (High Quality data)')
+      }
       # NDVI RAW
-      p_ndvi_raw = ndvi_pixel_data_df %>%
-        subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
-        select(pixel, date, ndvi_raw) %>%
-        mutate(pixel = paste0('NDVI_all_', pixel), Date = date) %>%
-        arrange(pixel, Date) %>%
-        plot_ly(x = ~date,
-                y = ~ndvi_raw) %>%
-        add_trace(
-          mode = 'markers',
-          type = "scatter",
-          color = ~pixel,
-          colors = rainbow(6),
-          marker = list(size = 5),
-          showlegend = TRUE,
-          legendgroup = ~pixel,
-          text = ~paste("Date: ", Date,
-                        '<br>Pixel: ', pixel,
-                        '<br>Data: ndvi')) %>%
-        layout(xaxis = list(title = "Date"))
-      p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
-                                     title_ = 'NDVI Plot (All data)')
+      if ('all_ndvi' %in% selected_plots){
+        p_ndvi_raw = ndvi_pixel_data_df %>%
+          subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
+          select(pixel, date, ndvi_raw) %>%
+          mutate(pixel = paste0('NDVI_all_', pixel), Date = date) %>%
+          arrange(pixel, Date) %>%
+          plot_ly(x = ~date,
+                  y = ~ndvi_raw) %>%
+          add_trace(
+            mode = 'markers',
+            type = "scatter",
+            color = ~pixel,
+            colors = c('green', 'dark green'),
+            marker = list(size = 5),
+            showlegend = TRUE,
+            legendgroup = ~pixel,
+            text = ~paste("Date: ", Date,
+                          '<br>Pixel: ', pixel,
+                          '<br>Data: ndvi')) %>%
+          layout(xaxis = list(title = "Date"))
+        p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
+                                       title_ = 'NDVI Plot (All data)')
+      }
     }
     
     
-    # BUILD EVI PLOTLY PLOTS
     if ('EVI' %in% selected_data){
-      # EVI
-      p_evi = evi_pixel_data_df %>%
-        subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
-        select(pixel, date, evi_filtered) %>%
-        mutate(pixel = paste0('EVI_high_', pixel), Date = date) %>%
-        arrange(pixel, Date) %>%
-        plot_ly(x = ~date,
-                y = ~evi_filtered) %>%
-        add_trace(
-          mode = 'markers',
-          type = "scatter",
-          color = ~pixel,
-          colors = rainbow(6),
-          marker = list(size = 5),
-          showlegend = TRUE,
-          legendgroup = ~pixel,
-          text = ~paste("Date: ", Date,
-                        '<br>Pixel: ', pixel,
-                        '<br>Data: EVI')) %>%
-        layout(xaxis = list(title = "Date"))
-      p_evi = add_title_to_plot(df = p_evi,
-                                title_ = 'EVI Plot (High Quality data)')
+      # EVI HIGH QUALITY
+      if ('hiq_evi' %in% selected_plots){
+        p_evi = evi_pixel_data_df %>%
+          subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
+          select(pixel, date, evi_filtered) %>%
+          mutate(pixel = paste0('EVI_high_', pixel), Date = date) %>%
+          arrange(pixel, Date) %>%
+          plot_ly(x = ~date,
+                  y = ~evi_filtered) %>%
+          add_trace(
+            mode = 'markers',
+            type = "scatter",
+            color = ~pixel,
+            colors = c('light blue', 'blue'),
+            marker = list(size = 5),
+            showlegend = TRUE,
+            legendgroup = ~pixel,
+            text = ~paste("Date: ", Date,
+                          '<br>Pixel: ', pixel,
+                          '<br>Data: EVI')) %>%
+          layout(xaxis = list(title = "Date"))
+        p_evi = add_title_to_plot(df = p_evi,
+                                  title_ = 'EVI Plot (High Quality data)')
+      }
       # EVI RAW
-      p_evi_raw = evi_pixel_data_df %>%
-        subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
-        select(pixel, date, evi_raw) %>%
-        mutate(pixel = paste0('EVI_all_', pixel), Date = date) %>%
-        arrange(pixel, Date) %>%
-        plot_ly(x = ~date,
-                y = ~evi_raw) %>%
-        add_trace(
-          mode = 'markers',
-          type = "scatter",
-          color = ~pixel,
-          colors = rainbow(6),
-          marker = list(size = 5),
-          showlegend = TRUE,
-          legendgroup = ~pixel,
-          text = ~paste("Date: ", Date,
-                        '<br>Pixel: ', pixel,
-                        '<br>Data: EVI')) %>%
-        layout(xaxis = list(title = "Date"))
-      p_evi_raw = add_title_to_plot(df = p_evi_raw,
-                                    title_ = 'EVI Plot (All data)')
+      if ('all_evi' %in% selected_plots){
+        p_evi_raw = evi_pixel_data_df %>%
+          subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
+          select(pixel, date, evi_raw) %>%
+          mutate(pixel = paste0('EVI_all_', pixel), Date = date) %>%
+          arrange(pixel, Date) %>%
+          plot_ly(x = ~date,
+                  y = ~evi_raw) %>%
+          add_trace(
+            mode = 'markers',
+            type = "scatter",
+            color = ~pixel,
+            colors = c('light blue', 'blue'),
+            marker = list(size = 5),
+            showlegend = TRUE,
+            legendgroup = ~pixel,
+            text = ~paste("Date: ", Date,
+                          '<br>Pixel: ', pixel,
+                          '<br>Data: EVI')) %>%
+          layout(xaxis = list(title = "Date"))
+        p_evi_raw = add_title_to_plot(df = p_evi_raw,
+                                      title_ = 'EVI Plot (All data)')
+      }
     }
     
     
-    # BUILD GCC PLOTLY PLOTS
     if ('GCC' %in% selected_data){
-      # GCC
-      gcc_p = data$gcc_p %>%         
-        add_annotations(
-          text = 'GCC Plot',
-          x = 0.5,
-          y = 1,
-          yref = "paper",
-          xref = "paper",
-          yanchor = "bottom",
-          showarrow = FALSE,
-          font = list(size = 15)) %>%
-        layout(
-          showlegend = TRUE,
-          shapes = list(
-            type = "rect",
-            x0 = 0,
-            x1 = 1,
-            xref = "paper",
-            y0 = 0,
-            y1 = 25,
-            yanchor = 1,
+      # GCC FROM PHENOCAM
+      if ('GCC' %in% selected_plots){
+        print ('plottttt gccCccc')
+        gcc_p = data$gcc_p %>%         
+          add_annotations(
+            text = 'GCC Plot',
+            x = 0.5,
+            y = 1,
             yref = "paper",
-            ysizemode = "pixel",
-            fillcolor = toRGB("gray80"),
-            line = list(color = "transparent")))
+            xref = "paper",
+            yanchor = "bottom",
+            showarrow = FALSE,
+            font = list(size = 15)) %>%
+          layout(
+            showlegend = TRUE,
+            shapes = list(
+              type = "rect",
+              x0 = 0,
+              x1 = 1,
+              xref = "paper",
+              y0 = 0,
+              y1 = 25,
+              yanchor = 1,
+              yref = "paper",
+              ysizemode = "pixel",
+              fillcolor = toRGB("gray80"),
+              line = list(color = "transparent")))
+      }
     }
-  
     
-    vector_length = length(selected_data)
-    if ('Transition Dates' %in% selected_data){
+
+    vector_length = length(selected_plots)
+    if ('tds_sat' %in% selected_plots){
       vector_length = vector_length - 1
     }
-    if('NPN' %in% selected_data){
-      vector_length = vector_length - 1
-    }
-  
+    # if('tds_npn' %in% selected_plots){
+    #   vector_length = vector_length - 1
+    # }
   
     plot_list = vector('list', vector_length)
-    print (plot_list)
     count = 0
-    for (i in selected_data){
+    for (i in selected_plots){
       count = count + 1
       print (i)
       if (i == 'GCC'){
         plot_list[[count]] = gcc_p
       }
-      if (i =='NDVI'){
+      if (i =='hiq_ndvi'){
         plot_list[[count]] = p_ndvi
       }
-      if (i == 'EVI'){
+      if (i =='all_ndvi'){
         plot_list[[count]] = p_ndvi_raw
+      }
+      if (i =='hiq_evi'){
+        plot_list[[count]] = p_evi
+      }
+      if (i =='all_evi'){
+        plot_list[[count]] = p_evi_raw
       }
     }
     
