@@ -271,8 +271,9 @@ for (pixel in c(1:20)){
 plot filtered and unfiltered data
 ```{r}
 
-selected_pixel_id = 2
+selected_pixel_id = c(2, 3, 4)
 # # Plot data for ndvi under said point
+for i in length(selected_pixel_id)
 ndvi_p = plot_ly() %>%
   add_markers(
   data = subset(pixel_df, pixel_id == selected_pixel_id),
@@ -287,12 +288,26 @@ ndvi_p = plot_ly() %>%
   y = ~ ndvi_filtered,
   showlegend = TRUE,
   type = 'scatter',
-  mode = 'markers'
-)
+  mode = 'markers')%>%
+    add_lines(
+    #y = ~fitted(scatter.smooth(x=ndvi_dates, y=ndvi), 
+    y=smooth(ndvi),
+    #y=~fitted(loess(ndvi~as.numeric(ndvi_dates)), data=data.frame(ndvi, as.numeric(ndvi_dates)), span=0.1, family='gaussian'),
+      x=~ndvi_dates,
+            line = list(color = '#07A4B5'),
+            name = "Loess Smoother", showlegend = TRUE)
 ndvi_p
 ```
 
-
+```{r}
+ndvi_p = plot_ly() %>%
+  add_lines(
+    y = ~fitted(loess(ndvi ~ as.numeric(ndvi_dates), span=3)),
+    x=~ndvi_dates,
+            line = list(color = '#07A4B5'),
+            name = "Loess Smoother", showlegend = TRUE)
+ndvi_p
+```
 
 Filter the NDVI data [test cell]
 ```{r}

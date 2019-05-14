@@ -886,9 +886,15 @@ server = function(input, output, session) {
 
     ndvi_pixel_data_df = data$ndvi_pixels
     rownames(ndvi_pixel_data_df) = NULL
-    
+    #saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
+    mNDVI=ndvi_pixel_data_df %>%
+      group_by(date) %>%
+      summarise(meanNDVI = mean(ndvi_raw))
     evi_pixel_data_df = data$evi_pixels
     rownames(evi_pixel_data_df) = NULL
+    mEVI=evi_pixel_data_df %>%
+      group_by(date) %>%
+      summarise(meanEVI = mean(evi_raw))
     
     print (as_tibble(sd))
     print (as_tibble(ndvi_pixel_data_df))
@@ -917,7 +923,7 @@ server = function(input, output, session) {
                           '<br>Data: ndvi')) %>%
           layout(xaxis = list(title = "Date"))
         p_ndvi = add_title_to_plot(df = p_ndvi,
-                                   title_ = 'NDVI Plot (High Quality data)')
+                                   title_ = 'NDVI (High Quality data)')
       }
       # NDVI RAW
       if ('all_ndvi' %in% selected_plots){
@@ -939,9 +945,17 @@ server = function(input, output, session) {
             text = ~paste("Date: ", Date,
                           '<br>Pixel: ', pixel,
                           '<br>Data: ndvi')) %>%
+          add_trace(
+                x=mNDVI$date, 
+                y=~fitted(smooth.spline(mNDVI$meanNDVI~as.numeric(mNDVI$date)), data=mNDVI),
+                mode = "lines",
+                line = list(width = 2, color = "rgb(120,120,120)"),
+                name = "NDVI loess fit",
+                showlegend = TRUE
+              )%>%
           layout(xaxis = list(title = "Date"))
         p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
-                                       title_ = 'NDVI Plot (All data)')
+                                       title_ = 'NDVI (All data)')
       }
     }
     
@@ -969,7 +983,7 @@ server = function(input, output, session) {
                           '<br>Data: EVI')) %>%
           layout(xaxis = list(title = "Date"))
         p_evi = add_title_to_plot(df = p_evi,
-                                  title_ = 'EVI Plot (High Quality data)')
+                                  title_ = 'EVI (High Quality data)')
       }
       # EVI RAW
       if ('all_evi' %in% selected_plots){
@@ -991,9 +1005,17 @@ server = function(input, output, session) {
             text = ~paste("Date: ", Date,
                           '<br>Pixel: ', pixel,
                           '<br>Data: EVI')) %>%
+          add_trace(
+            x=mEVI$date, 
+            y=~fitted(smooth.spline(mEVI$meanEVI~as.numeric(mEVI$date)), data=mEVI),
+            mode = "lines",
+            line = list(width = 2, color = "rgb(120,120,120)"),
+            name = "EVI loess fit",
+            showlegend = TRUE
+          )%>%
           layout(xaxis = list(title = "Date"))
         p_evi_raw = add_title_to_plot(df = p_evi_raw,
-                                      title_ = 'EVI Plot (All data)')
+                                      title_ = 'EVI (All data)')
       }
     }
     
@@ -1004,7 +1026,7 @@ server = function(input, output, session) {
         print ('plottttt gccCccc')
         gcc_p = data$gcc_p %>%         
           add_annotations(
-            text = 'GCC Plot',
+            text = 'PhenoCam Greenness(GCC)',
             x = 0.5,
             y = 1,
             yref = "paper",

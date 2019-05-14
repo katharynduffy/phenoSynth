@@ -1,0 +1,48 @@
+---
+title: "RSsmoothing"
+author: "K Duffy"
+date: "5/14/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+readRDS('testLOESSdata.rds')
+
+```
+
+```{r}
+head(testLOESSdata)
+```
+
+```{r}
+mNDVI=testLOESSdata %>%
+  group_by(date) %>%
+  summarise(meanNDVI = mean(ndvi_raw))
+```
+#regular smooth
+```{r}
+ndvi_p = plot_ly() %>%
+  add_trace(
+    x=mNDVI$date,
+    y=mNDVI$meanNDVI
+  )%>%
+  add_lines(
+    x=mNDVI$date, 
+    y=smooth(mNDVI$meanNDVI)
+  )
+ndvi_p
+```
+#use this one
+```{r}
+ndvi_p = plot_ly() %>%
+  add_trace(
+    x=mNDVI$date,
+    y=mNDVI$meanNDVI
+  )%>%
+  add_lines(
+    x=mNDVI$date, 
+    y=~fitted(smooth.spline(mNDVI$meanNDVI~as.numeric(mNDVI$date)), data=mNDVI)
+  )
+ndvi_p
+
+```
