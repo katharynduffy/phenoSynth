@@ -354,9 +354,7 @@ server = function(input, output, session) {
 
   # Observer for the azm changes from 0-360 on the slider
   observeEvent(input$azm, {
-    azm = input$azm
-    if(is.null(azm))
-      return()
+    azm = as.numeric(input$azm)
     if (input$drawROI == TRUE){
       site      = input$site
       site_data = get_site_info(site)
@@ -569,15 +567,8 @@ server = function(input, output, session) {
     selected_data = input$dataTypes_plot
     selected_pixel_type = input$pixelTypes
     
-    # plot_selected = c()
-    # if ('GCC' %in% selected_data){plot_selected = c(plot_selected, 'GCC')}
-    # if ('NDVI' %in% selected_data){plot_selected = c(plot_selected, 'hiq_ndvi', 'all_ndvi')}
-    # if ('EVI' %in% selected_data){plot_selected = c(plot_selected, 'hiq_evi', 'all_evi')}
-    # if ('Transition Dates' %in% selected_data){plot_selected = c(plot_selected, 'tds_sat')}
-    # updateCheckboxGroupInput(session, inputId = 'plotTheseBoxes', 
-    #                          choices  = plot_selected,
-    #                          selected = plot_selected,
-    #                          inline   = TRUE)
+    # Code that builds a list and char vector to be used in group checkboxes for plotting
+    # - Allows for renaming of checkboxes dynamically based on selected plotting data
     plot_selected = c()
     plot_choices = list()
     if ('GCC' %in% selected_data){
@@ -1228,11 +1219,11 @@ server = function(input, output, session) {
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       
       if (length(list.files(ndvi_filepath))==0){
-        setProgress(value = .1, detail = 'Downloading NDVI')
+        setProgress(value = .4, detail = 'Downloading NDVI')
         ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, ndvi_filepath)
         setProgress(value = .8, detail = 'NDVI Downloaded')
       }else {
-        setProgress(value = .1, detail = 'Importing NDVI')
+        setProgress(value = .4, detail = 'Importing NDVI')
         ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
         setProgress(value = .8, detail = 'NDVI Imported')
       }
