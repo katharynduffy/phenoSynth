@@ -17,7 +17,14 @@ head(testLOESSdata)
 ```{r}
 mNDVI=testLOESSdata %>%
   group_by(date) %>%
-  summarise(meanNDVI = mean(ndvi_raw))
+  summarise(meanNDVI = mean(ndvi_raw))%>%
+```
+```{r}
+
+mEVI=testLOESSdata2 %>%
+  filter(!is.na(testLOESSdata2$evi_raw)) %>%
+  group_by(date) %>%
+  summarise(meanEVI = mean(evi_raw))
 ```
 #regular smooth
 ```{r}
@@ -45,4 +52,17 @@ ndvi_p = plot_ly() %>%
   )
 ndvi_p
 
+```
+
+```{r}
+evi_p = plot_ly() %>%
+  add_trace(
+    x=mEVI$date,
+    y=mEVI$meanEVI
+  )%>%
+  add_lines(
+    x=mEVI$date, 
+    y=~fitted(smooth.spline(mEVI$meanEVI~as.numeric(mEVI$date)), data=mEVI)
+  )
+evi_p
 ```
