@@ -16,3 +16,6 @@ Notebooks/transition_date_plots_test.Rmd
 .Rda
 www/downloads_test
 www/npn_grid_data
+testLOESSdata2.rds
+testEVI.rds
+testLOESSdata.rds
