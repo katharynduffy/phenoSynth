@@ -1,9 +1,10 @@
 # Adds a title to a plotly plot
 add_title_to_plot = function(df,
-                             title_ = 'NDVI Plot(High Quality data)'){
+                             x_title_,
+                             y_title_){
   
   df_ = df %>% add_annotations(
-    text = title_,
+    text = x_title_,
     x = 0.5,
     y = 1,
     yref = "paper",
@@ -24,7 +25,17 @@ add_title_to_plot = function(df,
         yref = "paper",
         ysizemode = "pixel",
         fillcolor = toRGB("gray80"),
-        line = list(color = "transparent")))
+        line = list(color = "transparent"))) %>%
+    add_annotations(
+      text = y_title_,
+      x = -.04,
+      y = .4,
+      yref = "paper",
+      xref = "paper",
+      yanchor = "bottom",
+      showarrow = FALSE,
+      textangle=-90,
+      font = list(size = 12))
   return (df_)
 }
 

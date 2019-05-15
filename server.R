@@ -357,22 +357,19 @@ server = function(input, output, session) {
     azm = input$azm
     if(is.null(azm))
       return()
-    isolate({
-      if (input$drawROI == TRUE){
-        site      = input$site
-        site_data = get_site_info(site)
-        run_add_polyline(site_data, azm)
-      }
-    })
+    if (input$drawROI == TRUE){
+      site      = input$site
+      site_data = get_site_info(site)
+      run_add_polyline(site_data, azm)
+    }
   })
-
 
   # Draws fov polyline for a site location
   observeEvent(input$drawROI, {
     roi_bool = input$drawROI
     if (roi_bool == TRUE){
       print ('Drawing fov for phenocam site')
-      site            = isolate(input$site)
+      site            = input$site
       site_data       = get_site_info(site)
       cam_orientation = as.character(site_data$camera_orientation)
       degrees         = as.numeric(orientation_key[cam_orientation])
@@ -926,7 +923,8 @@ server = function(input, output, session) {
                           '<br>Data: ndvi')) %>%
           layout(xaxis = list(title = "Date"))
         p_ndvi = add_title_to_plot(df = p_ndvi,
-                                   title_ = 'NDVI (High Quality data)')
+                                   x_title_ = 'NDVI (High Quality data)',
+                                   y_title_ = 'NDVI value')
       }
       # NDVI RAW
       if ('all_ndvi' %in% selected_plots){
@@ -958,7 +956,8 @@ server = function(input, output, session) {
               )%>%
           layout(xaxis = list(title = "Date"))
         p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
-                                       title_ = 'NDVI (All data)')
+                                       x_title_ = 'NDVI (All data)',
+                                       y_title_ = 'NDVI value')
       }
     }
     
@@ -986,7 +985,8 @@ server = function(input, output, session) {
                           '<br>Data: EVI')) %>%
           layout(xaxis = list(title = "Date"))
         p_evi = add_title_to_plot(df = p_evi,
-                                  title_ = 'EVI (High Quality data)')
+                                  x_title_ = 'EVI (High Quality data)',
+                                  y_title_ = 'EVI value')
       }
       # EVI RAW
       if ('all_evi' %in% selected_plots){
@@ -1018,7 +1018,8 @@ server = function(input, output, session) {
           )%>%
           layout(xaxis = list(title = "Date"))
         p_evi_raw = add_title_to_plot(df = p_evi_raw,
-                                      title_ = 'EVI (All data)')
+                                      x_title_ = 'EVI (All data)',
+                                      y_title_ = 'EVI value')
       }
     }
     
@@ -1027,30 +1028,9 @@ server = function(input, output, session) {
       # GCC FROM PHENOCAM
       if ('GCC' %in% selected_plots){
         print ('plottttt gccCccc')
-        gcc_p = data$gcc_p %>%         
-          add_annotations(
-            text = 'PhenoCam Greenness(GCC)',
-            x = 0.5,
-            y = 1,
-            yref = "paper",
-            xref = "paper",
-            yanchor = "bottom",
-            showarrow = FALSE,
-            font = list(size = 15)) %>%
-          layout(
-            showlegend = TRUE,
-            shapes = list(
-              type = "rect",
-              x0 = 0,
-              x1 = 1,
-              xref = "paper",
-              y0 = 0,
-              y1 = 25,
-              yanchor = 1,
-              yref = "paper",
-              ysizemode = "pixel",
-              fillcolor = toRGB("gray80"),
-              line = list(color = "transparent")))
+        gcc_p = add_title_to_plot(df = data$gcc_p,
+                                  x_title_ = 'Phenocam Greenness (GCC)',
+                                  y_title_ = 'GCC value')
       }
     }
     
