@@ -546,6 +546,7 @@ server = function(input, output, session) {
   observeEvent(input$siteExplorerMode,{
     print ('Switching to Explorer Mode')
     panel$mode = 'explorer'
+    updateCheckboxInput(session, inputId = 'drawROI', value=FALSE)
     switch_to_explorer_panel()
     data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
     #data$pixel_sps_500m = SpatialPolygons(list())
