@@ -627,13 +627,14 @@ server = function(input, output, session) {
       # Inputs of pixels required for get_tds_modis_df function to extract Transition date data
       lats = pixels$Lat
       lngs = pixels$Lon
+      pixels = pixels$Pixel
       
-      tds_modis_df = get_tds_modis_df(lats, lngs, data$tds_nc,progress_bar=TRUE)
+      tds_modis_df = get_tds_modis_df(pixels, lats, lngs, data$tds_nc,progress_bar=TRUE)
       # Transition date data under selected pixels
-      OGD      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Decrease')
-      OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
-      OGMa     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Maximum')
-      OGMi     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Minimum')
+      data$OGD      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Decrease')
+      data$OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
+      data$OGMa     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Maximum')
+      data$OGMi     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Minimum')
       }) #END WITH PROGRESS BAR
     } # END TRANSITION DATE EXTRATION FOR PIXELS
     
@@ -892,6 +893,35 @@ server = function(input, output, session) {
     print (as_tibble(ndvi_pixel_data_df))
     print (as_tibble(evi_pixel_data_df))
     
+    if ('Transition Dates' %in% selected_data){
+      if ('tds_sat' %in% selected_plots){
+        OGMa = data$OGMa
+        OGMi = data$OGMi
+        OGI  = data$OGI
+        OGD  = data$OGD
+        
+        clean_OGMa = OGMa %>%
+          subset(OGMa$pixel %in% sd$Pixel) %>%
+          mutate(pixel = paste0('TD_OGMa_', pixel), Date = dates) %>%
+          select(pixel, Date, value) %>%
+          arrange(pixel, Date) 
+        clean_OGMi = OGMi %>%
+          subset(OGMi$pixel %in% sd$Pixel)%>%
+          mutate(pixel = paste0('TD_OGMi_', pixel), Date = dates) %>%
+          select(pixel, Date, value) %>%
+          arrange(pixel, Date) 
+        clean_OGI = OGI %>%
+          subset(OGI$pixel %in% sd$Pixel)%>%
+          mutate(pixel = paste0('TD_OGI_', pixel), Date = dates) %>%
+          select(pixel, Date, value) %>%
+          arrange(pixel, Date) 
+        clean_OGD = OGD %>%
+          subset(OGD$pixel %in% sd$Pixel)%>%
+          mutate(pixel = paste0('TD_OGD_', pixel), Date = dates) %>%
+          select(pixel, Date, value) %>%
+          arrange(pixel, Date) 
+      }}
+    
     if ('NDVI' %in% selected_data){
       # NDVI HIGH QUALITY
       if ('hiq_ndvi' %in% selected_plots){
@@ -912,7 +942,7 @@ server = function(input, output, session) {
             legendgroup = ~pixel,
             text = ~paste("Date: ", Date,
                           '<br>Pixel: ', pixel,
-                          '<br>Data: ndvi')) %>%
+                          '<br>Data: NDVI')) %>%
           layout(xaxis = list(title = "Date"))
         p_ndvi = add_title_to_plot(df = p_ndvi,
                                    x_title_ = 'NDVI (High Quality data)',
@@ -920,14 +950,17 @@ server = function(input, output, session) {
       }
       # NDVI RAW
       if ('all_ndvi' %in% selected_plots){
-        p_ndvi_raw = ndvi_pixel_data_df %>%
+        clean_ndvi_pixel_data_df = ndvi_pixel_data_df %>%
           subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
-          select(pixel, date, ndvi_raw) %>%
           mutate(pixel = paste0('NDVI_all_', pixel), Date = date) %>%
-          arrange(pixel, Date) %>%
-          plot_ly(x = ~date,
-                  y = ~ndvi_raw) %>%
+          select(pixel, Date, ndvi_raw) %>%
+          arrange(pixel, Date)
+        
+        p_ndvi_raw = plot_ly() %>%
           add_trace(
+            data = clean_ndvi_pixel_data_df,
+            x = ~Date,
+            y = ~ndvi_raw,
             mode = 'markers',
             type = "scatter",
             color = ~pixel,
@@ -937,19 +970,72 @@ server = function(input, output, session) {
             legendgroup = ~pixel,
             text = ~paste("Date: ", Date,
                           '<br>Pixel: ', pixel,
-                          '<br>Data: ndvi')) %>%
+                          '<br>Data: NDVI'))
+        
+        p_ndvi_raw = p_ndvi_raw %>%
           add_trace(
-                x=mNDVI$date, 
-                y=~fitted(smooth.spline(mNDVI$meanNDVI~as.numeric(mNDVI$date)), data=mNDVI),
-                mode = "lines",
-                line = list(width = 2, color = "rgb(120,120,120)"),
-                name = "NDVI loess fit",
-                showlegend = TRUE
-              )%>%
-          layout(xaxis = list(title = "Date"))
+            x=mNDVI$date, 
+            y=~fitted(smooth.spline(mNDVI$meanNDVI~as.numeric(mNDVI$date)), data=mNDVI),
+            mode = "lines",
+            line = list(width = 2, color = "rgb(120,120,120)"),
+            name = "NDVI loess fit",
+            showlegend = TRUE
+          )%>%layout(xaxis = list(title = "Date"))
+        
+        if ('Transition Dates' %in% selected_data){
+          if ('tds_sat' %in% selected_plots){
+                
+                p_ndvi_raw = p_ndvi_raw %>%
+                  add_markers(data = clean_OGMa,
+                              inherit = FALSE,
+                              x = ~Date,
+                              y = ~value,
+                              name = ~pixel,
+                              type = "scatter",
+                              mode = 'markers',
+                              marker = list(color = 'green', size= 10, symbol=2),
+                              showlegend = TRUE,
+                              text = ~paste("Date: ", Date,
+                                            '<br>Pixel: ', pixel,
+                                            '<br>Data: Onset Greenness Maximum')) %>%
+                  add_trace(data = clean_OGMi,
+                            x = ~Date,
+                            y = ~value,
+                            name = ~pixel,
+                            type = "scatter",
+                            mode = 'markers',
+                            marker = list(color = 'brown', size= 10, symbol=25),
+                            showlegend = TRUE,
+                            text = ~paste("Date: ", Date,
+                                          '<br>Pixel: ', pixel,
+                                          '<br>Data: Onset Greenness Minimum')) %>%
+                  add_trace(data = clean_OGI,
+                            x = ~Date,
+                            y = .5,
+                            name = ~pixel,
+                            type = "scatter",
+                            mode = 'markers',
+                            marker = list(color ='green', size= 10, symbol=5),
+                            showlegend = TRUE,
+                            text = ~paste("Date: ", Date,
+                                          '<br>Pixel: ', pixel,
+                                          '<br>Data: Onset Greenness Increase')) %>%
+                  add_trace(data = clean_OGD,
+                            x = ~Date,
+                            y = .5,
+                            name = ~pixel,
+                            type = "scatter",
+                            mode = 'markers',
+                            marker = list(color ='orange', size= 10, symbol=6),
+                            showlegend = TRUE,
+                            text = ~paste("Date: ", Date,
+                                          '<br>Pixel: ', pixel,
+                                          '<br>Data: Onset Greenness Decrease'))
+          }}
         p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
                                        x_title_ = 'NDVI (All data)',
                                        y_title_ = 'NDVI value')
+
       }
     }
     
@@ -982,14 +1068,17 @@ server = function(input, output, session) {
       }
       # EVI RAW
       if ('all_evi' %in% selected_plots){
-        p_evi_raw = evi_pixel_data_df %>%
+        clean_evi_pixel_data_df =  evi_pixel_data_df %>%
           subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
-          select(pixel, date, evi_raw) %>%
           mutate(pixel = paste0('EVI_all_', pixel), Date = date) %>%
-          arrange(pixel, Date) %>%
-          plot_ly(x = ~date,
-                  y = ~evi_raw) %>%
+          select(pixel, Date, evi_raw) %>%
+          arrange(pixel, Date) 
+        p_evi_raw = 
+          plot_ly() %>%
           add_trace(
+            data = clean_evi_pixel_data_df,
+            x = ~Date,
+            y = ~evi_raw,
             mode = 'markers',
             type = "scatter",
             color = ~pixel,
@@ -999,7 +1088,9 @@ server = function(input, output, session) {
             legendgroup = ~pixel,
             text = ~paste("Date: ", Date,
                           '<br>Pixel: ', pixel,
-                          '<br>Data: EVI')) %>%
+                          '<br>Data: EVI'))
+        
+        p_evi_raw = p_evi_raw %>%
           add_trace(
             x=mEVI$date, 
             y=~fitted(smooth.spline(mEVI$meanEVI~as.numeric(mEVI$date)), data=mEVI),
@@ -1007,13 +1098,169 @@ server = function(input, output, session) {
             line = list(width = 2, color = "rgb(120,120,120)"),
             name = "EVI loess fit",
             showlegend = TRUE
-          )%>%
-          layout(xaxis = list(title = "Date"))
+          ) %>% layout(xaxis = list(title = "Date"))
+            
+        if ('Transition Dates' %in% selected_data){
+          if ('tds_sat' %in% selected_plots){
+            p_evi_raw = p_evi_raw %>%
+              add_markers(data = clean_OGMa,
+                        inherit = FALSE,
+                        x = ~Date,
+                        y = ~value,
+                        name = ~pixel,
+                        type = "scatter",
+                        mode = 'markers',
+                        marker = list(color = 'green', size= 10, symbol=2),
+                        showlegend = TRUE,
+                        text = ~paste("Date: ", Date,
+                                      '<br>Pixel: ', pixel,
+                                      '<br>Data: Onset Greenness Maximum')) %>%
+              add_trace(data = clean_OGMi,
+                        x = ~Date,
+                        y = ~value,
+                        name = ~pixel,
+                        type = "scatter",
+                        mode = 'markers',
+                        marker = list(color = 'brown', size= 10, symbol=25),
+                        showlegend = TRUE,
+                        text = ~paste("Date: ", Date,
+                                      '<br>Pixel: ', pixel,
+                                      '<br>Data: Onset Greenness Minimum')) %>%
+              add_trace(data = clean_OGI,
+                        x = ~Date,
+                        y = .4,
+                        name = ~pixel,
+                        type = "scatter",
+                        mode = 'markers',
+                        marker = list(color ='green', size= 10, symbol=5),
+                        showlegend = TRUE,
+                        text = ~paste("Date: ", Date,
+                                      '<br>Pixel: ', pixel,
+                                      '<br>Data: Onset Greenness Increase')) %>%
+              add_trace(data = clean_OGD,
+                        x = ~Date,
+                        y = .4,
+                        name = ~pixel,
+                        type = "scatter",
+                        mode = 'markers',
+                        marker = list(color ='orange', size= 10, symbol=6),
+                        showlegend = TRUE,
+                        text = ~paste("Date: ", Date,
+                                      '<br>Pixel: ', pixel,
+                                      '<br>Data: Onset Greenness Decrease'))
+          }}
+            
         p_evi_raw = add_title_to_plot(df = p_evi_raw,
                                       x_title_ = 'EVI (All data)',
                                       y_title_ = 'EVI value')
       }
     }
+    
+    # # Add transition date points to pixels if Transition dates are selected
+    # if ('Transition Dates' %in% selected_data){
+    #   if ('tds_sat' %in% selected_plots){
+    #     OGMa = data$OGMa
+    #     OGMi = data$OGMi
+    #     OGI  = data$OGI
+    #     OGD  = data$OGD
+    #     print (as_tibble(OGMa))
+    #     
+    #     p_tds =
+    #       OGMa %>%
+    #       subset(OGMa$pixel %in% sd$Pixel) %>%
+    #       select(pixel, dates, value) %>%
+    #       mutate(pixel = paste0('TD_', pixel), Date = dates) %>%
+    #       arrange(pixel, Date) %>%
+    #       plot_ly(x = ~Date,
+    #               y = ~value) %>%
+    #       add_trace(
+    #         mode = 'markers',
+    #         type = "scatter",
+    #         color = ~pixel,
+    #         colors = c('green', 'dark green'),
+    #         marker = list(size= 10, symbol=2),
+    #         showlegend = TRUE,
+    #         text = ~paste("Date: ", Date,
+    #                       '<br>Pixel: ', pixel,
+    #                       '<br>Data: Onset Greenness Maximum')
+    #       )
+    #     
+    #     
+    #     clean_OGMa = OGMa %>%
+    #       subset(OGMa$pixel %in% sd$Pixel) %>%
+    #       mutate(pixel = paste0('TD_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date)
+    #       
+    #     test = p_evi_raw %>%
+    #       # plot_ly() %>%
+    #       add_trace(inherit = FALSE,
+    #         data = clean_OGMa,
+    #         x = ~Date,
+    #         y = ~value,
+    #         color = ~pixel,
+    #         colors = c('green', 'dark green'),
+    #         type = "scatter",
+    #         mode = 'markers',
+    #         marker = list(size= 10, symbol=2),
+    #         showlegend = TRUE,
+    #         text = ~paste("Date: ", Date,
+    #                       '<br>Pixel: ', pixel,
+    #                       '<br>Data: Onset_Greenness_Maximum'))
+    #     plotly_json(test)
+
+        
+        
+        
+        
+        # colors = c('#fffb93', '#fff500')
+          
+          # add_markers(
+          #   data = subset(OGMa,OGMa$pixel==num),
+          #   x = ~ dates,
+          #   y = ~ value,
+          #   showlegend = TRUE,
+          #   type = 'scatter',
+          #   mode = 'markers',
+          #   marker = list(color = cs[num], size= 10, symbol=2),
+          #   name = paste0(num,'_px_Onset_Greenness_Maximum')
+          # ) %>%
+          # add_markers(
+          #   data = subset(OGMi,OGMi$pixel==num),
+          #   x = ~ dates,
+          #   y = ~ value,
+          #   showlegend = TRUE,
+          #   type = 'scatter',
+          #   mode = 'markers',
+          #   marker = list(color = cs[num], size= 10, symbol=25),
+          #   name = paste0(num,'_px_Onset_Greenness_Minimum')
+          # ) %>%
+          # add_markers(
+          #   data = subset(OGI,OGI$pixel==num),
+          #   x = ~ dates,
+          #   y = .25,
+          #   showlegend = TRUE,
+          #   type = 'scatter',
+          #   mode = 'markers',
+          #   marker = list(color = cs[num], size= 10, symbol=5),
+          #   name = paste0(num,'_px_Onset_Greenness_Increase')
+          # ) %>%
+          # add_markers(
+          #   data = subset(OGD,OGD$pixel==num),
+          #   x = ~ dates,
+          #   y = .25,
+          #   showlegend = TRUE,
+          #   type = 'scatter',
+          #   mode = 'markers',
+          #   marker = list(color = cs[num], size= 10, symbol=6),
+          #   name = paste0(num,'_px_Onset_Greenness_Decrease')
+          # )
+
+    
+    
+    
+    
+    
     
     
     if ('GCC' %in% selected_data){
@@ -1214,17 +1461,17 @@ server = function(input, output, session) {
       # Import [NDVI] 
       #------------------------------------------------------------------------
     if ('NDVI' %in% selected_data){
-      withProgress(message = 'Importing NDVI', value = .1, {
+      withProgress(message = 'Importing NDVI', value = .4, {
         
       print ('Importing NDVI')
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       
       if (length(list.files(ndvi_filepath))==0){
-        setProgress(value = .4, detail = 'Downloading NDVI')
+        setProgress(value = .1, detail = 'Downloading NDVI')
         ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, ndvi_filepath)
         setProgress(value = .8, detail = 'NDVI Downloaded')
       }else {
-        setProgress(value = .4, detail = 'Importing NDVI')
+        setProgress(value = .1, detail = 'Importing NDVI')
         ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
         setProgress(value = .8, detail = 'NDVI Imported')
       }
@@ -1284,7 +1531,7 @@ server = function(input, output, session) {
     #   # Import [EVI] netcdf(evi) and csv(qa)
     #   #------------------------------------------------------------------------
     if ('EVI' %in% selected_data){
-      withProgress(message = 'Importing EVI', value = .1, {
+      withProgress(message = 'Importing EVI', value = .4, {
       print ('Importing EVI')
       
       appeears$evi  = get_appeears_task(site, type = 'evi')

@@ -42,7 +42,7 @@ add_title_to_plot = function(df,
 
 
 # Builds a dataframe from a list of lat/lngs and the netcdf from AppEEARS with the 6 layers
-get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
+get_tds_modis_df = function(pixels_, lats_, lngs_, netcdf_, progress_bar = FALSE){
   print ('START EXTRACTION OF TDS')
   lat_td = ncvar_get(netcdf_, "lat")
   lon_td = ncvar_get(netcdf_, "lon")
@@ -80,6 +80,8 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
     coordinates(xy) = ~ lon + lat
     proj4string(xy) = crs
     
+    pixel_id = pixels_[x]
+    
     #-----------------------------Onset_Greenness_Decrease-----------------------------
     OGD_data = c()
     for (layer in c(1:dim(OGD_var)[3])){
@@ -92,8 +94,8 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
     date_data = start_date + as.integer(OGD_data)
     
     if (length(date_data)==0){
-      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Decrease', pixel = x, value = NA)
-      print (paste0('Empty list of data in Onset_Greenness_Decrease. Pixel: ', x))
+      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Decrease', pixel = pixel_id, value = NA)
+      print (paste0('Empty list of data in Onset_Greenness_Decrease. Pixel: ', pixel_id))
       if (is.null(OGD_df)){
         OGD_df = df
       }else {
@@ -101,10 +103,10 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
       }
     }else {
       if (is.null(OGD_df)){
-        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Decrease', pixel = x, value = NA)
+        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Decrease', pixel = pixel_id, value = NA)
         OGD_df = df
       } else{
-        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Decrease', pixel = x, value = NA)
+        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Decrease', pixel = pixel_id, value = NA)
         OGD_df = rbind(OGD_df, df)
       }
     }
@@ -121,8 +123,8 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
     date_data = start_date + as.integer(OGI_data)
     
     if (length(date_data)==0){
-      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Increase', pixel = x, value = NA)
-      print (paste0('Empty list of data in Onset_Greenness_Increase. Pixel: ', x))
+      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Increase', pixel = pixel_id, value = NA)
+      print (paste0('Empty list of data in Onset_Greenness_Increase. Pixel: ', pixel_id))
       if (is.null(OGI_df)){
         OGI_df = df
       }else {
@@ -130,10 +132,10 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
       }
     }else {
       if (is.null(OGI_df)){
-        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Increase', pixel = x, value = NA)
+        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Increase', pixel = pixel_id, value = NA)
         OGI_df = df
       } else{
-        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Increase', pixel = x, value = NA)
+        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Increase', pixel = pixel_id, value = NA)
         OGI_df = rbind(OGI_df, df)
       }
     }
@@ -160,8 +162,8 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
     date_data = start_date + as.integer(OGMa_data)
     
     if (length(date_data)==0){
-      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Maximum', pixel = x, value = NA)
-      print (paste0('Empty list of data in Onset_Greenness_Maximum. Pixel: ', x))
+      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Maximum', pixel = pixel_id, value = NA)
+      print (paste0('Empty list of data in Onset_Greenness_Maximum. Pixel: ', pixel_id))
       if (is.null(OGMa_df)){
         OGMa_df = df
       }else {
@@ -169,10 +171,10 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
       }
     }else {
       if (is.null(OGMa_df)){
-        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = x, value = EVI_OGMa_data)
+        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = pixel_id, value = EVI_OGMa_data)
         OGMa_df = df
       } else{
-        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = x, value = EVI_OGMa_data)
+        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Maximum', pixel = pixel_id, value = EVI_OGMa_data)
         OGMa_df = rbind(OGMa_df, df)
       }
     }
@@ -199,8 +201,8 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
     date_data = start_date + as.integer(OGMi_data)
     
     if (length(date_data)==0){
-      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Minimum', pixel = x, value = NA)
-      print (paste0('Empty list of data in Onset_Greenness_Minimum. Pixel: ', x))
+      df = data.frame(dates = as.Date(NA), layer = 'Onset_Greenness_Minimum', pixel = pixel_id, value = NA)
+      print (paste0('Empty list of data in Onset_Greenness_Minimum. Pixel: ', pixel_id))
       if (is.null(OGMi_df)){
         OGMi_df = df
       }else {
@@ -208,10 +210,10 @@ get_tds_modis_df = function(lats_, lngs_, netcdf_, progress_bar = FALSE){
       }
     }else {
       if (is.null(OGMi_df)){
-        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = x, value = EVI_OGMi_data)
+        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = pixel_id, value = EVI_OGMi_data)
         OGMi_df = df
       } else{
-        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = x, value = EVI_OGMi_data)
+        df = data.frame(dates = date_data, layer = 'Onset_Greenness_Minimum', pixel = pixel_id, value = EVI_OGMi_data)
         OGMi_df = rbind(OGMi_df, df)
       }
     }
