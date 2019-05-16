@@ -4,7 +4,14 @@
 
 /*.leaflet-popup-content {
   width:280px;
-}*/
+}
+
+
+/* position of phenocam metadata tab */
+#phenoTable{
+  margin-top:60px;
+  padding: 0px 40px;
+}
 
 #plotTheseBoxes{
   margin-top: 55px;

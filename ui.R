@@ -133,7 +133,8 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
            #          ),
 
            tabPanel('Phenocam Metadata',
-                    tableOutput("phenoTable")
+                    # tableOutput("phenoTable")
+                    dataTableOutput('phenoTable')
                    ),
 
            tabPanel('Plot Data', value = 'PlotPanel',
