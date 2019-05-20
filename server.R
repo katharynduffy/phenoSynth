@@ -943,28 +943,32 @@ server = function(input, output, session) {
     if ('NDVI' %in% selected_data){
       # NDVI HIGH QUALITY
       if ('hiq_ndvi' %in% selected_plots){
-        p_ndvi = ndvi_pixel_data_df %>%
-          subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
-          select(pixel, date, ndvi_filtered) %>%
-          mutate(pixel = paste0('NDVI_high_', pixel), Date = date) %>%
-          arrange(pixel, Date) %>%
-          plot_ly(x = ~date,
-                  y = ~ndvi_filtered) %>%
-          add_trace(
-            mode = 'markers',
-            type = "scatter",
-            color = ~pixel,
-            colors = c('green', 'dark green'),
-            marker = list(size = 5),
-            showlegend = TRUE,
-            legendgroup = ~pixel,
-            text = ~paste("Date: ", Date,
-                          '<br>Pixel: ', pixel,
-                          '<br>Data: NDVI')) %>%
-          layout(xaxis = list(title = "Date"))
-        p_ndvi = add_title_to_plot(df = p_ndvi,
-                                   x_title_ = 'NDVI (High Quality data)',
-                                   y_title_ = 'NDVI value')
+        if (length(unique(ndvi_pixel_data_df$ndvi_filtered)) == 1){
+          selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_ndvi')]
+        }else {
+          p_ndvi = ndvi_pixel_data_df %>%
+            subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
+            select(pixel, date, ndvi_filtered) %>%
+            mutate(pixel = paste0('NDVI_high_', pixel), Date = date) %>%
+            arrange(pixel, Date) %>%
+            plot_ly(x = ~date,
+                    y = ~ndvi_filtered) %>%
+            add_trace(
+              mode = 'markers',
+              type = "scatter",
+              color = ~pixel,
+              colors = c('green', 'dark green'),
+              marker = list(size = 5),
+              showlegend = TRUE,
+              legendgroup = ~pixel,
+              text = ~paste("Date: ", Date,
+                            '<br>Pixel: ', pixel,
+                            '<br>Data: NDVI')) %>%
+            layout(xaxis = list(title = "Date"))
+          p_ndvi = add_title_to_plot(df = p_ndvi,
+                                     x_title_ = 'NDVI (High Quality data)',
+                                     y_title_ = 'NDVI value')
+        }
       }
       # NDVI RAW
       if ('all_ndvi' %in% selected_plots){
@@ -1061,28 +1065,32 @@ server = function(input, output, session) {
     if ('EVI' %in% selected_data){
       # EVI HIGH QUALITY
       if ('hiq_evi' %in% selected_plots){
-        p_evi = evi_pixel_data_df %>%
-          subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
-          select(pixel, date, evi_filtered) %>%
-          mutate(pixel = paste0('EVI_high_', pixel), Date = date) %>%
-          arrange(pixel, Date) %>%
-          plot_ly(x = ~date,
-                  y = ~evi_filtered) %>%
-          add_trace(
-            mode = 'markers',
-            type = "scatter",
-            color = ~pixel,
-            colors = c('light blue', 'blue'),
-            marker = list(size = 5),
-            showlegend = TRUE,
-            legendgroup = ~pixel,
-            text = ~paste("Date: ", Date,
-                          '<br>Pixel: ', pixel,
-                          '<br>Data: EVI')) %>%
-          layout(xaxis = list(title = "Date"))
-        p_evi = add_title_to_plot(df = p_evi,
-                                  x_title_ = 'EVI (High Quality data)',
-                                  y_title_ = 'EVI value')
+        if (length(unique(evi_pixel_data_df$evi_filtered)) == 1){
+          selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_evi')]
+        }else {
+          p_evi = evi_pixel_data_df %>%
+            subset(evi_pixel_data_df$pixel %in% sd$Pixel) %>%
+            select(pixel, date, evi_filtered) %>%
+            mutate(pixel = paste0('EVI_high_', pixel), Date = date) %>%
+            arrange(pixel, Date) %>%
+            plot_ly(x = ~date,
+                    y = ~evi_filtered) %>%
+            add_trace(
+              mode = 'markers',
+              type = "scatter",
+              color = ~pixel,
+              colors = c('light blue', 'blue'),
+              marker = list(size = 5),
+              showlegend = TRUE,
+              legendgroup = ~pixel,
+              text = ~paste("Date: ", Date,
+                            '<br>Pixel: ', pixel,
+                            '<br>Data: EVI')) %>%
+            layout(xaxis = list(title = "Date"))
+          p_evi = add_title_to_plot(df = p_evi,
+                                    x_title_ = 'EVI (High Quality data)',
+                                    y_title_ = 'EVI value')
+        }
       }
       # EVI RAW
       if ('all_evi' %in% selected_plots){
@@ -1284,7 +1292,6 @@ server = function(input, output, session) {
     if ('GCC' %in% selected_data){
       # GCC FROM PHENOCAM
       if ('GCC' %in% selected_plots){
-        print ('plottttt gccCccc')
         gcc_p = add_title_to_plot(df = data$gcc_p,
                                   x_title_ = 'Phenocam Greenness (GCC)',
                                   y_title_ = 'GCC value')
