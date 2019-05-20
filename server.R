@@ -1667,7 +1667,6 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'doneBuildingPlot')
     shinyjs::show(id = 'pixelTypes')
     sm_pixels = data$pixel_sps_250m
-    
     types = data$imported_types
 
     if (is.null(sm_pixels@polygons[1][[1]])){
@@ -1675,22 +1674,11 @@ server = function(input, output, session) {
       shinyjs::hide(id = 'pixelTypes')
       if ('GCC' %in% types){
         updateSelectInput(session, 'dataTypes_plot', choices ='GCC', selected = 'GCC')
-        shinyjs::hide(id = 'dataDateRange')
       }else {
         updateSelectInput(session, 'dataTypes_plot', choices ='No Data Available')
       }
-      
-      ## --remove me -- ##
-    # }else if (is.null(sm_pixels@polygons[1][[1]])){
-    #   updateSelectInput(session, 'pixelTypes', choices = c('500m'))
-    #   updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
-    # }else if (is.null(lg_pixels@polygons[1][[1]])){
-    #   updateSelectInput(session, 'pixelTypes', choices = c('250m'))
-    #   updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
-    # }else{
-    #   updateSelectInput(session, 'pixelTypes', choices = c('250m', '500m'))
-    #   updateSelectInput(session, 'dataTypes_plot', choices = types, selected = types)
-      
+    } else{
+      updateSelectInput(session, 'dataTypes_plot', choices = types, selected=types)
     }
   })
   
