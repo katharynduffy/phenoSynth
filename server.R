@@ -433,6 +433,9 @@ server = function(input, output, session) {
     draw_bool = input$drawImage
     site      = input$site
     roi_bool  = input$drawImageROI
+    pft       = input$pftSelection
+    pft       = strsplit(pft, '_')[[1]][1]
+    pft_abbr  = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
 
     removeUI(selector = '#phenocamSiteImage')
     img_url = get_img_url(site)
@@ -444,7 +447,7 @@ server = function(input, output, session) {
                       tags$img(src=img_url, class= 'img',
                                style="position: absolute; z-index: 1; top:0px; left:0px;")))}
       if (roi_bool == TRUE){
-          roi_url = get_roi_url(site)
+          roi_url = get_roi_url(name = site, pft_abr = pft_abbr)
           print (roi_url)
           if (roi_url != 'Not Found'){
           insertUI(selector = '#phenocamSiteImage',
@@ -522,9 +525,11 @@ server = function(input, output, session) {
     }
   })
 
-  # When ROI Vegetation type changes re-plot highlighted veg type
+  # When ROI Vegetation type changes re-plot highlighted veg type, change roi mask to overlay, and 
+  #  the csv data to import form phenocam API
   observeEvent(input$pftSelection, {
     if (panel$mode == 'analyzer'){
+        # Change vegetation cover agreement to match selected ROI in pftSelection
         print ('Running pft Selection')
         global_r   = raster::raster(data$global_pth)
 
@@ -535,6 +540,7 @@ server = function(input, output, session) {
         c3 = build_pft_palette(data$r_landcover)
         pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
+        pft_abbr = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
         rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
 
         leafletProxy('map') %>%
@@ -546,6 +552,11 @@ server = function(input, output, session) {
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE))
         
+        # Grab correct ROI mask from phenocamAPI 
+        data$roi_url = get_roi_url(name = site, pft_abr = pft_abbr)
+        print (data$roi_url)
+        
+        # Grab correct CSV from phenocamAPI
     }
   })
 
