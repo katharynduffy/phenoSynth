@@ -681,7 +681,7 @@ server = function(input, output, session) {
     
     # ------------------PLOT NDVI------------------------------------
     if ('NDVI' %in% selected_data){
-      withProgress(message = 'Building NDVI Plot', value = .1, {
+      withProgress(message = 'Building NDVI Plot', value = .4, {
       print ('Plotting NDVI')
     
       if (is.null(sm_pixels@polygons[1][[1]])){
@@ -722,7 +722,7 @@ server = function(input, output, session) {
     
     # ------------------PLOT EVI------------------------------------
     if ('EVI' %in% selected_data){
-      withProgress(message = 'Building EVI Plot', value = .1, {
+      withProgress(message = 'Building EVI Plot', value = .4, {
       print ('Plotting EVI')
       
       if (is.null(sm_pixels@polygons[1][[1]])){
@@ -758,12 +758,13 @@ server = function(input, output, session) {
         data$evi_pixels = evi_pixel_data_df
 
       }
-      print ('END EVI PLOT')
       }) #END WITH PROGRESS BAR
-  } #END EVI PLOT
-
+    } #END EVI PLOT
+    # Show and switch to plotpanel
+    shiny::showTab('navbar','PlotPanel')
     updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
   }) #END PLOTTING DATA OBSERVER
+  
   
   # Plot the data
   output$data_plot <- renderPlotly({
@@ -809,9 +810,9 @@ server = function(input, output, session) {
       }}
     
     if ('NDVI' %in% selected_data){
-      print (as_tibble(ndvi_pixel_data_df))
       # NDVI HIGH QUALITY
       ndvi_pixel_data_df = data$ndvi_pixels
+      print (as_tibble(ndvi_pixel_data_df))
       rownames(ndvi_pixel_data_df) = NULL
       #saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
       mNDVI=ndvi_pixel_data_df %>%
@@ -939,9 +940,9 @@ server = function(input, output, session) {
     
     
     if ('EVI' %in% selected_data){
-      print (as_tibble(evi_pixel_data_df))
       # EVI HIGH QUALITY
       evi_pixel_data_df = data$evi_pixels
+      print (as_tibble(evi_pixel_data_df))
       rownames(evi_pixel_data_df) = NULL
       #saveRDS(evi_pixel_data_df, 'testLOESSdata2.rds')
       mEVI=evi_pixel_data_df %>%
@@ -1387,7 +1388,7 @@ server = function(input, output, session) {
     # Import [GCC] splined Data from phenocam (csv)
     #------------------------------------------------------------------------
     if ('GCC' %in% selected_data){
-      # withProgress(message = 'Importing GCC', value = .1, {
+      withProgress(message = 'Importing GCC', value = .1, {
       file_path = gcc_filepath
       veg_types = data$veg_types
       phenocam$gcc_all = list()
@@ -1404,7 +1405,7 @@ server = function(input, output, session) {
         
         if (file.exists(gcc_filepath)){
           print ('Will import GCC on fly when plotting!')
-          # setProgress(value = .5, detail = 'Importing GCC CSV')
+          setProgress(value = .2, detail = 'Importing GCC CSV')
           phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
           phenocam$spring = read.csv(spring_filepath, header = TRUE)
           phenocam$fall   = read.csv(fall_filepath, header = TRUE)
@@ -1412,13 +1413,13 @@ server = function(input, output, session) {
                                               spring = phenocam$spring,
                                               fall   = phenocam$fall)
         }else{
-          # setProgress(value = .2, detail = 'Downloading GCC data')
+          setProgress(value = .2, detail = 'Downloading GCC data')
           phenocam$data = get_site_roi_csvs(name        = site,
                                             roi_files_  = roi_files,
                                             frequency_  = freq,
                                             percentile_ = percentile_gcc,
                                             roi_type_   = pft_abbr)
-          # setProgress(value = .2, detail = 'GCC data Downloaded')
+          setProgress(value = .2, detail = 'GCC data Downloaded')
           
           phenocam$gcc    = phenocam$data[[1]]
           phenocam$spring = phenocam$data[[2]]
@@ -1434,17 +1435,10 @@ server = function(input, output, session) {
       }
 
       shinyjs::show(id = 'plotRemoteData')
-      # }) #END WITH PROGRESS BAR
+      }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
 
-    
-    
-    
-    
-    
-    
-    
-    
+
     data$imported_types = selected_data
     start_site = as.character(site_data$date_first)
     end_site   = as.character(site_data$date_last)

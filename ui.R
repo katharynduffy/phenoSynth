@@ -88,6 +88,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                                       tags$div(id = 'image')
                                       ),
 
+                        # rename this id, should be imgroipanel or something(add in server too)
                         absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
                                       draggable = TRUE,  top = 'auto', left = 400, right = 'auto' , bottom = 20,
                                       width = 375, height = 225, style="z-index:500;",
