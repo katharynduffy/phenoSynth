@@ -502,6 +502,7 @@ server = function(input, output, session) {
       data$r_landcover = r
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
+      data$veg_types = veg_types
       print (veg_types)
 
       pft = strsplit(veg_types[1], '_')[[1]][1]
@@ -540,7 +541,8 @@ server = function(input, output, session) {
         c3 = build_pft_palette(data$r_landcover)
         pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
-        pft_abbr = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+        pft_abbr = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+        data$pft_abbr = pft_abbr
         rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
 
         leafletProxy('map') %>%
@@ -614,13 +616,34 @@ server = function(input, output, session) {
     
     print (paste0('Plotting: ', selected_data))
     
+    if (is.null(sm_pixels@polygons[1][[1]])){
+      output$plotTable <- DT::renderDataTable(
+        data.frame(Empty='empty')
+      )
+    }else{
+      output$plotTable <- DT::renderDataTable(
+        subset(data$pixel_df, data$pixel_df$Type == '250m') %>% 
+          select(Site, Pixel, Type, Lat, Lon),
+        filter = 'top',
+        options = list(autoWidth = TRUE, scrollY = TRUE))
+    }
+    
     
     # ------------------PLOT GCC------------------------------------
     if ('GCC' %in% selected_data){
       withProgress(message = 'Building GCC Plot', value = .1, {
       print ('Plotting GCC')
-      gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
+        
+      # Get current pft from pftSelection observer
+      pft_abbr = data$pft_abbr
+      # Input into plotting gcc function
+      gcc_p = gcc_plot(phenocam$gcc_all[[pft_abbr]]$gcc, 
+                       phenocam$gcc_all[[pft_abbr]]$spring, 
+                       phenocam$gcc_all[[pft_abbr]]$fall)
       data$gcc_p = gcc_p
+        
+      # gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
+      # data$gcc_p = gcc_p
       }) #END WITH PROGRESS BAR
     } #END GCC PLOT
     
@@ -688,19 +711,6 @@ server = function(input, output, session) {
           }else {
             ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
           }
-          
-          # # Build NDVI plot
-          # data$ndvi_p = ndvi_p %>%
-          #   add_markers(
-          #   data = ndvi_brick_df,
-          #   x = ~ date,
-          #   y = ~ ndvi_raw,
-          #   showlegend = TRUE,
-          #   type = 'scatter',
-          #   mode = 'markers',
-          #   name = paste0(num,'_px_NDVI_250m'),
-          #   marker = list(color = cs[num])
-          #   )
           }
           
         ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 2114, 
@@ -742,63 +752,6 @@ server = function(input, output, session) {
         }else {
           evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
         }
-        
-        # evi_p = evi_p %>%
-        #   add_markers(
-        #     data = evi_brick_df,
-        #     x = ~ date,
-        #     y = ~ pixel,
-        #     showlegend = TRUE,
-        #     type = 'scatter',
-        #     mode = 'markers',
-        #     name = paste0(num,'_px_EVI_250m'),
-        #     marker = list(color = cs[num])
-        #   )
-        # # Add transition date points to pixels if Transition dates are selected
-        # if ('Transition Dates' %in% selected_data){
-        #   evi_p = evi_p %>%
-        #     add_markers(
-        #       data = subset(OGMa,OGMa$pixel==num),
-        #       x = ~ dates,
-        #       y = ~ value,
-        #       showlegend = TRUE,
-        #       type = 'scatter',
-        #       mode = 'markers',
-        #       marker = list(color = cs[num], size= 10, symbol=2),
-        #       name = paste0(num,'_px_Onset_Greenness_Maximum')
-        #     ) %>%
-        #     add_markers(
-        #       data = subset(OGMi,OGMi$pixel==num),
-        #       x = ~ dates,
-        #       y = ~ value,
-        #       showlegend = TRUE,
-        #       type = 'scatter',
-        #       mode = 'markers',
-        #       marker = list(color = cs[num], size= 10, symbol=25),
-        #       name = paste0(num,'_px_Onset_Greenness_Minimum')
-        #     ) %>%
-        #     add_markers(
-        #       data = subset(OGI,OGI$pixel==num),
-        #       x = ~ dates,
-        #       y = .25,
-        #       showlegend = TRUE,
-        #       type = 'scatter',
-        #       mode = 'markers',
-        #       marker = list(color = cs[num], size= 10, symbol=5),
-        #       name = paste0(num,'_px_Onset_Greenness_Increase')
-        #     ) %>%
-        #     add_markers(
-        #       data = subset(OGD,OGD$pixel==num),
-        #       x = ~ dates,
-        #       y = .25,
-        #       showlegend = TRUE,
-        #       type = 'scatter',
-        #       mode = 'markers',
-        #       marker = list(color = cs[num], size= 10, symbol=6),
-        #       name = paste0(num,'_px_Onset_Greenness_Decrease')
-        #     )
-        # }
-        
           } #END 250M LOOP
         evi_pixel_data_df$evi_filtered = ifelse(evi_pixel_data_df$evi_qc == 2112 | evi_pixel_data_df$evi_qc == 2114, 
                                                 evi_pixel_data_df$evi_raw, NA)
@@ -809,78 +762,10 @@ server = function(input, output, session) {
       }) #END WITH PROGRESS BAR
   } #END EVI PLOT
 
-
-    # # ------------------COMPILING PLOT ------------------------------------
-    # if ( 'NDVI' %in% selected_data |'EVI' %in% selected_data | 'GCC' %in% selected_data | 'Transition Dates' %in% selected_data){
-    #   withProgress(message = 'Compiling All Plots', value = .3, {
-    #   print ('Compiling plot')
-    #   print (selected_data)
-    #   vector_length = length(selected_data)
-    #   if ('Transition Dates' %in% selected_data){
-    #     vector_length = vector_length - 1
-    #   }
-    #   if('NPN' %in% selected_data){
-    #     vector_length = vector_length - 1
-    #   }
-    #   
-    #   plot_list = vector('list', vector_length)
-    #   print (plot_list)
-    #   count = 0
-    #   for (i in selected_data){
-    #     count = count + 1
-    #     print (i)
-    #     if (i == 'GCC'){
-    #       plot_list[[count]] = gcc_p
-    #     }
-    #     if (i =='NDVI'){
-    #       plot_list[[count]] = ndvi_p
-    #     }
-    #     if (i == 'EVI'){
-    #       plot_list[[count]] = evi_p
-    #     }
-    #   }
-    #   
-    #   print ('Compiling intermediate plot')
-    #   intermediate_p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE) %>%
-    #     layout(title='PhenoSynth Plots')
-    #   
-    #   print ('Compiling final plot')
-    #   # Removing unwanted mode bar options on plotly plot
-    #   final_plot = intermediate_p %>% config(displaylogo = FALSE,
-    #                              modeBarButtonsToRemove = list(
-    #                                'sendDataToCloud',
-    #                                'autoScale2d',
-    #                                'resetScale2d',
-    #                                'hoverClosestCartesian',
-    #                                'hoverCompareCartesian',
-    #                                'toggleSpikelines'
-    #                              )) %>%
-    #     layout(height = 250* vector_length, width = 1300, inline = TRUE)
-    #   
-    #   # add table for npn gridded tds
-    #   if(selected_pixel_type == '250m'){
-    #     data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
-    #   }else if(selected_pixel_type =='500m'){
-    #     data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '500m')
-    #   }
-    #   
-    #   updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
-    #     }) #END WITH PROGRESS BAR
-    #   }
     updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
   }) #END PLOTTING DATA OBSERVER
   
-  
-  
-  output$plotTable <- DT::renderDataTable(
-    subset(data$pixel_df, data$pixel_df$Type == '250m') %>% 
-      select(Site, Pixel, Type, Lat, Lon),
-      filter = 'top',
-      options = list(autoWidth = TRUE, scrollY = TRUE))
-
-  
-  
-  # Observer to track currently selected data from Plotting Dataframe on plat panel page
+  # Plot the data
   output$data_plot <- renderPlotly({
     selected_data = input$dataTypes_plot
     
@@ -891,25 +776,8 @@ server = function(input, output, session) {
 
     s <- req(input$plotTable_rows_all)
     sd = data$plotTable[s, , drop = FALSE]
-
-    ndvi_pixel_data_df = data$ndvi_pixels
-    rownames(ndvi_pixel_data_df) = NULL
-    #saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
-    mNDVI=ndvi_pixel_data_df %>%
-      filter(!is.na(ndvi_pixel_data_df$ndvi_raw)) %>%
-      group_by(date) %>%
-      summarise(meanNDVI = mean(ndvi_raw))
-    evi_pixel_data_df = data$evi_pixels
-    rownames(evi_pixel_data_df) = NULL
-    #saveRDS(evi_pixel_data_df, 'testLOESSdata2.rds')
-    mEVI=evi_pixel_data_df %>%
-      filter(!is.na(evi_pixel_data_df$evi_raw)) %>%
-      group_by(date) %>%
-      summarise(meanEVI = mean(evi_raw))
-    #saveRDS(mEVI, 'testmEVI.rds')
+    
     print (as_tibble(sd))
-    print (as_tibble(ndvi_pixel_data_df))
-    print (as_tibble(evi_pixel_data_df))
     
     if ('Transition Dates' %in% selected_data){
       if ('tds_sat' %in% selected_plots){
@@ -941,7 +809,15 @@ server = function(input, output, session) {
       }}
     
     if ('NDVI' %in% selected_data){
+      print (as_tibble(ndvi_pixel_data_df))
       # NDVI HIGH QUALITY
+      ndvi_pixel_data_df = data$ndvi_pixels
+      rownames(ndvi_pixel_data_df) = NULL
+      #saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
+      mNDVI=ndvi_pixel_data_df %>%
+        filter(!is.na(ndvi_pixel_data_df$ndvi_raw)) %>%
+        group_by(date) %>%
+        summarise(meanNDVI = mean(ndvi_raw))
       if ('hiq_ndvi' %in% selected_plots){
         if (length(unique(ndvi_pixel_data_df$ndvi_filtered)) == 1){
           selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_ndvi')]
@@ -1063,7 +939,16 @@ server = function(input, output, session) {
     
     
     if ('EVI' %in% selected_data){
+      print (as_tibble(evi_pixel_data_df))
       # EVI HIGH QUALITY
+      evi_pixel_data_df = data$evi_pixels
+      rownames(evi_pixel_data_df) = NULL
+      #saveRDS(evi_pixel_data_df, 'testLOESSdata2.rds')
+      mEVI=evi_pixel_data_df %>%
+        filter(!is.na(evi_pixel_data_df$evi_raw)) %>%
+        group_by(date) %>%
+        summarise(meanEVI = mean(evi_raw))
+      #saveRDS(mEVI, 'testmEVI.rds')
       if ('hiq_evi' %in% selected_plots){
         if (length(unique(evi_pixel_data_df$evi_filtered)) == 1){
           selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_evi')]
@@ -1181,119 +1066,12 @@ server = function(input, output, session) {
                                       y_title_ = 'EVI value')
       }
     }
-    
-    # # Add transition date points to pixels if Transition dates are selected
-    # if ('Transition Dates' %in% selected_data){
-    #   if ('tds_sat' %in% selected_plots){
-    #     OGMa = data$OGMa
-    #     OGMi = data$OGMi
-    #     OGI  = data$OGI
-    #     OGD  = data$OGD
-    #     print (as_tibble(OGMa))
-    #     
-    #     p_tds =
-    #       OGMa %>%
-    #       subset(OGMa$pixel %in% sd$Pixel) %>%
-    #       select(pixel, dates, value) %>%
-    #       mutate(pixel = paste0('TD_', pixel), Date = dates) %>%
-    #       arrange(pixel, Date) %>%
-    #       plot_ly(x = ~Date,
-    #               y = ~value) %>%
-    #       add_trace(
-    #         mode = 'markers',
-    #         type = "scatter",
-    #         color = ~pixel,
-    #         colors = c('green', 'dark green'),
-    #         marker = list(size= 10, symbol=2),
-    #         showlegend = TRUE,
-    #         text = ~paste("Date: ", Date,
-    #                       '<br>Pixel: ', pixel,
-    #                       '<br>Data: Onset Greenness Maximum')
-    #       )
-    #     
-    #     
-    #     clean_OGMa = OGMa %>%
-    #       subset(OGMa$pixel %in% sd$Pixel) %>%
-    #       mutate(pixel = paste0('TD_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date)
-    #       
-    #     test = p_evi_raw %>%
-    #       # plot_ly() %>%
-    #       add_trace(inherit = FALSE,
-    #         data = clean_OGMa,
-    #         x = ~Date,
-    #         y = ~value,
-    #         color = ~pixel,
-    #         colors = c('green', 'dark green'),
-    #         type = "scatter",
-    #         mode = 'markers',
-    #         marker = list(size= 10, symbol=2),
-    #         showlegend = TRUE,
-    #         text = ~paste("Date: ", Date,
-    #                       '<br>Pixel: ', pixel,
-    #                       '<br>Data: Onset_Greenness_Maximum'))
-    #     plotly_json(test)
-
-        
-        
-        
-        
-        # colors = c('#fffb93', '#fff500')
-          
-          # add_markers(
-          #   data = subset(OGMa,OGMa$pixel==num),
-          #   x = ~ dates,
-          #   y = ~ value,
-          #   showlegend = TRUE,
-          #   type = 'scatter',
-          #   mode = 'markers',
-          #   marker = list(color = cs[num], size= 10, symbol=2),
-          #   name = paste0(num,'_px_Onset_Greenness_Maximum')
-          # ) %>%
-          # add_markers(
-          #   data = subset(OGMi,OGMi$pixel==num),
-          #   x = ~ dates,
-          #   y = ~ value,
-          #   showlegend = TRUE,
-          #   type = 'scatter',
-          #   mode = 'markers',
-          #   marker = list(color = cs[num], size= 10, symbol=25),
-          #   name = paste0(num,'_px_Onset_Greenness_Minimum')
-          # ) %>%
-          # add_markers(
-          #   data = subset(OGI,OGI$pixel==num),
-          #   x = ~ dates,
-          #   y = .25,
-          #   showlegend = TRUE,
-          #   type = 'scatter',
-          #   mode = 'markers',
-          #   marker = list(color = cs[num], size= 10, symbol=5),
-          #   name = paste0(num,'_px_Onset_Greenness_Increase')
-          # ) %>%
-          # add_markers(
-          #   data = subset(OGD,OGD$pixel==num),
-          #   x = ~ dates,
-          #   y = .25,
-          #   showlegend = TRUE,
-          #   type = 'scatter',
-          #   mode = 'markers',
-          #   marker = list(color = cs[num], size= 10, symbol=6),
-          #   name = paste0(num,'_px_Onset_Greenness_Decrease')
-          # )
-
-    
-    
-    
-    
-    
-    
-    
+ 
     if ('GCC' %in% selected_data){
       # GCC FROM PHENOCAM
       if ('GCC' %in% selected_plots){
         gcc_p = add_title_to_plot(df = data$gcc_p,
-                                  x_title_ = 'Phenocam Greenness (GCC)',
+                                  x_title_ = paste0('Phenocam Greenness (GCC) : ',as.character(input$pftSelection)),
                                   y_title_ = 'GCC value')
       }
     }
@@ -1432,7 +1210,7 @@ server = function(input, output, session) {
     print ('Importing data for:')
     print (selected_data)
 
-    # Set up directories to store data if in Download local data mode
+    # Set up directories to store data
     main = './www/site_data'
     npn_grid_dir  = './www/npn_grid_data'
     if (!file.exists(main)){
@@ -1449,7 +1227,6 @@ server = function(input, output, session) {
       dir.create(file.path(file_path))
     }
     if (!file.exists(ndvi_filepath) & 'NDVI' %in% selected_data){
-      print ('building ndvi folder')
       dir.create(file.path(ndvi_filepath))
     }
     if (!file.exists(evi_filepath) & 'EVI' %in% selected_data){
@@ -1461,8 +1238,6 @@ server = function(input, output, session) {
     if (!file.exists(gcc_filepath) & 'GCC' %in% selected_data){
       dir.create(file.path(gcc_filepath))
     }
-    
-    
     
       # Import [NPN]
     if ('NPN' %in% selected_data){
@@ -1603,48 +1378,73 @@ server = function(input, output, session) {
     } #END IMPORT EVI
     
 
+    
+    
+    
+    
+    
+    
     # Import [GCC] splined Data from phenocam (csv)
     #------------------------------------------------------------------------
     if ('GCC' %in% selected_data){
-      withProgress(message = 'Importing GCC', value = .1, {
-        
+      # withProgress(message = 'Importing GCC', value = .1, {
       file_path = gcc_filepath
-      print ('Importing Phenocam GCC')
-      pft_long = input$pftSelection
-      pft = strsplit(pft_long, '_')[[1]][1]
-      pft_abb = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
-
-      gcc_filepath    = paste0(file_path, 'gcc', '_',paste0(freq,'_day'), '.csv')
-      spring_filepath = paste0(file_path, 'gcc', '_',paste0(freq,'_day_spring_tds'), '.csv')
-      fall_filepath   = paste0(file_path, 'gcc', '_',paste0(freq,'_day_fall_tds'), '.csv')
-
-      if (file.exists(gcc_filepath)){
-        setProgress(value = .5, detail = 'Importing GCC CSV')
-        phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
-        phenocam$spring = read.csv(spring_filepath, header = TRUE)
-        phenocam$fall   = read.csv(fall_filepath, header = TRUE)
-      }else{
-        setProgress(value = .2, detail = 'Downloading GCC data')
-        phenocam$data = get_site_roi_csvs(name        = site,
-                                          roi_files_  = roi_files,
-                                          frequency_  = freq,
-                                          percentile_ = percentile_gcc,
-                                          roi_type_   = pft_abb)
-        setProgress(value = .2, detail = 'GCC data Downloaded')
+      veg_types = data$veg_types
+      phenocam$gcc_all = list()
+      
+      for (veg in veg_types){
+        print (veg)
+        pft       = strsplit(veg, '_')[[1]][1]
+        pft_abbr  = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+        print (paste0('Importing Phenocam GCC: ', pft_abbr))
         
-        phenocam$gcc    = phenocam$data[[1]]
-        phenocam$spring = phenocam$data[[2]]
-        phenocam$fall   = phenocam$data[[3]]
+        gcc_filepath    = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day'), '.csv')
+        spring_filepath = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_spring_tds'), '.csv')
+        fall_filepath   = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_fall_tds'), '.csv')
         
-        write.csv(phenocam$gcc,    file = gcc_filepath)
-        write.csv(phenocam$spring, file = spring_filepath)
-        write.csv(phenocam$fall,   file = fall_filepath)
+        if (file.exists(gcc_filepath)){
+          print ('Will import GCC on fly when plotting!')
+          # setProgress(value = .5, detail = 'Importing GCC CSV')
+          phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
+          phenocam$spring = read.csv(spring_filepath, header = TRUE)
+          phenocam$fall   = read.csv(fall_filepath, header = TRUE)
+          phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
+                                              spring = phenocam$spring,
+                                              fall   = phenocam$fall)
+        }else{
+          # setProgress(value = .2, detail = 'Downloading GCC data')
+          phenocam$data = get_site_roi_csvs(name        = site,
+                                            roi_files_  = roi_files,
+                                            frequency_  = freq,
+                                            percentile_ = percentile_gcc,
+                                            roi_type_   = pft_abbr)
+          # setProgress(value = .2, detail = 'GCC data Downloaded')
+          
+          phenocam$gcc    = phenocam$data[[1]]
+          phenocam$spring = phenocam$data[[2]]
+          phenocam$fall   = phenocam$data[[3]]
+          phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
+                                            spring = phenocam$spring,
+                                            fall   = phenocam$fall)
+          
+          write.csv(phenocam$gcc,    file = gcc_filepath)
+          write.csv(phenocam$spring, file = spring_filepath)
+          write.csv(phenocam$fall,   file = fall_filepath)
+        }
       }
 
       shinyjs::show(id = 'plotRemoteData')
-      }) #END WITH PROGRESS BAR
+      # }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
 
+    
+    
+    
+    
+    
+    
+    
+    
     data$imported_types = selected_data
     start_site = as.character(site_data$date_first)
     end_site   = as.character(site_data$date_last)
