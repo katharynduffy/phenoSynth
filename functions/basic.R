@@ -1,5 +1,6 @@
 # Switch to explorer panel
 switch_to_explorer_panel = function(map_ = 'map'){
+  shiny::hideTab('navbar', 'PlotPanel')
   # Ids to show:
   shinyjs::show(id = 'explorerTitle')
   shinyjs::show(id = 'usZoom')
