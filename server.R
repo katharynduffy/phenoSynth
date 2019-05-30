@@ -894,14 +894,16 @@ server = function(input, output, session) {
 
     ndvi_pixel_data_df = data$ndvi_pixels
     rownames(ndvi_pixel_data_df) = NULL
-    #saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
+    saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
+    #add logic to skip if all poor quality
+    
     mNDVI=ndvi_pixel_data_df %>%
       filter(!is.na(ndvi_pixel_data_df$ndvi_raw)) %>%
       group_by(date) %>%
       summarise(meanNDVI = mean(ndvi_raw))
     evi_pixel_data_df = data$evi_pixels
     rownames(evi_pixel_data_df) = NULL
-    #saveRDS(evi_pixel_data_df, 'testLOESSdata2.rds')
+    saveRDS(evi_pixel_data_df, 'testLOESSdata2.rds')
     mEVI=evi_pixel_data_df %>%
       filter(!is.na(evi_pixel_data_df$evi_raw)) %>%
       group_by(date) %>%

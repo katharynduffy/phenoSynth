@@ -39,7 +39,7 @@ library(httr)
 library(shinycssloaders)
 library(data.table)
 library(grDevices)
-library(plotly)
+
 library(knitr)
 library(kableExtra)
 options(knitr.table.format = "html")
