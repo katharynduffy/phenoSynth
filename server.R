@@ -777,7 +777,7 @@ server = function(input, output, session) {
 
     s <- req(input$plotTable_rows_all)
     sd = data$plotTable[s, , drop = FALSE]
-<<<<<<< HEAD
+
 
     ndvi_pixel_data_df = data$ndvi_pixels
     rownames(ndvi_pixel_data_df) = NULL
@@ -796,9 +796,7 @@ server = function(input, output, session) {
       group_by(date) %>%
       summarise(meanEVI = mean(evi_raw))
     #saveRDS(mEVI, 'testmEVI.rds')
-=======
-    
->>>>>>> 50b6071f0c68c78000a06798af617ced14eaaa54
+
     print (as_tibble(sd))
     
     if ('Transition Dates' %in% selected_data){
