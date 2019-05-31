@@ -39,6 +39,7 @@ library(httr)
 library(shinycssloaders)
 library(data.table)
 library(grDevices)
+library(plotly)
 
 library(knitr)
 library(kableExtra)
@@ -56,6 +57,13 @@ c$sitemetadata=NULL
 cams_=cbind(c, c_m)
 cams_[is.na(cams_)] = 'N'
 cams_[, 2:4] <- sapply(cams_[, 2:4], as.numeric) #changing lat/lon/elev from string values into numeric
+
+print ('Grabbing phenocam rois-api')
+rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
+roi_files = rois$results
+
+idx=is.element(cams_$Sitename, roi_files$site)
+cams_=cams_[idx,]
 
 # All site names from table
 site_names = cams_$Sitename
@@ -77,13 +85,6 @@ pft_expanded = c('Water', 'Evergreen Needleleaf Forest', 'Evergreen Broadleaf Fo
 pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded)
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
-
-print ('Grabbing phenocam rois-api')
-rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
-roi_files = rois$results
-
-idx=is.element(cams_$Sitename, roi_files$site)
-cams_=cams_[idx,]
 
 # Load in dataframe with cached AppEEARS tasks
 appeears_tasks_ndvi     = readRDS(file = './www/cache_df_ndvi.df')
