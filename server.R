@@ -499,7 +499,8 @@ server = function(input, output, session) {
     variables$color_list = c()
     variables$color_list_reserve = rainbow(20)
 
-    data$global_pth = './www/global_landcover_2016.tif'
+    # Landcover layer
+    data$global_pth = './www/MCD12Q1.006_LC_type_1_2017.tif'
     global_r   = raster::raster(data$global_pth)
 
     veg_types  = c()
