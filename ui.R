@@ -3,6 +3,15 @@
 ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                mainPanel(
                  img(src='phenoSynth.png', id = 'phenoSynthLogo'),
+                 bsModal("saveShpPopup",
+                         "Select Plot Data", "saveShp",
+                         tags$head(tags$style("#window .modal{backdrop: 'static'}")),
+                         size = "small",
+                         selectInput('shapefiles', "Select Shapefile", c('None')),
+                         actionButton('emailShp', 'Email shapefile'),
+                         br(),br(),
+                         actionButton('downloadShp', 'Download shapefile')
+                 ),
                  bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
@@ -114,20 +123,20 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                         ), # close tab panel
 
 
-           # tabPanel('pAOI Management',
-           # 
-           #          tags$div(id='pAOItab'),
-           #          selectInput('shapefiles', "Select Shapefile", c('None')),
-           #          actionButton('saveshp', 'Save Shapefile'),
-           #          br(),
-           #          br(), br(),
-           # 
-           # 
-           #          # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
-           #          #   some point......
-           #          DTOutput("pAOIchart")
-           # 
-           #         ),
+           tabPanel('pAOI Management',
+
+                    tags$div(id='pAOItab',
+                    actionButton('saveShp', 'Save Shapefile'),
+                    br(),
+                    br(), br(),
+
+
+                    # Attempting to build a chart here for the shapefiles, mihgt move it to a new tab at
+                    #   some point......
+                    DTOutput("pAOIchart")
+                    )
+
+                   ),
 
            # tabPanel('User Guide',
            #          includeMarkdown('UserGuide.Rmd')

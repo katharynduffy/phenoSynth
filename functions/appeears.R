@@ -59,6 +59,24 @@ get_appeears_task = function(name, type){
         return (subset(appeears_tasks_ndvi, appeears_tasks_ndvi$task_name == task_))
       }
     }
+  }else if (type == 'ndvi_tera'){
+    task_pos = grep(name, appeears_tasks_ndvi_tera$task_name)
+    for (i in c(1:length(task_pos))){
+      row = get_site_from_task(appeears_tasks_ndvi_tera[task_pos[i],]$task_name, 4)
+      if (row == name){
+        task_ = appeears_tasks_ndvi_tera[task_pos[i],]$task_name
+        return (subset(appeears_tasks_ndvi_tera, appeears_tasks_ndvi_tera$task_name == task_))
+      }
+    }
+  }else if (type == 'ndvi_aqua'){
+    task_pos = grep(name, appeears_tasks_ndvi_aqua$task_name)
+    for (i in c(1:length(task_pos))){
+      row = get_site_from_task(appeears_tasks_ndvi_aqua[task_pos[i],]$task_name, 4)
+      if (row == name){
+        task_ = appeears_tasks_ndvi_aqua[task_pos[i],]$task_name
+        return (subset(appeears_tasks_ndvi_aqua, appeears_tasks_ndvi_aqua$task_name == task_))
+      }
+    }
   }else if (type == 'tds'){
     task_pos = grep(name, appeears_tasks_tds$task_name)
     for (i in c(1:length(task_pos))){
@@ -75,6 +93,24 @@ get_appeears_task = function(name, type){
       if (row == name){
         task_ = appeears_tasks_evi[task_pos[i],]$task_name
         return (subset(appeears_tasks_evi, appeears_tasks_evi$task_name == task_))
+      }
+    }
+  }else if (type == 'evi_tera'){
+    task_pos = grep(name, appeears_tasks_evi_tera$task_name)
+    for (i in c(1:length(task_pos))){
+      row = get_site_from_task(appeears_tasks_evi_tera[task_pos[i],]$task_name, 5)
+      if (row == name){
+        task_ = appeears_tasks_evi_tera[task_pos[i],]$task_name
+        return (subset(appeears_tasks_evi_tera, appeears_tasks_evi_tera$task_name == task_))
+      }
+    }
+  }else if (type == 'evi_aqua'){
+    task_pos = grep(name, appeears_tasks_evi_aqua$task_name)
+    for (i in c(1:length(task_pos))){
+      row = get_site_from_task(appeears_tasks_evi_aqua[task_pos[i],]$task_name, 5)
+      if (row == name){
+        task_ = appeears_tasks_evi_aqua[task_pos[i],]$task_name
+        return (subset(appeears_tasks_evi_aqua, appeears_tasks_evi_aqua$task_name == task_))
       }
     }
   }else {print ('failed to grab task')}

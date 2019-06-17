@@ -8,7 +8,9 @@ server = function(input, output, session) {
   variables = reactiveValues(
                       filter   = 'All',
                       sites_df = cams_,
-                      sites    = site_names)
+                      sites    = site_names,
+                      color_count = 1,
+                      color = 'blue')
   appeears = reactiveValues(
                       none = '')
 
@@ -32,6 +34,7 @@ server = function(input, output, session) {
                       df    = data.frame(),
                       all_data = data.frame(),
                       veg_types = c(),
+                      select_pixel_mode_was_on = FALSE,
                       pixel_sps = SpatialPolygons(list()),
                       #pixel_sps_500m = SpatialPolygons(list()),
                       pixel_sps_250m = SpatialPolygons(list()))
@@ -96,7 +99,7 @@ server = function(input, output, session) {
                Shiny.onInputChange('hover_coordinates', null)})
                }")  %>%
       setView(lng = -93.85, lat = 37.45, zoom = 4) %>%
-      addStyleEditor() %>%
+      addStyleEditor(openOnLeafletDraw = TRUE) %>%
       addMeasure(position          = "topleft",
                  primaryLengthUnit = "meters",
                  primaryAreaUnit   = "sqmeters",
@@ -174,8 +177,21 @@ server = function(input, output, session) {
   # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
     data$draw_mode = TRUE
-    print ('Starting Draw Mode')
+    print ('Map Draw Start')
+    # Turn off highlight pixel mode if it is on
+    if(input$highlightPixelModeNDVI == TRUE){
+      updateCheckboxInput(session, 'highlightPixelModeNDVI', value=FALSE)
+      data$select_pixel_mode_was_on = TRUE
+    }
   })
+  
+  observeEvent(input$map_draw_stop, {
+    print ('Map Draw Stop')
+    if (data$select_pixel_mode_was_on == TRUE){
+      updateCheckboxInput(session, 'highlightPixelModeNDVI', value=TRUE)
+    }
+  })
+  
 
   # Clears plot
   observeEvent(input$clearPlot, {
@@ -191,10 +207,15 @@ server = function(input, output, session) {
   observeEvent(input$map_draw_new_feature, {
       # Leaflet ID to add to the shapefile dataframe
       id = input$map_draw_new_feature$properties$`_leaflet_id`
+      
 
       # Site name combined with run # for new polygon feature
       data$run   = data$run + 1
-      name_      = paste(c(isolate(input$site),data$run), collapse='_')
+      if (panel$mode =='analyzer'){
+        name_ = paste(c(isolate(input$site),data$run), collapse='_')
+      }else{
+        name_ = paste0('no_site_',data$run)
+      }
       data$names = c(data$names, name_)
 
       # Grabbing lat/lon values for new leaflet polygon
@@ -277,7 +298,7 @@ server = function(input, output, session) {
   })
 
   # Save shapefile button
-  observeEvent(input$saveshp,{
+  observeEvent(input$downloadShp,{
     WGScoor              = data$df
     coordinates(WGScoor) = ~Longitude + Latitude
     proj4string(WGScoor) = CRS("+proj=longlat +datum=WGS84")
@@ -288,6 +309,12 @@ server = function(input, output, session) {
     print (filename)
 
     shapefile(LLcoor, filename, overwrite=TRUE)
+  })
+  
+  # Email shapefile button
+  observeEvent(input$emailShp, {
+    print ('Email to soandso@gmail.com')
+    shinyBS::toggleModal(session, 'saveShpPopup', toggle = 'close')
   })
 
 
@@ -467,6 +494,10 @@ server = function(input, output, session) {
     site       = input$site
     site_data  = get_site_info(site)
     data$all_data = data.frame()
+    # Reactive variables for changing and tracking color of highlighted pixel
+    variables$color_count = 1
+    variables$color_list = c()
+    variables$color_list_reserve = rainbow(20)
 
     data$global_pth = './www/global_landcover_2016.tif'
     global_r   = raster::raster(data$global_pth)
@@ -613,7 +644,6 @@ server = function(input, output, session) {
                              inline   = TRUE)
     
     
-    
     print (paste0('Plotting: ', selected_data))
     
     if (is.null(sm_pixels@polygons[1][[1]])){
@@ -622,10 +652,13 @@ server = function(input, output, session) {
       )
     }else{
       output$plotTable <- DT::renderDataTable(
-        subset(data$pixel_df, data$pixel_df$Type == '250m') %>% 
-          select(Site, Pixel, Type, Lat, Lon),
+        data$pixel_df_table,
         filter = 'top',
         options = list(autoWidth = TRUE, scrollY = TRUE))
+        # subset(data$pixel_df, data$pixel_df$Type == '250m') %>% 
+        #   select(Site, Pixel, Type, Lat, Lon),
+        # filter = 'top',
+        # options = list(autoWidth = TRUE, scrollY = TRUE))
     }
     
     
@@ -688,22 +721,38 @@ server = function(input, output, session) {
         print ('No pixels selected')
         ndvi_p = plot_ly()
       }else{
-        ndvi_under_pixel = extract(data$ndvi_brick, sm_pixels)
-        qc_ndvi_under_pixel = extract(data$ndvi_qc_brick, sm_pixels)
-        data$cs  = get_custom_color_list(length(ndvi_under_pixel))
+        ndvi_under_pixel_tera = extract(data$ndvi_tera_brick, sm_pixels)
+        ndvi_under_pixel_aqua = extract(data$ndvi_aqua_brick, sm_pixels)
+        
+        qc_ndvi_under_pixel_tera = extract(data$ndvi_qc_tera_brick, sm_pixels)
+        qc_ndvi_under_pixel_aqua = extract(data$ndvi_qc_aqua_brick, sm_pixels)
+
         ndvi_p = plot_ly()
         
-        for (num in c(1:length(ndvi_under_pixel))){
-          incProgress(amount = (1/length(ndvi_under_pixel))*.8)
+        for (num in c(1:length(ndvi_under_pixel_tera))){
+          incProgress(amount = (1/length(ndvi_under_pixel_tera))*.8)
           pixel_id = sm_pixels@polygons[[num]]@ID
-          ndvi = ndvi_under_pixel[[num]][1,]
-          ndvi_qc = qc_ndvi_under_pixel[[num]][1,]
-          dates = as.Date(names(ndvi),format='X%Y.%m.%d')
-          ndvi_brick_df = data.frame(date = dates, 
-                                     pixel = pixel_id, 
-                                     ndvi_raw = ndvi, 
-                                     ndvi_qc = ndvi_qc)
           
+          ndvi_tera = ndvi_under_pixel_tera[[num]][1,]
+          ndvi_qc_tera = qc_ndvi_under_pixel_tera[[num]][1,]
+          
+          ndvi_aqua = ndvi_under_pixel_aqua[[num]][1,]
+          ndvi_qc_aqua = qc_ndvi_under_pixel_aqua[[num]][1,]
+          
+          dates_tera = as.Date(names(ndvi_tera),format='X%Y.%m.%d')
+          dates_aqua = as.Date(names(ndvi_aqua),format='X%Y.%m.%d')
+          
+          ndvi_brick_df_tera = data.frame(date = dates_tera, 
+                                     pixel = pixel_id, 
+                                     ndvi_raw = ndvi_tera, 
+                                     ndvi_qc = ndvi_qc_tera,
+                                     type    = 'TERA')
+          ndvi_brick_df_aqua = data.frame(date = dates_aqua, 
+                                          pixel = pixel_id, 
+                                          ndvi_raw = ndvi_aqua, 
+                                          ndvi_qc = ndvi_qc_aqua,
+                                          type    = 'AQUA')
+          ndvi_brick_df = rbind(ndvi_brick_df_tera, ndvi_brick_df_aqua)
           
           # Add ndvi_brick_df data (one pixel worth) to a larger df with all pixels and ndvi
           if (num == 1){
@@ -716,6 +765,7 @@ server = function(input, output, session) {
         ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 2114, 
                                                   ndvi_pixel_data_df$ndvi_raw, NA)
         data$ndvi_pixels = ndvi_pixel_data_df
+        print (as_tibble(data$ndvi_pixels))
         }
         })# END WITH PROGRESS BAR
       } #END NDVI PLOT
@@ -729,33 +779,51 @@ server = function(input, output, session) {
         print ('No pixels selected')
         evi_p = plot_ly()
       }else{
-      
-      evi_under_pixel = extract(data$evi_brick, sm_pixels)
-      qc_evi_under_pixel = extract(data$evi_qc_brick, sm_pixels)
-      data$cs  = get_custom_color_list(length(evi_under_pixel))
-      evi_p = plot_ly()
-      
-      for (num in c(1:length(evi_under_pixel))){
-        incProgress(amount = (1/length(evi_under_pixel))*.8)
-        pixel_id = sm_pixels@polygons[[num]]@ID
-        evi = evi_under_pixel[[num]][1,]
-        evi_qc = qc_evi_under_pixel[[num]][1,]
-        dates = as.Date(names(evi),format='X%Y.%m.%d')
-        evi_brick_df = data.frame(date = dates, 
-                                   pixel = pixel_id, 
-                                   evi_raw = evi, 
-                                   evi_qc = evi_qc)
         
-        # Add evi_brick_df data (one pixel worth) to a larger df with all pixels and evi
-        if (num == 1){
-          evi_pixel_data_df = evi_brick_df
-        }else {
-          evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
-        }
-          } #END 250M LOOP
-        evi_pixel_data_df$evi_filtered = ifelse(evi_pixel_data_df$evi_qc == 2112 | evi_pixel_data_df$evi_qc == 2114, 
-                                                evi_pixel_data_df$evi_raw, NA)
-        data$evi_pixels = evi_pixel_data_df
+        evi_under_pixel_tera = extract(data$evi_tera_brick, sm_pixels)
+        evi_under_pixel_aqua = extract(data$evi_aqua_brick, sm_pixels)
+        
+        qc_evi_under_pixel_tera = extract(data$evi_qc_tera_brick, sm_pixels)
+        qc_evi_under_pixel_aqua = extract(data$evi_qc_aqua_brick, sm_pixels)
+      
+        evi_p = plot_ly()
+        
+        for (num in c(1:length(evi_under_pixel_tera))){
+          incProgress(amount = (1/length(evi_under_pixel_tera))*.8)
+          pixel_id = sm_pixels@polygons[[num]]@ID
+          
+          evi_tera = evi_under_pixel_tera[[num]][1,]
+          evi_qc_tera = qc_evi_under_pixel_tera[[num]][1,]
+          
+          evi_aqua = evi_under_pixel_aqua[[num]][1,]
+          evi_qc_aqua = qc_evi_under_pixel_aqua[[num]][1,]
+          
+          dates_tera = as.Date(names(evi_tera),format='X%Y.%m.%d')
+          dates_aqua = as.Date(names(evi_aqua),format='X%Y.%m.%d')
+          
+          evi_brick_df_tera = data.frame(date = dates_tera, 
+                                          pixel = pixel_id, 
+                                          evi_raw = evi_tera, 
+                                          evi_qc = evi_qc_tera,
+                                          type    = 'TERA')
+          evi_brick_df_aqua = data.frame(date = dates_aqua, 
+                                          pixel = pixel_id, 
+                                          evi_raw = evi_aqua, 
+                                          evi_qc = evi_qc_aqua,
+                                          type    = 'AQUA')
+          evi_brick_df = rbind(evi_brick_df_tera, evi_brick_df_aqua)
+          
+          # Add evi_brick_df data (one pixel worth) to a larger df with all pixels and evi
+          if (num == 1){
+            evi_pixel_data_df = evi_brick_df
+          }else {
+            evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
+          }
+            } #END 250M LOOP
+          evi_pixel_data_df$evi_filtered = ifelse(evi_pixel_data_df$evi_qc == 2112 | evi_pixel_data_df$evi_qc == 2114, 
+                                                  evi_pixel_data_df$evi_raw, NA)
+          data$evi_pixels = evi_pixel_data_df
+          print (as_tibble(data$evi_pixels))
 
       }
       }) #END WITH PROGRESS BAR
@@ -838,6 +906,7 @@ server = function(input, output, session) {
         filter(!is.na(ndvi_pixel_data_df$ndvi_raw)) %>%
         group_by(date) %>%
         summarise(meanNDVI = mean(ndvi_raw))
+      
       if ('hiq_ndvi' %in% selected_plots){
         if (length(unique(ndvi_pixel_data_df$ndvi_filtered)) == 1){
           selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_ndvi')]
@@ -847,7 +916,7 @@ server = function(input, output, session) {
             select(pixel, date, ndvi_filtered) %>%
             mutate(pixel = paste0('NDVI_high_', pixel), Date = date) %>%
             arrange(pixel, Date) %>%
-            plot_ly(x = ~date,
+            plot_ly(x = ~Date,
                     y = ~ndvi_filtered) %>%
             add_trace(
               mode = 'markers',
@@ -978,7 +1047,7 @@ server = function(input, output, session) {
             select(pixel, date, evi_filtered) %>%
             mutate(pixel = paste0('EVI_high_', pixel), Date = date) %>%
             arrange(pixel, Date) %>%
-            plot_ly(x = ~date,
+            plot_ly(x = ~Date,
                     y = ~evi_filtered) %>%
             add_trace(
               mode = 'markers',
@@ -1198,6 +1267,10 @@ server = function(input, output, session) {
     for (id_ in ids){
       remove_polyline(id = id_, all = FALSE)
     }
+    variables$color_count = 1
+    variables$color_list = c()
+    variables$color_list_reserve = rainbow(20)
+    
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
     #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
@@ -1212,11 +1285,15 @@ server = function(input, output, session) {
     selected_data  = input$dataTypes_get
     data_options   = c('NDVI', 'EVI', 'GCC', 'Transition Dates', 'NPN')
     
-    file_path      = paste0('./www/site_data/', site, '/data_layers/')
-    ndvi_filepath = paste0(file_path,'ndvi/')
-    evi_filepath = paste0(file_path,'evi/')
-    tds_filepath = paste0(file_path,'tds/')
-    gcc_filepath = paste0(file_path,'gcc/')
+    file_path          = paste0('./www/site_data/', site, '/data_layers/')
+    ndvi_filepath      = paste0(file_path,'ndvi/')
+    ndvi_tera_filepath = paste0(ndvi_filepath, 'tera/')
+    ndvi_aqua_filepath = paste0(ndvi_filepath, 'aqua/')
+    evi_filepath       = paste0(file_path,'evi/')
+    evi_tera_filepath  = paste0(evi_filepath, 'tera/')
+    evi_aqua_filepath  = paste0(evi_filepath, 'aqua/')
+    tds_filepath       = paste0(file_path,'tds/')
+    gcc_filepath       = paste0(file_path,'gcc/')
     
     temp_nc_ndvi = './www/deleteme/ndvi/'
     
@@ -1249,8 +1326,20 @@ server = function(input, output, session) {
     if (!file.exists(ndvi_filepath) & 'NDVI' %in% selected_data){
       dir.create(file.path(ndvi_filepath))
     }
+    if (!file.exists(ndvi_tera_filepath) & 'NDVI' %in% selected_data){
+      dir.create(file.path(ndvi_tera_filepath))
+    }
+    if (!file.exists(ndvi_aqua_filepath) & 'NDVI' %in% selected_data){
+      dir.create(file.path(ndvi_aqua_filepath))
+    }
     if (!file.exists(evi_filepath) & 'EVI' %in% selected_data){
       dir.create(file.path(evi_filepath))
+    }
+    if (!file.exists(evi_tera_filepath) & 'EVI' %in% selected_data){
+      dir.create(file.path(evi_tera_filepath))
+    }
+    if (!file.exists(evi_aqua_filepath) & 'EVI' %in% selected_data){
+      dir.create(file.path(evi_aqua_filepath))
     }
     if (!file.exists(tds_filepath) & 'Transition Dates' %in% selected_data){
       dir.create(file.path(tds_filepath))
@@ -1284,35 +1373,72 @@ server = function(input, output, session) {
       withProgress(message = 'Importing NDVI', value = .4, {
         
       print ('Importing NDVI')
+      # Bring in tera and aqua data
+      appeears$ndvi_aqua = get_appeears_task(site, type = 'ndvi_aqua')
+      appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
       appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       
-      if (length(list.files(ndvi_filepath))==0){
-        setProgress(value = .1, detail = 'Downloading NDVI')
-        ndvi_bundle_df = download_bundle_file(appeears$ndvi$task_id, ndvi_filepath)
-        setProgress(value = .8, detail = 'NDVI Downloaded')
+      print (as_tibble(appeears$ndvi_aqua))
+      print (as_tibble(appeears$ndvi_tera))
+      
+      if (length(list.files(ndvi_tera_filepath))==0){
+        setProgress(value = .1, detail = 'Downloading NDVI TERA')
+        ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
       }else {
-        setProgress(value = .1, detail = 'Importing NDVI')
-        ndvi_bundle_df = get_appeears_bundle_df(appeears$ndvi$task_id)
-        setProgress(value = .8, detail = 'NDVI Imported')
+        setProgress(value = .1, detail = 'Importing NDVI TERA')
+        ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
       }
       
-      ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
-      ndvi_path = paste0(ndvi_filepath, ndvi_name)
+      if (length(list.files(ndvi_aqua_filepath))==0){
+        setProgress(value = .1, detail = 'Downloading NDVI AQUA')
+        ndvi_bundle_df_aqua = download_bundle_file(appeears$ndvi_aqua$task_id, ndvi_aqua_filepath)
+      }else {
+        setProgress(value = .1, detail = 'Importing NDVI AQUA')
+        ndvi_bundle_df_aqua = get_appeears_bundle_df(appeears$ndvi_aqua$task_id)
+      }
       
-      ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
-      ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
+      print (as_tibble(ndvi_bundle_df_tera))
+      print (as_tibble(ndvi_bundle_df_aqua))
       
-      ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
-      ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
-      ndvi_qc_csv   = read.csv(ndvi_qc_path)
-
-      # Add ndvi_nc file to memory
-      data$ndvi_brick    = ndvi_brick
-      data$ndvi_qc_brick = ndvi_qc_brick
-      data$ndvi_qc_csv   = ndvi_qc_csv
+      # TERA data (ndvi)
+      ndvi_tera_name     = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
+      ndvi_tera_path     = paste0(ndvi_tera_filepath, ndvi_tera_name)
+      ndvi_qc_tera_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
+      ndvi_qc_tera_path  = paste0(ndvi_tera_filepath, ndvi_qc_tera_name)
+      # bricks
+      data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI')
+      data$ndvi_qc_tera_brick = raster::brick(ndvi_tera_path, varname='_250m_16_days_VI_Quality')
+      data$ndvi_qc_csv_tera   = read.csv(ndvi_qc_tera_path)
+      
+      # AQUA data (ndvi)
+      ndvi_aqua_name     = subset(ndvi_bundle_df_aqua, file_type == 'nc')$file_name
+      ndvi_aqua_path     = paste0(ndvi_aqua_filepath, ndvi_aqua_name)
+      ndvi_qc_aqua_name  = ndvi_bundle_df_aqua[grep('Quality-lookup', ndvi_bundle_df_aqua$file_name),]$file_name
+      ndvi_qc_aqua_path  = paste0(ndvi_aqua_filepath, ndvi_qc_aqua_name)
+      # bricks
+      data$ndvi_aqua_brick    = raster::brick(ndvi_aqua_path, varname='_250m_16_days_NDVI')
+      data$ndvi_qc_aqua_brick = raster::brick(ndvi_aqua_path, varname='_250m_16_days_VI_Quality')
+      data$ndvi_qc_csv_aqua   = read.csv(ndvi_qc_aqua_path)
+      
+      ####
+      # 
+      # ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
+      # ndvi_path = paste0(ndvi_filepath, ndvi_name)
+      # 
+      # ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
+      # ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
+      # 
+      # ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
+      # ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
+      # ndvi_qc_csv   = read.csv(ndvi_qc_path)
+      # 
+      # # Add ndvi_nc file to memory
+      # data$ndvi_brick    = ndvi_brick
+      # data$ndvi_qc_brick = ndvi_qc_brick
+      # data$ndvi_qc_csv   = ndvi_qc_csv
 
       # Grab first observation of NDVI and Quality datasets
-      raster_1_brick_ndvi = raster(subset(ndvi_brick, 1))
+      raster_1_brick_ndvi = raster(subset(data$ndvi_tera_brick, 1))
       data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, raster_1_brick_ndvi)
       build_raster_grid(data$r_ndvi_cropped, map = 'map')
 
@@ -1351,37 +1477,83 @@ server = function(input, output, session) {
     #   # Import [EVI] netcdf(evi) and csv(qa)
     #   #------------------------------------------------------------------------
     if ('EVI' %in% selected_data){
-      withProgress(message = 'Importing EVI', value = .4, {
+      # withProgress(message = 'Importing EVI', value = .4, {
       print ('Importing EVI')
-      
+        
+      appeears$evi_aqua = get_appeears_task(site, type = 'evi_aqua')
+      appeears$evi_tera = get_appeears_task(site, type = 'evi_tera')
       appeears$evi  = get_appeears_task(site, type = 'evi')
       
-      # if (input$localDownload){
-        if (length(list.files(evi_filepath))==0){
-          setProgress(value = .1, detail = 'Downloading EVI')
-          evi_bundle_df = download_bundle_file(appeears$evi$task_id, evi_filepath)
-          setProgress(value = .1, detail = 'EVI Downloaded')
-        }else {
-          setProgress(value = .1, detail = 'Importing EVI')
-          evi_bundle_df = get_appeears_bundle_df(appeears$evi$task_id)
-          setProgress(value = .1, detail = 'EVI Imported')
-          }
-        print (evi_bundle_df)
-        evi_name = subset(evi_bundle_df, file_type == 'nc')$file_name
-        evi_path = paste0(evi_filepath, evi_name)
-        
-        evi_qc_name = evi_bundle_df[grep('Quality-lookup', evi_bundle_df$file_name),]$file_name
-        evi_qc_path = paste0(evi_filepath, evi_qc_name)
-        
-        evi_brick    = raster::brick(evi_path, varname='_250m_16_days_EVI')
-        evi_qc_brick = raster::brick(evi_path, varname='_250m_16_days_VI_Quality')
-        evi_qc_csv   = read.csv(evi_qc_path)
-      # }
+      print (as_tibble(appeears$evi_aqua))
+      print (as_tibble(appeears$evi_tera))
       
-      # Add evi_nc file to memory
-      data$evi_brick    = evi_brick
-      data$evi_qc_brick = evi_qc_brick
-      data$evi_qc_csv   = evi_qc_csv
+      if (length(list.files(evi_tera_filepath))==0){
+        setProgress(value = .1, detail = 'Downloading EVI TERA')
+        evi_bundle_df_tera = download_bundle_file(appeears$evi_tera$task_id, evi_tera_filepath)
+      }else {
+        setProgress(value = .1, detail = 'Importing EVI TERA')
+        evi_bundle_df_tera = get_appeears_bundle_df(appeears$evi_tera$task_id)
+      }
+      
+      if (length(list.files(evi_aqua_filepath))==0){
+        setProgress(value = .1, detail = 'Downloading evi AQUA')
+        evi_bundle_df_aqua = download_bundle_file(appeears$evi_aqua$task_id, evi_aqua_filepath)
+      }else {
+        setProgress(value = .1, detail = 'Importing EVI AQUA')
+        evi_bundle_df_aqua = get_appeears_bundle_df(appeears$evi_aqua$task_id)
+      }
+      
+      print (as_tibble(evi_bundle_df_tera))
+      print (as_tibble(evi_bundle_df_aqua))
+      
+      # TERA data (evi)
+      evi_tera_name     = subset(evi_bundle_df_tera, file_type == 'nc')$file_name
+      evi_tera_path     = paste0(evi_tera_filepath, evi_tera_name)
+      evi_qc_tera_name  = evi_bundle_df_tera[grep('Quality-lookup', evi_bundle_df_tera$file_name),]$file_name
+      evi_qc_tera_path  = paste0(evi_tera_filepath, evi_qc_tera_name)
+      # bricks
+      data$evi_tera_brick    = raster::brick(evi_tera_path, varname='_250m_16_days_EVI')
+      data$evi_qc_tera_brick = raster::brick(evi_tera_path, varname='_250m_16_days_VI_Quality')
+      data$evi_qc_csv_tera   = read.csv(evi_qc_tera_path)
+      
+      # AQUA data (evi)
+      evi_aqua_name     = subset(evi_bundle_df_aqua, file_type == 'nc')$file_name
+      evi_aqua_path     = paste0(evi_aqua_filepath, evi_aqua_name)
+      evi_qc_aqua_name  = evi_bundle_df_aqua[grep('Quality-lookup', evi_bundle_df_aqua$file_name),]$file_name
+      evi_qc_aqua_path  = paste0(evi_aqua_filepath, evi_qc_aqua_name)
+      # bricks
+      data$evi_aqua_brick    = raster::brick(evi_aqua_path, varname='_250m_16_days_EVI')
+      data$evi_qc_aqua_brick = raster::brick(evi_aqua_path, varname='_250m_16_days_VI_Quality')
+      data$evi_qc_csv_aqua   = read.csv(evi_qc_aqua_path)
+      
+      # appeears$evi  = get_appeears_task(site, type = 'evi')
+      # 
+      # # if (input$localDownload){
+      #   if (length(list.files(evi_filepath))==0){
+      #     setProgress(value = .1, detail = 'Downloading EVI')
+      #     evi_bundle_df = download_bundle_file(appeears$evi$task_id, evi_filepath)
+      #     setProgress(value = .1, detail = 'EVI Downloaded')
+      #   }else {
+      #     setProgress(value = .1, detail = 'Importing EVI')
+      #     evi_bundle_df = get_appeears_bundle_df(appeears$evi$task_id)
+      #     setProgress(value = .1, detail = 'EVI Imported')
+      #     }
+      #   print (evi_bundle_df)
+      #   evi_name = subset(evi_bundle_df, file_type == 'nc')$file_name
+      #   evi_path = paste0(evi_filepath, evi_name)
+      #   
+      #   evi_qc_name = evi_bundle_df[grep('Quality-lookup', evi_bundle_df$file_name),]$file_name
+      #   evi_qc_path = paste0(evi_filepath, evi_qc_name)
+      #   
+      #   evi_brick    = raster::brick(evi_path, varname='_250m_16_days_EVI')
+      #   evi_qc_brick = raster::brick(evi_path, varname='_250m_16_days_VI_Quality')
+      #   evi_qc_csv   = read.csv(evi_qc_path)
+      # # }
+      # 
+      # # Add evi_nc file to memory
+      # data$evi_brick    = evi_brick
+      # data$evi_qc_brick = evi_qc_brick
+      # data$evi_qc_csv   = evi_qc_csv
       
       if ('NDVI' %!in% selected_data){
         # Grab first observation of evi and Quality datasets
@@ -1394,7 +1566,7 @@ server = function(input, output, session) {
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
       shinyjs::show(id = 'plotRemoteData')
-      }) #END WITH PROGRESS BAR
+      # }) #END WITH PROGRESS BAR
     } #END IMPORT EVI
     
 
@@ -1571,15 +1743,18 @@ server = function(input, output, session) {
        datalon = c(xclose, xfar, xfar, xclose ,xclose)
        datalat = c(yclose, yclose, yfar, yfar, yclose)
        id_     = paste0(row, '_', col)
-       
-       print (datalon)
-       print (datalat)
-       print (midcell)
 
        # Check to see if already drawn, and if so remove it from df and leaflet map
        if (id_ %in% data$pixel_df$Pixel){
          remove_polyline(id = id_, all = FALSE)
+         row_to_remove = subset(data$pixel_df, data$pixel_df$Pixel==id_)
          data$pixel_df = subset(data$pixel_df, Pixel!=id_)
+         print ('row to remove')
+         print (row_to_remove)
+         
+         color_to_remove = as.character(row_to_remove$pixel_color)
+         variables$color_list_reserve = c(color_to_remove, variables$color_list_reserve)
+         variables$color_list = variables$color_list[!variables$color_list %in% color_to_remove]
 
          if (type_ == '500m'){
            # Remove polygon from data$pixel_sps_500m
@@ -1598,14 +1773,26 @@ server = function(input, output, session) {
            lst_ = lst[-(pos)]
            data$pixel_sps_250m = data$pixel_sps_250m[lst_]
          }
-         print ('Dataframe of all highlighted pixels (250m)')
-         print (data$pixel_df)
+         # print ('Dataframe of all highlighted pixels (250m)')
+         # print (data$pixel_df)
 
        }else{
          # Draw the pixel polygon on the leaflet map
          if (input$highlightPixelModeNDVI){
+           variables$color_count = length(unique(data$pixel_df$Pixel)) + 1
+
+           if (length(variables$color_list_reserve) > 0){
+           # Add color to the current color list being displayed in the app
+           variables$color = variables$color_list_reserve[1]
+           variables$color_list = c(variables$color_list, variables$color)
+           # Remove the new color from the reserve of colors
+           variables$color_list_reserve = variables$color_list_reserve[!variables$color_list_reserve %in% variables$color]
+           }else{
+             variables$color = 'black'
+           }
+           
            leafletProxy("map") %>%
-             addPolygons(datalon, datalat, layerId = id_, weight = 4,  opacity = .95, color = 'blue', group = '250m Highlighted Pixels', fillOpacity = .1)
+             addPolygons(datalon, datalat, layerId = id_, weight = 4,  opacity = .95, color = variables$color, group = '250m Highlighted Pixels', fillOpacity = .1)
          }
 
          ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,
@@ -1614,12 +1801,16 @@ server = function(input, output, session) {
          print (ps)
 
          # Build Dataframe   reactive value = data$pixel_df
-         data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, Type = type_, Lat = midcelly, Lon = midcellx, pft = vegindex,
+         data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, Type = type_, Lat = midcelly, Lon = midcellx, pft = vegindex,
                                                          pt1_lat = datalat[1], pt1_lon = datalon[1],
                                                          pt2_lat = datalat[2], pt2_lon = datalon[2],
                                                          pt3_lat = datalat[3], pt3_lon = datalon[3],
                                                          pt4_lat = datalat[4], pt4_lon = datalon[4],
                                                          pt5_lat = datalat[5], pt5_lon = datalon[5]))
+         
+         data$pixel_df_table = data$pixel_df %>%  subset(Type == '250m') %>%
+           select(Site, Pixel, Type, Lat, Lon) %>% datatable() %>%  formatStyle('Pixel', fontWeight = 'bold',
+             backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
 
          pixel  = matrix_to_polygon(rbind(c(datalon[1], datalat[1]),
                                           c(datalon[2], datalat[2]),
@@ -1640,11 +1831,9 @@ server = function(input, output, session) {
                data$pixel_sps_250m = rbind(data$pixel_sps_250m, pixel)
              }}
 
-         print ('500m Grid Sp Object info:')
-         print ((data$pixel_sps_500m))
-         print ('250m Grid Sp Object info:')
-         print ((data$pixel_sps_250m))
-         print ('Dataframe of all highlighted pixels (250m)')
+         # print ('250m Grid Sp Object info:')
+         # print ((data$pixel_sps_250m))
+         # print ('Dataframe of all highlighted pixels (250m)')
          print (data$pixel_df)
        }
      }

@@ -13,6 +13,17 @@
   padding: 0px 40px;
 }
 
+/* user created polygon tab */
+#pAOItab{
+  margin-top:60px;
+  padding: 0px 40px;
+}
+.leaflet-styleeditor-tooltip {
+  color:white;
+  border-color:white;
+}
+
+
 #plotTheseBoxes{
   margin-top: 55px;
   margin-left: 30px;

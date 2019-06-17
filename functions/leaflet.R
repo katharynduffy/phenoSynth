@@ -36,7 +36,7 @@ add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red', map_ = '
 # remove all polylines
 remove_polyline = function(id_=NULL, all=TRUE, map_ = 'map'){
   if (all == TRUE){
-    leafletProxy("map") %>%
+    leafletProxy(map_) %>%
       clearShapes()
   }else if(all == FALSE){
     leafletProxy(map_) %>% removeShape(layerId = id_)
