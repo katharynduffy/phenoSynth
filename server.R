@@ -1809,8 +1809,10 @@ server = function(input, output, session) {
                                                          pt5_lat = datalat[5], pt5_lon = datalon[5]))
          
          data$pixel_df_table = data$pixel_df %>%  subset(Type == '250m') %>%
-           select(Site, Pixel, Type, Lat, Lon) %>% datatable() %>%  formatStyle('Pixel', fontWeight = 'bold',
-             backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
+           select(Site, Pixel, Type, Lat, Lon) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10),
+                                                             filter = 'top') %>%
+               formatStyle('Pixel', fontWeight = 'bold', 
+                           backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
 
          pixel  = matrix_to_polygon(rbind(c(datalon[1], datalat[1]),
                                           c(datalon[2], datalat[2]),
