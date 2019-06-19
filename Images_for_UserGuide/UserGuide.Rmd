@@ -1,0 +1,186 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+# User Guide for PhenoSynth June 19th, 2019
+
+***
+### 1. Getting Started
+
+To launch the phenoSynth App navigate to the [phenoSynth repository](https://github.com/katharynduffy/phenoSynth) and click on the phenoSynth logo:
+
+<br>
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 11.29.42 AM.png)
+<br>
+
+
+
+Alternately, if you have Rstudio installed on your computer, you can clone or download the app as a .zip file like so:
+
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 11.30.20 AM.png)
+
+$~$
+
+
+Clone the github repo in your terminal like so:
+
+```
+git clone https://github.com/katharynduffy/phenoSynth.git
+```
+***
+\newpage
+
+### 2. Launching the App
+
+***
+
+$~$
+
+If you decided to download or clone the app, launch it within RStudio by opening the global.R file and clicking the Run App button:
+
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 12.07.24 PM.png)
+
+$~$
+
+
+Once the App has launched you should be directed to the site explorer interface:
+
+$~$
+
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-10 at 12.23.32 PM.png)
+
+
+***
+
+### 3. Navigating the App
+
+In the main interface you can:
+<br>
+
+1. explore the map by scrolling and zooming
+
+<br>
+
+2. Filter by site types that you are interested in:
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.45.54 AM.png)
+<br>
+
+or 3. Type in the name of a site that you want to explore:
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.45.11 AM.png)
+<br>
+
+Once you find a site that you are interested in, click the 'Enter Analyze Mode' button:
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.45.26 AM.png)
+<br>
+
+While in analyze mode you can toggle on or off MODIS Landcover Classification, display of the Region of Interest (ROI) PhenoCam mask used to extract greenness signals by vegetation type, and display the PhenoCam Field of View (FOV):
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.46.56 AM.png)
+
+
+<br>
+
+Now click the 'Import Data' button:
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.47.46 AM.png)
+
+<br>
+
+and select the data and PhenoCam timestep that you are interested in importing.
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.47.57 AM.png)
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.48.03 AM.png)
+
+<br>
+
+When you have selected the data you wish to use, click the 'Get Data' button.
+
+<br>
+
+A 250 m grid of MODIS tiles will appear for comparison with PhenoCam greenness.
+
+With this grid you can select various pixels, including pixels which match vegetation cover classifciation or are within the PhenoCam field of view (FOV)
+
+<br>
+
+The 'Vegetation Cover Agreement' layer is dynamic, such that if multiple vegetation ROIs are available from the PhenoCam network, selecting them in the ROI vegetation drop down menu will highlight new pixels.
+
+<br>
+
+Once you have selected the pixels you are interested in, click on the ‘Plot Data’ button
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.50.22 AM.png)
+<br>
+
+and select the data that you want to plot:  
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.50.33 AM.png)
+<br>
+
+You will be redirected to the plot data tab.
+
+<br>
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.50.57 AM.png)
+
+<br>
+
+In the interactive plot you can select time periods that you are interested, such as dates where PhenoCam and MODIS overlap:
+
+<br>
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.51.02 AM.png)
+<br>
+
+As a user you have the ability to select or remove various levels or types of data with the tick boxes at the top.
+
+<br>
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.52.27 AM.png)
+
+<br>
+
+You can also turn on or off individual pixels, LOESS fits or transition dates by clicking on the on the right.
+
+<br>
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.52.54 AM.png)
+<br>
+
+The naming convention on the pixels represents the x/y position of that pixel surrounding a 1 degree grid from the PhenoCam location.
+
+<br>
+
+You can view metadata about the lat/lon of the pixels that you have selected at the bottom:
+
+<br>
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.54.05 AM.png)
+
+<br>
+
+Further, you can download a dataframe for additional analysis by clicking on the ‘Download Dataframe’ button.
+
+<br>
+
+Or download a png of the plot
+
+<br>
+
+![](/Users/kdw223/Research/PostDoc/phenoSynth/Images_for_UserGuide/Screen Shot 2019-05-20 at 7.53.00 AM.png)
