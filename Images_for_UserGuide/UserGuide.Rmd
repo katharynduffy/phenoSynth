@@ -36,7 +36,7 @@ Clone the github repo in your terminal like so:
 git clone https://github.com/katharynduffy/phenoSynth.git
 ```
 ***
-\newpage
+
 
 ### 2. Launching the App
 
