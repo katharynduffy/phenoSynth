@@ -142,10 +142,14 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
            #          includeMarkdown('UserGuide.Rmd')
            #          ),
 
-           tabPanel('Phenocam Metadata',
+           tabPanel('phenoSynth User Guide',
+                    # tableOutput("phenoTable")
+                    includeMarkdown('../phenoSynth/Images_for_UserGuide/UserGuide.Rmd')
+                   ),
+           tabPanel('PhenoCam Metadata',
                     # tableOutput("phenoTable")
                     dataTableOutput('phenoTable')
-                   ),
+           ),
 
            tabPanel('Plot Data', value = 'PlotPanel',
                     checkboxGroupInput("plotTheseBoxes", label = h4("Select Plots to Display"), 
