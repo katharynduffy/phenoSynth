@@ -83,7 +83,7 @@ server = function(input, output, session) {
         editOptions         = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
         polygonOptions      = drawPolygonOptions(
                                               showArea     = TRUE,
-                                              repeatMode   = F,
+                                              repeatMode   = FALSE,
                                               shapeOptions = drawShapeOptions(
                                                               clickable = TRUE,
                                                               color     = 'black',
@@ -149,7 +149,7 @@ server = function(input, output, session) {
     #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     panel$mode = 'explorer'
-    data$df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
+    data$paois_df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
   })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
@@ -185,12 +185,12 @@ server = function(input, output, session) {
     }
   })
   
-  observeEvent(input$map_draw_stop, {
-    print ('Map Draw Stop')
-    if (data$select_pixel_mode_was_on == TRUE){
-      updateCheckboxInput(session, 'highlightPixelModeNDVI', value=TRUE)
-    }
-  })
+  # observeEvent(input$map_draw_stop, {
+  #   print ('Map Draw Stop')
+  #   if (data$select_pixel_mode_was_on == TRUE){
+  #     updateCheckboxInput(session, 'highlightPixelModeNDVI', value=TRUE)
+  #   }
+  # })
   
 
   # Clears plot
@@ -227,7 +227,7 @@ server = function(input, output, session) {
       c = 0
       for (x in Longitude){
         c       = c + 1
-        data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
+        data$paois_df = rbind(data$paois_df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
 
       # Creating a SpatialPolygon that can be added to our spatial polygons dataframe (value$drawnPoly)
       poly    = Polygon(cbind(Longitude, Latitude))
@@ -240,12 +240,12 @@ server = function(input, output, session) {
                                                                row.names = row.names(spPolys))))
 
       # Updating the select input for the download availability of created leaflet features
-      updateSelectInput(session, 'shapefiles', choices = unique(data$df$Name))
+      updateSelectInput(session, 'shapefiles', choices = unique(data$paois_df$Name))
 
-      # Building the polygon table from the data$df dataframe containing all of the leaflet polygon data
-      build_polygon_table(data$df)
+      # Building the polygon table from the data$paois_df dataframe containing all of the leaflet polygon data
+      build_polygon_table(data$paois_df)
 
-      # print (data$df)
+      # print (data$paois_df)
       # sets highlight pixel to on
       data$draw_mode = FALSE
       print ('Exiting Draw Mode')
@@ -263,21 +263,21 @@ server = function(input, output, session) {
     coor      = unlist(input$map_draw_edited_features$features[[1]]$geometry$coordinates[[1]])
     Longitude = coor[seq(1, length(coor), 2)]
     Latitude  = coor[seq(2, length(coor), 2)]
-    name_     = unique(subset(data$df, LeafletId == id)$Name)
+    name_     = unique(subset(data$paois_df, LeafletId == id)$Name)
 
     # Deletes all rows with id being edited
-    data$df = subset(data$df, LeafletId != id)
+    data$paois_df = subset(data$paois_df, LeafletId != id)
 
-    # Adds back the edited polygon to the dataframe (data$df)
+    # Adds back the edited polygon to the dataframe (data$paois_df)
     c = 0
     for (x in Longitude){
       c       = c + 1
-      data$df = rbind(data$df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
+      data$paois_df = rbind(data$paois_df, data.frame(Name = name_, Longitude = x, Latitude = Latitude[c], LeafletId = id))}
 
-    # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
-    build_polygon_table(data$df)
+    # Updating the polygon table from the data$paois_df dataframe containing all of the leaflet polygon data
+    build_polygon_table(data$paois_df)
 
-    print (data$df)
+    print (data$paois_df)
   })
 
 
@@ -287,34 +287,78 @@ server = function(input, output, session) {
     id      = input$map_draw_deleted_features$features[[1]]$properties$`_leaflet_id`
 
     # Deletes all rows with id being edited
-    print (data$df)
-    data$df = subset(data$df, LeafletId != id)
+    print (data$paois_df)
+    data$paois_df = subset(data$paois_df, LeafletId != id)
 
     # Updating the select input for the download availability of created leaflet features
-    updateSelectInput(session, 'shapefiles', choices = unique(data$df$Name))
+    updateSelectInput(session, 'shapefiles', choices = unique(data$paois_df$Name))
 
-    # Updating the polygon table from the data$df dataframe containing all of the leaflet polygon data
-    build_polygon_table(data$df)
+    # Updating the polygon table from the data$paois_df dataframe containing all of the leaflet polygon data
+    build_polygon_table(data$paois_df)
   })
 
   # Save shapefile button
   observeEvent(input$downloadShp,{
-    WGScoor              = data$df
-    coordinates(WGScoor) = ~Longitude + Latitude
-    proj4string(WGScoor) = CRS("+proj=longlat +datum=WGS84")
-    LLcoor               <- spTransform(WGScoor,CRS("+proj=longlat"))
+    WGScoor              = subset(data$paois_df, data$paois_df$Name == input$shapefiles)
+    xy = select(WGScoor, Longitude, Latitude)
+    xy_matrix = data.matrix(xy)
+    p = Polygon(xy_matrix)
+    ps = Polygons(list(p),1)
+    sps = SpatialPolygons(list(ps))
+    proj4string(sps) = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+
     file                 = isolate(input$shapefiles)
     folder               = get_download_folder()
     filename             = paste(folder, file, sep='')
+    
     print (filename)
-
-    shapefile(LLcoor, filename, overwrite=TRUE)
+    shapefile(sps, filename, overwrite=TRUE)
   })
   
   # Email shapefile button
   observeEvent(input$emailShp, {
-    print ('Email to soandso@gmail.com')
+    print ('Send Email')
     shinyBS::toggleModal(session, 'saveShpPopup', toggle = 'close')
+    site_name = input$site
+    
+    WGScoor              = subset(data$paois_df, data$paois_df$Name == input$shapefiles)
+    xy = select(WGScoor, Longitude, Latitude)
+    xy_matrix = data.matrix(xy)
+    p = Polygon(xy_matrix)
+    ps = Polygons(list(p),1)
+    sps = SpatialPolygons(list(ps))
+    proj4string(sps) = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+    
+    tmp_dir  = paste0('./www/', site_name, '_paoi')
+    file     = isolate(input$shapefiles)
+    filename = paste0(tmp_dir,'/', file)
+    
+    dir.create(tmp_dir)
+    shapefile(sps, filename, overwrite=TRUE)
+    
+    email_body = toString(WGScoor)
+    
+    sender <- "pheno.synth@gmail.com"
+    recipients <- c("kyle.enns13@alumni.colostate.edu")
+    mailR::send.mail(from = sender,
+                     to = recipients,
+                     subject = paste0("Phenosynth Shapefile, site: ", site_name),
+                     body = paste0(input$paoiUser,'\n', input$paoiNotes, '\n', email_body),
+                     smtp = list(host.name = "smtp.gmail.com", port = 465,
+                                 user.name = EMAIL_UN, # UN and PW stored in the config.R file
+                                 passwd = EMAIL_PW, ssl = TRUE),
+                     attach.files = c(paste0(filename,'.shp'),
+                                      paste0(filename,'.dbf'),
+                                      paste0(filename,'.prj'),
+                                      paste0(filename,'.shx')),
+                     authenticate = TRUE,
+                     send = TRUE)
+    
+    # Remove the shapefile/folder
+    unlink(tmp_dir, recursive = TRUE)
+    
+    #Convert the points to polygons: see spatialpolygons post in stackoverflow
+    # https://stackoverflow.com/questions/26620373/spatialpolygons-creating-a-set-of-polygons-in-r-from-coordinates
   })
 
 

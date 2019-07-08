@@ -11,6 +11,8 @@ source('./functions/normalize_ts.R')
 source('./functions/gcc_plot.R')
 source('./functions/npn_gridded_data.R')
 
+source('./config.R')
+
 # Libraries
 library(shiny)          # Provides web framework for building web applications
 library(leaflet)        #
