@@ -144,6 +144,10 @@ server = function(input, output, session) {
     #            p('Once you have your choices pop up in the input above, press the button below to enter into the Shiny Application Interface'))),
     #   footer = modalButton('Enter Phenosynth')
     # )))
+    if (EMAIL_MODE == FALSE){
+      shinyjs::hide(id = 'emailShp')
+    }
+    
     switch_to_explorer_panel()
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
     #data$pixel_sps_500m = SpatialPolygons(list())
@@ -241,6 +245,7 @@ server = function(input, output, session) {
 
       # Updating the select input for the download availability of created leaflet features
       updateSelectInput(session, 'shapefiles', choices = unique(data$paois_df$Name))
+      updateSelectInput(session, 'shapefiles2', choices = unique(data$paois_df$Name))
 
       # Building the polygon table from the data$paois_df dataframe containing all of the leaflet polygon data
       build_polygon_table(data$paois_df)
@@ -313,15 +318,15 @@ server = function(input, output, session) {
     
     print (filename)
     shapefile(sps, filename, overwrite=TRUE)
+    shinyBS::toggleModal(session, 'saveShpPopup', toggle = 'close')
   })
   
   # Email shapefile button
-  observeEvent(input$emailShp, {
+  observeEvent(input$emailShpButton, {
     print ('Send Email')
-    shinyBS::toggleModal(session, 'saveShpPopup', toggle = 'close')
     site_name = input$site
     
-    WGScoor              = subset(data$paois_df, data$paois_df$Name == input$shapefiles)
+    WGScoor              = subset(data$paois_df, data$paois_df$Name == input$shapefiles2)
     xy = select(WGScoor, Longitude, Latitude)
     xy_matrix = data.matrix(xy)
     p = Polygon(xy_matrix)
@@ -330,7 +335,7 @@ server = function(input, output, session) {
     proj4string(sps) = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
     
     tmp_dir  = paste0('./www/', site_name, '_paoi')
-    file     = isolate(input$shapefiles)
+    file     = isolate(input$shapefiles2)
     filename = paste0(tmp_dir,'/', file)
     
     dir.create(tmp_dir)
@@ -356,6 +361,7 @@ server = function(input, output, session) {
     
     # Remove the shapefile/folder
     unlink(tmp_dir, recursive = TRUE)
+    shinyBS::toggleModal(session, 'emailShpPopup', toggle = 'close')
     
     #Convert the points to polygons: see spatialpolygons post in stackoverflow
     # https://stackoverflow.com/questions/26620373/spatialpolygons-creating-a-set-of-polygons-in-r-from-coordinates

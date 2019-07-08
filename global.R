@@ -11,7 +11,11 @@ source('./functions/normalize_ts.R')
 source('./functions/gcc_plot.R')
 source('./functions/npn_gridded_data.R')
 
-source('./config.R')
+EMAIL_MODE = FALSE
+if (file.exists('./config.R')){
+  source('./config.R')
+  EMAIL_MODE = TRUE
+}
 
 # Libraries
 library(shiny)          # Provides web framework for building web applications
