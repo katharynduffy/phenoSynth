@@ -256,6 +256,7 @@ server = function(input, output, session) {
       print ('Exiting Draw Mode')
 
       print (input$map_draw_stop)
+      shiny::showTab('navbar', 'paoiTab')
   })
 
 

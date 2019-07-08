@@ -130,7 +130,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                         ), # close tab panel
 
 
-           tabPanel('pAOI Management',
+           tabPanel('pAOI Management', value='paoiTab',
 
                     tags$div(id='pAOItab',
                     actionButton('saveShp', 'Download Shapefile'),
