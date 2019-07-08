@@ -9,6 +9,7 @@ rsconnect/
 tokens/
 tokens.R
 powerpoint
+config.R
 www/site_data/
 *.jar
 Notebooks/transition_date_extraction_modis_test.Rmd
