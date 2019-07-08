@@ -344,7 +344,7 @@ server = function(input, output, session) {
     
     email_body = toString(WGScoor)
     
-    sender <- "pheno.synth@gmail.com"
+    sender <- EMAIL_UN
     recipients <- c("kyle.enns13@alumni.colostate.edu")
     mailR::send.mail(from = sender,
                      to = recipients,
