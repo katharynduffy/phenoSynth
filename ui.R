@@ -8,6 +8,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
                          selectInput('shapefiles', "Select Shapefile", c('None')),
+                         textInput('savePaoiFilename', 'Edit Shapefile Name:'),
                          actionButton('downloadShp', 'Download shapefile')
                  ),
                  bsModal("emailShpPopup",

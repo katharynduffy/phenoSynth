@@ -302,20 +302,30 @@ server = function(input, output, session) {
     # Updating the polygon table from the data$paois_df dataframe containing all of the leaflet polygon data
     build_polygon_table(data$paois_df)
   })
+  
+  observeEvent(input$shapefiles, {
+    file = input$shapefiles
+    updateTextInput(session, inputId = 'savePaoiFilename', value = file)
+  })
 
   # Save shapefile button
   observeEvent(input$downloadShp,{
-    WGScoor              = subset(data$paois_df, data$paois_df$Name == input$shapefiles)
-    xy = select(WGScoor, Longitude, Latitude)
+    site_name = input$site
+    WGScoor   = subset(data$paois_df, data$paois_df$Name == input$shapefiles)
+    xy        = select(WGScoor, Longitude, Latitude)
     xy_matrix = data.matrix(xy)
-    p = Polygon(xy_matrix)
-    ps = Polygons(list(p),1)
+    
+    p   = Polygon(xy_matrix)
+    ps  = Polygons(list(p),1)
     sps = SpatialPolygons(list(ps))
     proj4string(sps) = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 
-    file                 = isolate(input$shapefiles)
-    folder               = get_download_folder()
-    filename             = paste(folder, file, sep='')
+    file     = input$savePaoiFilename
+    folder   = get_download_folder()
+    folder   = paste0(folder,site_name,'_paoi/')
+    filename = paste(folder, file, sep='')
+    dir.create(folder)
+    
     
     print (filename)
     shapefile(sps, filename, overwrite=TRUE)
