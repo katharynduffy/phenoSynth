@@ -1,0 +1,199 @@
+---
+title: "submit_appeears_tasks.Rmd"
+author: "K. Enns"
+date: "5/31/2019"
+output: html_document
+---
+
+##Submitting tasks to AppEEARS using the submit_appeears_tasks.R script
+
+Get token for AppEEARS
+```{r}
+####################################################################################
+# GO RUN global.R for variables and libraries required in this RMD file
+####################################################################################
+
+# devtools::install_github("ennsk/AppEEARS4R")
+library(jsonlite)
+library(appeears)
+library(httr)
+username = ''
+password = ''
+
+token_response = appeears::appeears_start_session(username,password)
+rm(password)
+```
+View all AppEEARS tasks under user
+```{r}
+token         = paste("Bearer", token_response$token)
+response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
+task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+tasks = jsonlite::fromJSON(txt=task_response)
+# tasks = tasks %>% distinct(task_id,task_name)
+tasks[,2:dim(tasks)[2]]
+```
+
+Submit transition dates tasks to appeears
+```{r}
+layer_     = 'TDS_v6'
+source('submit_appeears_tasks.R')
+submit_appeears_tasks(appeears_token=token, roi_sites=c('acadia'), data_layer=layer_, test=FALSE)
+```
+
+Downloadj transition date task for acadia
+```{r}
+# download_bundle_file(site_task_id_ = 'dbed8c3e-4776-429c-86b0-42474ae33fc5' , filepath_ = '/users/kenns/downloads/')
+tds_brick = raster::brick('/users/kenns/downloads/MCD12Q2.006_500m_aid0001.nc', varnames)
+names(tds_brick)
+```
+
+submit phenocam tasks for NDVI_aqua
+```{r}
+# Remove acadia, kamuela (159), and kelloggcorn(162) from list
+#### NDVI AQUA RUNS ##### 5/31/2019 #########
+# Should be 455 sites in cams_$Sitename @ this time
+# Run # 1 [2:90]   ----- already submitted 2 today (must stay under 100)
+# Run # 2 [c(91:158,160,161,163:192)]
+# Run # 3 [193:292]
+# Run # 4 [293:392]
+# Run # 5 [393:455]
+
+#### NDVI TERA RUNS ##### 6/10/2019 #########
+# Should be 455 sites in cams_$Sitename @ this time
+# Run # 1 [2:101]
+# Run # 2 [c(91:158,160,161,163:192)]
+# Run # 3 [193:203]
+# Run # 4 [204:273]
+# Run # 5 [274:373]
+# Run # 6 [374:459]
+
+#### EVI AQUA RUNS ##### 6/12/2019 #########
+# Should be 455 sites in cams_$Sitename @ this time
+# Run # 1 [2:101]
+# Run # 2 [c(102:158,160,161,163:203)]
+# Run # 3 [204:303]
+# Run # 4 [304:403]
+# Run # 5 [404:455] (52 total)
+
+#### EVI TERA RUNS ##### 6/12/2019 #########
+# Should be 455 sites in cams_$Sitename @ this time
+# Run # 1 [2:99] # wanted to save room submit a task in the ui for LandCover geotiff 2017
+# Run # 2 [c(100:158,160,161,163:181)]
+# Run # 3 [182:229]
+# Run # 4 [230:329]
+# Run # 4 [330:429]
+# Run # 4 [430:459] (30 total)
+
+roi_sites_ = cams_$Sitename[374:459]
+length(cams_$Sitename)
+length(roi_sites_)
+layer_     = 'NDVI_tera'
+source('submit_appeears_tasks.R')
+submit_appeears_tasks(appeears_token=token, roi_sites=roi_sites_, data_layer=layer_, test=TRUE)
+```
+
+
+
+
+
+
+
+
+################################################################################
+misc
+################################################################################
+
+# check number of tasks for ndvi/aqua ndvi/tera evi/aqua and evi/tera
+```{r}
+ndvi_aqua_tasks = tasks[grep(c('NDVI_v6_aqua'), tasks$task_name),]$task_name
+
+names = c()
+for (x in ndvi_aqua_tasks){
+  ele = strsplit(x, split = '_', fixed=TRUE)
+  names = c(names, ele[[1]][1])
+}
+
+names
+cams_$Sitename
+m = match(cams_$Sitename,names)
+# Show extra sites
+cams_$Sitename[is.na(m)]
+# Results: 6/26/2019
+# "arsspltarc2" "hwmo1"       "hwmo2"       "hwmo3"  
+
+elements = strsplit(task_name_, split = '_', fixed=TRUE)
+element_length = length(elements[[1]])
+
+print (tasks[grep(c('NDVI_v6_aqua'), tasks$task_name),])
+print ((tasks[grep(c('NDVI_v6_tera'), tasks$task_name),]))
+print ((tasks[grep(c('EVI_MOD13Q1_v6_aqua'), tasks$task_name),]))
+print ((tasks[grep(c('EVI_MOD13Q1_v6_tera'), tasks$task_name),]))
+
+
+# print ((tasks[grep(c('hwmo'), tasks$task_name),]))
+# tasks[grep(c('EVI_MOD13Q1_v6_aqua'), tasks$task_name),]
+```
+
+
+Check to see how many phenocam sites we have with ROIS
+```{r}
+# Sanity check
+rois            = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
+phenocam_roi_df = rois$results %>% distinct(site,lat,lon)
+# These should be the same
+print (dim(phenocam_roi_df)[1])
+print (dim(cams_)[1])
+# Last check they were both 455 @ 5/31/2019
+```
+
+Take a look at the NDVI tasks in AppEEARS
+```{r}
+ndvi_tasks = tasks[grep(c('NDVI_v6'), tasks$task_name),]
+length(unique(ndvi_tasks$task_name))
+print (length(cams_$Sitename))
+
+sites_ = paste(cams_$Sitename, collapse='|')
+data_appeears = ndvi_tasks[grep(c(sites_), ndvi_tasks$task_name),]
+data_appeears[,8:dim(data_appeears)[2]]
+```
+
+Submit tasks
+```{r}
+roi_sites_ = 
+layer_     = 'NDVI_aqua'
+submit_appeears_tasks_rmd(appeears_token=token, roi_sites=roi_sites_, data_layer='NDVI_tera', test=TRUE)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
