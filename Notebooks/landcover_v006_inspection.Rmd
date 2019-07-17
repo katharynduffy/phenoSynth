@@ -1,0 +1,376 @@
+---
+title: "landcover_v006_inspection.Rmd"
+author: "K. Enns"
+date: "6/12/2019"
+output: html_document
+---
+
+## This notebook downloads and visualizes the landcover layer from MODIS across NA
+
+Get token for AppEEARS
+```{r}
+####################################################################################
+# GO RUN global.R for variables and libraries required in this RMD file
+####################################################################################
+
+# devtools::install_github("ennsk/AppEEARS4R")
+library(jsonlite)
+library(appeears)
+library(httr)
+# username = ''
+# password = ''
+# token_response = appeears::appeears_start_session(username,password)
+# rm(password)
+# token         = paste("Bearer", token_response$token)
+# response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
+# task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# tasks = jsonlite::fromJSON(txt=task_response)
+```
+
+
+```{r}
+# tasks[grep(c('landcover'), tasks$task_name),]
+files = get_appeears_bundle_df('48d7ab5d-2b4c-46d0-925f-003a5a4479f4')
+files
+
+# response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", '48d7ab5d-2b4c-46d0-925f-003a5a4479f4', '/', '1b518b73-d2d6-4067-a3a6-6a24863a8e97', sep = ""), write_disk('/users/kenns/downloads/MCD12Q1.006_LC_Type1_doy2017001_aid0001.tif', overwrite = TRUE), progress())
+```
+bring in tif of 2017 v006 layer
+```{r}
+# acadia
+# lat = 44.3769444444
+# lng = -68.2608333333
+
+# Konza 39.0824, -96.5603
+lat = 39.0824
+lng = -96.5603
+
+lnd_cover = raster('/users/kenns/downloads/MCD12Q1.006_LC_Type1_doy2017001_aid0001.tif')
+lnd_cover_original = raster('/users/kenns/projects/r/apis/phenosynth/www/global_landcover_2016.tif')
+# overlap = lnd_cover - lnd_cover_original
+lnd_cover
+lnd_cover_2017_cropped = crop_raster(lat, lng, lnd_cover, height = .03, width=.05)
+library(leaflet)
+leaflet() %>% addTiles() %>% addRasterImage(lnd_cover_2017_cropped)
+# leaflet() %>% addTiles() %>% addRasterImage(overlap)
+```
+
+
+Converting Landcover Landsat layer from albers to wgs84
+```{r}
+NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+landsat_atts = NLCD_lc@data@attributes
+get_x_y_albers_from_wgs84 = function(lon_,lat_){
+  xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
+  colnames(xy)    = c('lon', 'lat')
+  coordinates(xy) = ~ lon + lat
+  proj4string(xy) = CRS("+proj=longlat +datum=WGS84")
+  p               = spTransform(xy, CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"))
+  return (p)
+}
+lat = 39.0824
+lng = -96.5603
+albs_point = get_x_y_albers_from_wgs84(lng,lat)
+lng = albs_point@coords[[1]]
+lat = albs_point@coords[[2]]
+
+# Crop in Albers
+width  = 12000
+height = 12000
+e      = as(extent(lng - width, lng + width, lat - height, lat + height), 'SpatialPolygons')
+crs(e) <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+NLCD_lc_cropped        = raster::crop(NLCD_lc, e, snap='near')
+NLCD_lc_cropped_wgs = projectRaster(NLCD_lc_cropped, crs="+proj=longlat +datum=WGS84", method='ngb')
+
+# Crop again in WGS
+width  = .05
+height = .03
+lat = 39.0824
+lng = -96.5603
+e2 =as(extent(lng - width, lng + width, lat - height, lat + height), 'SpatialPolygons')
+crs(e2) <- "+proj=longlat +datum=WGS84"
+NLCD_lc_final_wgs = raster::crop(NLCD_lc_cropped_wgs, e2, snap='near')
+
+# Display using leaflet
+leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_cropped_wgs)
+leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_final_wgs)
+            
+# remove large raster layer out of memory so .rmd doesn't freeze
+rm(NLCD_lc)
+```
+
+
+
+Converting Landcover Landsat layer from albers to web mercator 
+```{r}
+NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+landsat_atts = NLCD_lc@data@attributes
+
+get_x_y_albers_from_wgs84 = function(lon_,lat_){
+  xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
+  colnames(xy)    = c('lon', 'lat')
+  coordinates(xy) = ~ lon + lat
+  proj4string(xy) = CRS("+proj=longlat +datum=WGS84")
+  p               = spTransform(xy, CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"))
+  return (p)
+}
+
+get_x_y_merc_from_wgs84 = function(lon_,lat_){
+  xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
+  colnames(xy)    = c('lon', 'lat')
+  coordinates(xy) = ~ lon + lat
+  proj4string(xy) = CRS("+proj=longlat +datum=WGS84")
+  p               = spTransform(xy, CRS('+init=EPSG:3857'))
+  return (p)
+}
+
+# lat = 44.3769444444
+# lng = -68.2608333333
+lat = 39.0824
+lng = -96.5603
+albs_point = get_x_y_albers_from_wgs84(lng,lat)
+merc_point = get_x_y_merc_from_wgs84(lng,lat)
+lng = albs_point@coords[[1]]
+lat = albs_point@coords[[2]]
+
+# Crop in Albers
+width  = 12000
+height = 12000
+e      = as(extent(lng - width, lng + width, lat - height, lat + height), 'SpatialPolygons')
+crs(e) <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+NLCD_lc_cropped        = raster::crop(NLCD_lc, e, snap='near')
+NLCD_lc_cropped_merc = projectRaster(NLCD_lc_cropped, crs=CRS('+init=EPSG:3857'), method='ngb')
+
+
+
+# Crop in Mercator
+merc_width  = 5000
+merc_height = 5000
+merc_lng = merc_point@coords[[1]]
+merc_lat = merc_point@coords[[2]]
+
+e      = as(extent(merc_lng - merc_width, merc_lng + merc_width, merc_lat - merc_height, merc_lat + merc_height), 'SpatialPolygons')
+crs(e) <- CRS('+init=EPSG:3857')
+NLCD_lc_final_merc  = raster::crop(NLCD_lc_cropped_merc, e, snap='near')
+
+# Display using leaflet
+leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_cropped_merc)
+leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_final_merc)
+
+# remove large raster layer out of memory so .rmd doesn't freeze
+rm(NLCD_lc)
+```
+
+Pull one modis pixel, clip it to the landcover, and find % of landcover types
+```{r}
+modis_lc   = lnd_cover_2017_cropped 
+landsat_lc = NLCD_lc_final_wgs
+
+lat = 39.0824
+lng = -96.5603
+
+single_raster_pixel = crop_raster(lat, lng, modis_lc, height = .005, width=.005)
+leaflet() %>% addTiles() %>% addRasterImage(single_raster_pixel)
+
+new_landsat_lc = crop(landsat_lc, single_raster_pixel, snap='near')
+leaflet() %>% addTiles() %>% addRasterImage(new_landsat_lc)
+
+# Run this calculation to get % homogeneity of MODIS pixel
+percent = is.element(landsat_lc@data@values,71)
+sum(percent)/length(landsat_lc@data@values)*100
+
+```
+
+
+
+
+
+attributes for landsat landcover cropped raster
+```{r}
+key_df = subset(landsat_atts[[1]], landsat_atts[[1]]$COUNT != 0)
+key_df
+```
+
+reclassify the layers into categories 1-17 like in pft from landcover
+```{r}
+# IDs
+ids      = key_df$ID
+lc_types = key_df$NLCD.Land.Cover.Class
+```
+
+create the new color palette for landsat
+```{r}
+
+build_landsat_lc_pallet = function(raster_, us_landsat_lc, landsat_key){
+  print ('building landsat landcover palette')
+  landsat_atts_ = us_landsat_lc@data@attributes
+  key_df = subset(landsat_atts_[[1]], landsat_atts_[[1]]$COUNT != 0)
+  print (key_df)
+  colors = c()
+  names  = c()
+  color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
+                    '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
+  
+  v = unique(values(raster_))
+  remove = c(NA)
+  v = v [! v %in% remove]
+  v = sort(v, decreasing = FALSE)
+  
+  print (v)
+  
+  count = 0
+  for (x in v){
+    count = count + 1
+      
+    red = subset(landsat_key, landsat_key$ID == x)$Red/255
+    green = subset(landsat_key, landsat_key$ID == x)$Green/255
+    blue = subset(landsat_key, landsat_key$ID == x)$Blue/255
+    color = rgb(red,green,blue)
+    colors = c(colors, color)
+    # colors = c(colors, color_list[count])
+    name   = as.character(subset(landsat_key, landsat_key$ID == x)$NLCD.Land.Cover.Class)
+    names  = c(names, name)
+  }
+  colors_ = list('colors' = colors, 'names' = names)
+  return (colors_)
+}
+
+us_landsat_lc =  raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+c = build_landsat_lc_pallet(NLCD_lc_final_wgs, us_landsat_lc, key_df)
+rm(us_landsat_lc)
+
+leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_final_wgs, colors = c$colors, opacity = .7) %>%
+  addLegend(labels = c$names, colors = c$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover')
+# run to get nothing
+
+
+```
+
+
+
+# Give the MODIS Landcover layer feedback (homogeneity) using the landsat layer
+```{r}
+# Landsat (extent is .06 x .06)
+lnd_cover_2017_cropped
+# MODIS   (extent is .05 x .05)
+NLCD_lc_final_wgs
+```
+
+
+# First test will be for WATER, see how homogeneous the water pixels in MODIS are based on landsat lc
+
+Extract all the pixel center points/boundary box and create a dataframe with id/lat/lng 
+```{r}
+# Values needed to calculate center pixels to use on analysis of netcdf data
+r_         = cropped_ndvi
+xmin       = xmin(extent(r_))
+xmax       = xmax(extent(r_))
+ymin       = ymin(extent(r_))
+ymax       = ymax(extent(r_))
+nrows      = nrow(r_)
+ncols      = ncol(r_)
+resolution = res(r_)[1]
+
+lngs = c()
+lats = c()
+lng_start = xmin + .5*(resolution)
+lat_start = ymax + .5*(resolution)
+for (row in c(1:nrows)){
+  for (col in c(1:ncols)){
+    lng = lng_start + (resolution)*(col-1)
+    lat = lat_start - (resolution)*(row)
+    lngs = c(lngs,lng)
+    lats = c(lats,lat)
+  }
+}
+pixel_ids = c(1:(ncols*nrows))
+all_site_pixels_df = data.frame(pixel_id=pixel_ids, lat = lats, lng = lngs, site='acadia')
+all_site_pixels_df
+```
+
+
+test
+```{r}
+library(raster)
+r1 <- raster(matrix(1:4, nrow=4, ncol=4))
+r2 <- raster(matrix(runif(16),nrow=4))
+# x <- overlay(r1, r2, fun=function(x,y){ y[x==1] = .5; y[x==2] = .2; y})
+x <- overlay(r1, r2, fun=function(x,y){ y[x==1] = .5; y[x==2] = .2; y})
+
+plot(x)
+```
+```{r}
+plot(r1)
+```
+
+```{r}
+plot(r2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# OLD LAYERS
+```{r}
+# Read in the nc file we downloaded above (landcover version 6)
+lat = 40
+lng = -105
+
+lnd_cover = raster::brick('/Users/kenns/Downloads/MCD12Q1.006_500m_aid0001.nc', 'LC_Type1')
+lnd_cover_2017 = subset(lnd_cover, 17)
+
+lnd_cover_2017_cropped = crop_raster(lat, lng, lnd_cover_2017, height = 5, width=5)
+library(leaflet)
+leaflet() %>% addTiles() %>% addRasterImage(lnd_cover_2017_cropped, opacity = .5)
+```
+old layer
+```{r}
+old_lnd_cover = raster::raster('/users/kenns/projects/r/apis/phenosynth/www/global_landcover_2016.tif')
+old_lnd_cover
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
