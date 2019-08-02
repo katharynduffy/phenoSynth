@@ -16,7 +16,8 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
                          selectInput('shapefiles2', "Select Shapefile", c('None')),
-                         textInput('paoiUser', 'Email or Name'),
+                         textInput('paoiUser', 'Name'), # Make this required
+                         textInput('paoiEmail', 'Email'),
                          textInput('paoiNotes', 'Notes or Comments'),
                          actionButton('emailShpButton', 'Email shapefile')
                  ),

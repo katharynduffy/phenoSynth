@@ -114,11 +114,21 @@ build_raster_grid = function(raster_, map_ = NULL){
     }
 }
 
+# Function to convert any crs lat/lon coordinates into any crs lat/lon sp object (default is wgs to sinu)
+from_crs1_to_crs2_lon_lat = function(lon_,lat_, from_crs = "+proj=longlat +datum=WGS84", 
+                                     to_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"){
+  xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
+  colnames(xy)    = c('lon', 'lat')
+  coordinates(xy) = ~ lon + lat
+  proj4string(xy) = CRS(from_crs)
+  p               = spTransform(xy, CRS(to_crs))
+  return (p)
+}
 
 # Creates boundary box for clipping rasters using lat/lon from phenocam site
-crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL, height=.03, width=.05){
+crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL, height=.03, width=.05, crs_str = "+proj=longlat +datum=WGS84 +no_defs"){
   e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
-  crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
+  crs(e) <- crs_str
   r        = raster::crop(r_, e, snap='near')
   
   if (reclassify == FALSE){
@@ -242,4 +252,47 @@ rotate_pt = function(lon, lat, azm, r){
   lon_ = lon + (r * sin(rad))
   lat_ = lat + (r * cos(rad))
   return (list(lon_, lat_))
+}
+
+get_x_y_albers_from_wgs84 = function(lon_,lat_){
+  xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
+  colnames(xy)    = c('lon', 'lat')
+  coordinates(xy) = ~ lon + lat
+  proj4string(xy) = CRS("+proj=longlat +datum=WGS84")
+  p               = spTransform(xy, CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"))
+  return (p)
+}
+
+build_landsat_lc_pallet = function(raster_, us_landsat_lc, landsat_key){
+  print ('building landsat landcover palette')
+  landsat_atts_ = us_landsat_lc@data@attributes
+  key_df = subset(landsat_atts_[[1]], landsat_atts_[[1]]$COUNT != 0)
+  print (key_df)
+  colors = c()
+  names  = c()
+  color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
+                    '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
+  
+  v = unique(values(raster_))
+  remove = c(NA)
+  v = v [! v %in% remove]
+  v = sort(v, decreasing = FALSE)
+  
+  print (v)
+  
+  count = 0
+  for (x in v){
+    count = count + 1
+    
+    red = subset(landsat_key, landsat_key$ID == x)$Red/255
+    green = subset(landsat_key, landsat_key$ID == x)$Green/255
+    blue = subset(landsat_key, landsat_key$ID == x)$Blue/255
+    color = rgb(red,green,blue)
+    colors = c(colors, color)
+    # colors = c(colors, color_list[count])
+    name   = as.character(subset(landsat_key, landsat_key$ID == x)$NLCD.Land.Cover.Class)
+    names  = c(names, name)
+  }
+  colors_ = list('colors' = colors, 'names' = names)
+  return (colors_)
 }

@@ -355,11 +355,12 @@ server = function(input, output, session) {
     email_body = toString(WGScoor)
     
     sender <- EMAIL_UN
-    recipients <- c("kyle.enns13@alumni.colostate.edu")
+    # recipients <- c("kyle.enns13@alumni.colostate.edu")
+    recipients <- c(EMAIL_UN)
     mailR::send.mail(from = sender,
                      to = recipients,
-                     subject = paste0("Phenosynth Shapefile, site: ", site_name),
-                     body = paste0(input$paoiUser,'\n', input$paoiNotes, '\n', email_body),
+                     subject = paste0("Phenosynth Shapefile"),
+                     body = paste0('<site_name>',site_name , '<name>',input$paoiUser,'\n<comment>', input$paoiNotes, '\n', email_body),
                      smtp = list(host.name = "smtp.gmail.com", port = 465,
                                  user.name = EMAIL_UN, # UN and PW stored in the config.R file
                                  passwd = EMAIL_PW, ssl = TRUE),
@@ -561,7 +562,8 @@ server = function(input, output, session) {
     variables$color_list_reserve = rainbow(20)
 
     # Landcover layer
-    data$global_pth = './www/MCD12Q1.006_LC_type_1_2017.tif'
+    # data$global_pth = './www/MCD12Q1.006_LC_type_1_2017.tif'
+    data$global_pth = './www/MCD12Q1.006_LC_Type1_doy2016001_aid0001.tif'
     global_r   = raster::raster(data$global_pth)
 
     veg_types  = c()
@@ -590,9 +592,27 @@ server = function(input, output, session) {
       data$veg_types = veg_types
 
       # Building Landcover layer and color pallette for specific pft composition in clipped raster
-      r  = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=FALSE)
-      c3 = build_pft_palette(r)
-      data$r_landcover = r
+      
+      lat_wgs = site_data$Lat
+      lng_wgs = site_data$Lon
+      # from wgs to sinusoidal
+      pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
+      lat_sin = pt_sinu@coords[2]
+      lng_sin = pt_sinu@coords[1]
+      # from wgs to web mercator
+      pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+      data$lat_merc = pt_merc@coords[2]
+      data$lng_merc = pt_merc@coords[1]
+      
+      cropped_landcover_v6_sinu = crop_raster(lat_ = lat_sin, lon_ = lng_sin , r_ = landcover_v6_sinu, height = 30000, width = 30000, crs_str = sinu_crs)
+      unique(values(cropped_landcover_v6_sinu))
+      data$cropped_landcover_v6_merc = projectRaster(from = cropped_landcover_v6_sinu, crs = merc_crs, method='ngb')
+      cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs)
+      c3 = build_pft_palette(cropped_landcover_v6_merc_box)
+      
+      # r  = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=FALSE)
+      # c3 = build_pft_palette(r)
+      data$r_landcover = cropped_landcover_v6_merc_box
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       data$veg_types = veg_types
@@ -603,7 +623,8 @@ server = function(input, output, session) {
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
       print (as.numeric(pft_key))
 
-      rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+      rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key))
+      # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
@@ -614,7 +635,7 @@ server = function(input, output, session) {
                   colors = c('green', 'grey'), labels = c('ROI-Match', 'No-Match')) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                          overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
-                         position = c("topleft"),
+                         position = c("topleft"), 
                          options = layersControlOptions(collapsed = FALSE))
     }
   })
@@ -625,8 +646,7 @@ server = function(input, output, session) {
     if (panel$mode == 'analyzer'){
         # Change vegetation cover agreement to match selected ROI in pftSelection
         print ('Running pft Selection')
-        global_r   = raster::raster(data$global_pth)
-
+        # global_r   = raster::raster(data$global_pth)
         site       = input$site
         site_data  = get_site_info(site)
         pft        = input$pftSelection
@@ -636,7 +656,10 @@ server = function(input, output, session) {
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
         pft_abbr = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
         data$pft_abbr = pft_abbr
-        rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+        # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+        print (as.numeric(pft_key))
+        rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key))
+        
 
         leafletProxy('map') %>%
           clearImages() %>%
@@ -766,6 +789,8 @@ server = function(input, output, session) {
       pixels = pixels$Pixel
       
       tds_modis_df = get_tds_modis_df(pixels, lats, lngs, data$tds_nc,progress_bar=TRUE)
+      tds_nc_v6 = nc_open('/users/kenns/downloads/acadia/MCD12Q2.006_500m_aid0001.nc')
+      tds_modis_df_v6 = extract_df_tds_v6(pixels, lats, lngs, tds_nc_v6,progress_bar=TRUE) 
       # Transition date data under selected pixels
       data$OGD      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Decrease')
       data$OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
