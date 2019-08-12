@@ -107,6 +107,7 @@ appeears_tasks_ndvi_tera = readRDS(file = './www/cache_df_ndvi_tera.df')
 appeears_tasks_ndvi_aqua = readRDS(file = './www/cache_df_ndvi_aqua.df')
 appeears_tasks_evi_tera  = readRDS(file = './www/cache_df_evi_tera.df')
 appeears_tasks_evi_aqua  = readRDS(file = './www/cache_df_evi_aqua.df')
+appeears_tasks_tds  = readRDS(file = './www/cache_df_tds.df')
 
 # AppEEARS products page: https://lpdaacsvc.cr.usgs.gov/appeears/products
 

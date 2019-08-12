@@ -152,6 +152,7 @@ server = function(input, output, session) {
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
     #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
+    data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     panel$mode = 'explorer'
     data$paois_df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
   })
@@ -597,17 +598,16 @@ server = function(input, output, session) {
       lng_wgs = site_data$Lon
       # from wgs to sinusoidal
       pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
-      lat_sin = pt_sinu@coords[2]
-      lng_sin = pt_sinu@coords[1]
+      data$lat_sin = pt_sinu@coords[2]
+      data$lng_sin = pt_sinu@coords[1]
       # from wgs to web mercator
       pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
       data$lat_merc = pt_merc@coords[2]
       data$lng_merc = pt_merc@coords[1]
       
-      cropped_landcover_v6_sinu = crop_raster(lat_ = lat_sin, lon_ = lng_sin , r_ = landcover_v6_sinu, height = 30000, width = 30000, crs_str = sinu_crs)
-      unique(values(cropped_landcover_v6_sinu))
+      cropped_landcover_v6_sinu = crop_raster(lat_ = data$lat_sin, lon_ = data$lng_sin , r_ = global_r, height = 15000, width = 15000, crs_str = sinu_crs)
       data$cropped_landcover_v6_merc = projectRaster(from = cropped_landcover_v6_sinu, crs = merc_crs, method='ngb')
-      cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs)
+      cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$cropped_landcover_v6_merc, height = 5000, width = 5000, crs_str = merc_crs)
       c3 = build_pft_palette(cropped_landcover_v6_merc_box)
       
       # r  = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=FALSE)
@@ -623,7 +623,7 @@ server = function(input, output, session) {
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
       print (as.numeric(pft_key))
 
-      rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key))
+      rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, height = 5000, width = 5000, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
       # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
       leafletProxy('map') %>%
         clearControls() %>%
@@ -658,7 +658,7 @@ server = function(input, output, session) {
         data$pft_abbr = pft_abbr
         # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
         print (as.numeric(pft_key))
-        rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key))
+        rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, height = 5000, width = 5000, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
         
 
         leafletProxy('map') %>%
@@ -685,8 +685,8 @@ server = function(input, output, session) {
     updateCheckboxInput(session, inputId = 'drawROI', value=FALSE)
     switch_to_explorer_panel()
     data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
+    data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
   })
 
   # Button that plots selected Data Types
@@ -694,8 +694,10 @@ server = function(input, output, session) {
     shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
     
     # Selected pixels
-    sm_pixels = data$pixel_sps_250m
-    print (sm_pixels)
+    # sm_pixels = data$pixel_sps_250m
+    # print (sm_pixels)
+    
+    sm_pixels = data$midcell_pixel_sin
     
     # Empty dataframes to use for plotting
     pixel_data_df = data
@@ -731,7 +733,7 @@ server = function(input, output, session) {
     
     print (paste0('Plotting: ', selected_data))
     
-    if (is.null(sm_pixels@polygons[1][[1]])){
+    if (is.null(sm_pixels@coords[1][[1]])){
       output$plotTable <- DT::renderDataTable(
         data.frame(Empty='empty')
       )
@@ -779,7 +781,7 @@ server = function(input, output, session) {
     
     # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
     if ('Transition Dates' %in% selected_data){
-      withProgress(message = 'Compiling Transition Dates', value = .1, {
+      # withProgress(message = 'Compiling Transition Dates', value = .1, {
       # Extracting lat/lng values for selected 250m or 500m pixels
       pixels = subset(data$pixel_df, data$pixel_df$Type == '250m')
 
@@ -796,15 +798,15 @@ server = function(input, output, session) {
       data$OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
       data$OGMa     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Maximum')
       data$OGMi     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Minimum')
-      }) #END WITH PROGRESS BAR
+      # }) #END WITH PROGRESS BAR
     } # END TRANSITION DATE EXTRATION FOR PIXELS
     
     # ------------------PLOT NDVI------------------------------------
     if ('NDVI' %in% selected_data){
-      withProgress(message = 'Building NDVI Plot', value = .4, {
+      # withProgress(message = 'Building NDVI Plot', value = .4, {
       print ('Plotting NDVI')
     
-      if (is.null(sm_pixels@polygons[1][[1]])){
+      if (is.null(sm_pixels@coords[1][[1]])){
         print ('No pixels selected')
         ndvi_p = plot_ly()
       }else{
@@ -816,9 +818,15 @@ server = function(input, output, session) {
 
         ndvi_p = plot_ly()
         
+        sm_pixels = data$pixel_sps_250m
+        sm_pixels = data$midcell_pixel_sin
+        
+        
+        # for (num in c(1:length(sm_pixels@data$ID))){
         for (num in c(1:length(ndvi_under_pixel_tera))){
           incProgress(amount = (1/length(ndvi_under_pixel_tera))*.8)
           pixel_id = sm_pixels@polygons[[num]]@ID
+          sm_pixels@polygons[[5]]@ID
           
           ndvi_tera = ndvi_under_pixel_tera[[num]][1,]
           ndvi_qc_tera = qc_ndvi_under_pixel_tera[[num]][1,]
@@ -854,7 +862,7 @@ server = function(input, output, session) {
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
         }
-        })# END WITH PROGRESS BAR
+        # })# END WITH PROGRESS BAR
       } #END NDVI PLOT
     
     # ------------------PLOT EVI------------------------------------
@@ -930,10 +938,9 @@ server = function(input, output, session) {
 
     print (selected_plots)
 
-    s <- req(input$plotTable_rows_all)
+    s  = req(input$plotTable_rows_all)
     sd = data$plotTable[s, , drop = FALSE]
-
-
+    
     ndvi_pixel_data_df = data$ndvi_pixels
     rownames(ndvi_pixel_data_df) = NULL
     saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
@@ -1302,10 +1309,6 @@ server = function(input, output, session) {
   })
   
   
-  
-  
-  
-
 
   # Button that hides GCC Plot
   observeEvent(input$hidePlot, {
@@ -1338,7 +1341,10 @@ server = function(input, output, session) {
               lon_ = click$lng
               lat_ = click$lat
               if(input$highlightPixelModeNDVI == TRUE){
-                showpos(x = lon_ , y = lat_, site, data$r_ndvi_cropped, '250m')
+                pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lon_, lat_ = lat_, from_crs = wgs_crs, to_crs = merc_crs)
+                lat_merc = pt_merc@coords[2]
+                lng_merc = pt_merc@coords[1]
+                showpos(x = lng_merc , y = lat_merc, site, data$r_ndvi_cropped, '250m')
               }}}
           if (dim(data$pixel_df)[1] == 0){
             shinyjs::hide(id = 'clearPixels')
@@ -1359,8 +1365,8 @@ server = function(input, output, session) {
     variables$color_list_reserve = rainbow(20)
     
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
+    data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     shinyjs::hide(id = 'clearPixels')
   })
 
@@ -1457,7 +1463,7 @@ server = function(input, output, session) {
       # Import [NDVI] 
       #------------------------------------------------------------------------
     if ('NDVI' %in% selected_data){
-      withProgress(message = 'Importing NDVI', value = .4, {
+      # withProgress(message = 'Importing NDVI', value = .4, {
         
       print ('Importing NDVI')
       # Bring in tera and aqua data
@@ -1508,33 +1514,24 @@ server = function(input, output, session) {
       data$ndvi_qc_csv_aqua   = read.csv(ndvi_qc_aqua_path)
       
       ####
-      # 
-      # ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
-      # ndvi_path = paste0(ndvi_filepath, ndvi_name)
-      # 
-      # ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
-      # ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
-      # 
-      # ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
-      # ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
-      # ndvi_qc_csv   = read.csv(ndvi_qc_path)
-      # 
-      # # Add ndvi_nc file to memory
-      # data$ndvi_brick    = ndvi_brick
-      # data$ndvi_qc_brick = ndvi_qc_brick
-      # data$ndvi_qc_csv   = ndvi_qc_csv
+      
+
 
       # Grab first observation of NDVI and Quality datasets
-      raster_1_brick_ndvi = raster(subset(data$ndvi_tera_brick, 1))
-      data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, raster_1_brick_ndvi)
-      build_raster_grid(data$r_ndvi_cropped, map = 'map')
+      r_for_grid = raster::raster(ndvi_tera_path)
+      crs(r_for_grid) = sinu_crs
+      r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs)
+      r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 5000, width = 5000, crs_str = merc_crs)
+      data$r_ndvi_cropped = r_for_grid_cropped_merc
+      
+      grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
 
       shinyjs::show(id = 'highlightPixelModeNDVI')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
 
       shinyjs::show(id = 'plotRemoteData')
       
-      }) #END WITH PROGRESS BAR
+      # }) #END WITH PROGRESS BAR
     } #END IMPORT NDVI
 
 
@@ -1818,17 +1815,42 @@ server = function(input, output, session) {
          col = ncols
        }
 
-       xclose = ((col - 1) * resolution) + xmin
-       xfar   = (col * resolution) + xmin
-       yclose = -((row - 1) * resolution) + ymax
-       yfar   = -(row * resolution) + ymax
+       # Mercator Coordinates
+       xclose_merc = ((col - 1) * resolution) + xmin
+       xfar_merc   = (col * resolution) + xmin
+       yclose_merc = -((row - 1) * resolution) + ymax
+       yfar_merc   = -(row * resolution) + ymax
 
-       midcellx = xclose + (resolution * .5)
-       midcelly = yclose - (resolution * .5)
-       midcell  = c(midcellx, midcelly)
+       midcellx_merc = xclose_merc + (resolution * .5)
+       midcelly_merc = yclose_merc - (resolution * .5)
+       midcell_merc  = c(midcellx_merc, midcelly_merc)
+       
+       # Sinusoidal coordinates
+       midcell_pt_sin  = from_crs1_to_crs2_lon_lat(lon_ = midcellx_merc, lat_ = midcelly_merc, from_crs = merc_crs, to_crs = sinu_crs)
+       midcellx_sin = midcell_pt_sin@coords[1]
+       midcelly_sin = midcell_pt_sin@coords[2]
+       midcell_sin  = c(midcellx_sin, midcelly_sin)
+       
+       xyclosefar_pts_sin = from_crs1_to_crs2_lon_lat(lon_ = c(xclose_merc,xfar_merc), lat_ = c(yclose_merc,yfar_merc), from_crs = merc_crs, to_crs = sinu_crs)
+       xclose_sin = xyclosefar_pts_sin@coords[1,1]
+       xfar_sin   = xyclosefar_pts_sin@coords[2,1]
+       yclose_sin = xyclosefar_pts_sin@coords[1,2]
+       yfar_sin   = xyclosefar_pts_sin@coords[2,2]
+       
+       # WGS coordinates
+       midcell_pt_wgs  = from_crs1_to_crs2_lon_lat(lon_ = midcellx_merc, lat_ = midcelly_merc, from_crs = merc_crs, to_crs = wgs_crs)
+       midcellx_wgs = midcell_pt_wgs@coords[1]
+       midcelly_wgs = midcell_pt_wgs@coords[2]
+       midcell_wgs  = c(midcellx_wgs, midcelly_wgs)
 
-       datalon = c(xclose, xfar, xfar, xclose ,xclose)
-       datalat = c(yclose, yclose, yfar, yfar, yclose)
+       xyclosefar_pts_wgs = from_crs1_to_crs2_lon_lat(lon_ = c(xclose_merc,xfar_merc), lat_ = c(yclose_merc,yfar_merc), from_crs = merc_crs, to_crs = wgs_crs)
+       xclose_wgs = xyclosefar_pts_wgs@coords[1,1]
+       xfar_wgs   = xyclosefar_pts_wgs@coords[2,1]
+       yclose_wgs = xyclosefar_pts_wgs@coords[1,2]
+       yfar_wgs   = xyclosefar_pts_wgs@coords[2,2]
+
+       datalon_wgs = c(xclose_wgs, xfar_wgs, xfar_wgs, xclose_wgs ,xclose_wgs)
+       datalat_wgs = c(yclose_wgs, yclose_wgs, yfar_wgs, yfar_wgs, yclose_wgs)
        id_     = paste0(row, '_', col)
 
        # Check to see if already drawn, and if so remove it from df and leaflet map
@@ -1843,15 +1865,7 @@ server = function(input, output, session) {
          variables$color_list_reserve = c(color_to_remove, variables$color_list_reserve)
          variables$color_list = variables$color_list[!variables$color_list %in% color_to_remove]
 
-         if (type_ == '500m'){
-           # Remove polygon from data$pixel_sps_500m
-           ids_500m = unique(ggplot2::fortify(data$pixel_sps_500m)$id)
-           len = length(ids_500m)
-           lst = c(1:len)
-           pos = which(unique(ggplot2::fortify(data$pixel_sps_500m)$id) %in% c(id_))
-           lst_ = lst[-(pos)]
-           data$pixel_sps_500m = data$pixel_sps_500m[lst_]
-         }else if (type_ == '250m'){
+         if (type_ == '250m'){
            # Remove polygon from data$pixel_sps_250m
            ids_250m = unique(ggplot2::fortify(data$pixel_sps_250m)$id)
            len = length(ids_250m)
@@ -1859,9 +1873,14 @@ server = function(input, output, session) {
            pos = which(unique(ggplot2::fortify(data$pixel_sps_250m)$id) %in% c(id_))
            lst_ = lst[-(pos)]
            data$pixel_sps_250m = data$pixel_sps_250m[lst_]
+           # Remove point from data$midcell_pixel_sin
+           ids_ = unique(ggplot2::fortify(data$midcell_pixel_sin)$id)
+           len = length(ids_)
+           lst = c(1:len)
+           pos = which(unique(ggplot2::fortify(data$midcell_pixel_sin)$id) %in% c(id_))
+           lst_ = lst[-(pos)]
+           data$midcell_pixel_sin = data$midcell_pixel_sin[lst_]
          }
-         # print ('Dataframe of all highlighted pixels (250m)')
-         # print (data$pixel_df)
 
        }else{
          # Draw the pixel polygon on the leaflet map
@@ -1879,50 +1898,49 @@ server = function(input, output, session) {
            }
            
            leafletProxy("map") %>%
-             addPolygons(datalon, datalat, layerId = id_, weight = 4,  opacity = .95, color = variables$color, group = '250m Highlighted Pixels', fillOpacity = .1)
+             addPolygons(datalon_wgs, datalat_wgs, layerId = id_, weight = 4,  opacity = .95, color = variables$color, group = '250m Highlighted Pixels', fillOpacity = .1)
          }
 
          ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,
                      ' --Row: ', row, ' --Column: ', col, ' --Pft Number: ', vegindex,
-                     ' --Middle of Cell lon: ', midcell[1], ' lat: ', midcell[2])
+                     ' --Middle of Cell lon: ', midcell_wgs[1], ' lat: ', midcell_wgs[2])
          print (ps)
 
          # Build Dataframe   reactive value = data$pixel_df
-         data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, Type = type_, Lat = midcelly, Lon = midcellx, pft = vegindex,
-                                                         pt1_lat = datalat[1], pt1_lon = datalon[1],
-                                                         pt2_lat = datalat[2], pt2_lon = datalon[2],
-                                                         pt3_lat = datalat[3], pt3_lon = datalon[3],
-                                                         pt4_lat = datalat[4], pt4_lon = datalon[4],
-                                                         pt5_lat = datalat[5], pt5_lon = datalon[5]))
+         data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, 
+                                                         Type = type_, Lat_wgs = midcelly_wgs, Lon_wgs = midcellx_wgs, 
+                                                         pft = vegindex, Lat_sin = midcelly_sin, Lon_sin = midcellx_sin,
+                                                         pt1_lat = datalat_wgs[1], pt1_lon = datalon_wgs[1],
+                                                         pt2_lat = datalat_wgs[2], pt2_lon = datalon_wgs[2],
+                                                         pt3_lat = datalat_wgs[3], pt3_lon = datalon_wgs[3],
+                                                         pt4_lat = datalat_wgs[4], pt4_lon = datalon_wgs[4],
+                                                         pt5_lat = datalat_wgs[5], pt5_lon = datalon_wgs[5]))
          
          data$pixel_df_table = data$pixel_df %>%  subset(Type == '250m') %>%
-           select(Site, Pixel, Type, Lat, Lon) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10),
+           select(Site, Pixel, Type, Lat_wgs, Lon_wgs) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10),
                                                              filter = 'top') %>%
                formatStyle('Pixel', fontWeight = 'bold', 
                            backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
 
-         pixel  = matrix_to_polygon(rbind(c(datalon[1], datalat[1]),
-                                          c(datalon[2], datalat[2]),
-                                          c(datalon[3], datalat[3]),
-                                          c(datalon[4], datalat[4]),
-                                          c(datalon[5], datalat[5])), id_, as.character(type_))
-
-         if (type_ == '500m'){
-             if (length(data$pixel_sps_500m) == 0){
-               data$pixel_sps_500m = pixel
-             }else{
-               data$pixel_sps_500m = rbind(data$pixel_sps_500m, pixel)
-
-           }}else if(type_ == '250m'){
+         pixel  = matrix_to_polygon(rbind(c(datalon_wgs[1], datalat_wgs[1]),
+                                          c(datalon_wgs[2], datalat_wgs[2]),
+                                          c(datalon_wgs[3], datalat_wgs[3]),
+                                          c(datalon_wgs[4], datalat_wgs[4]),
+                                          c(datalon_wgs[5], datalat_wgs[5])), id_, as.character(type_))
+         
+         coords_ = data.frame(x = midcellx_sin, y = midcelly_sin)
+         row.names(coords_) = id_ 
+         center_point = SpatialPointsDataFrame(coords_, data=data.frame(ID=id_), proj4string=CRS(sinu_crs))
+         
+          if(type_ == '250m'){
              if (length(data$pixel_sps_250m) == 0){
                data$pixel_sps_250m = pixel
+               data$midcell_pixel_sin = center_point
+               
              }else{
                data$pixel_sps_250m = rbind(data$pixel_sps_250m, pixel)
+               data$midcell_pixel_sin = rbind(data$midcell_pixel_sin, center_point)
              }}
-
-         # print ('250m Grid Sp Object info:')
-         # print ((data$pixel_sps_250m))
-         # print ('Dataframe of all highlighted pixels (250m)')
          print (data$pixel_df)
        }
      }

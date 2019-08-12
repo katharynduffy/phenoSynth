@@ -38,7 +38,7 @@ build_pft_palette = function(raster_){
 
 
 # Build grid for any input raster
-build_raster_grid = function(raster_, map_ = NULL){
+build_raster_grid = function(raster_, map_ = NULL, crs='wgs'){
   r_         = raster_
   xmin       = xmin(extent(r_))
   xmax       = xmax(extent(r_))
@@ -85,7 +85,7 @@ build_raster_grid = function(raster_, map_ = NULL){
     # For each id, create a line that connects all points with that id
     for ( i in id.list ) {
       event_lines = SpatialLines(list(Lines(Line(i[1]@coords), ID = id)),
-                                 proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs"))
+                                 proj4string = CRS(merc_crs))
       if (id == 1){
         sp_lines  = event_lines
       } else {
@@ -100,15 +100,17 @@ build_raster_grid = function(raster_, map_ = NULL){
   is_not_null = function(x) ! is.null(x)
   if (is_not_null(map_)){
     print ('Adding Raster grid to map')
-    leafletProxy(map_) %>% addPolylines(data = sp_lines, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid') %>%
+    if (crs=='merc'){
+      grid = spTransform(sp_lines, crs(wgs_crs))
+    }else{grid = sp_lines}
+    leafletProxy(map_) %>% addPolylines(data = grid, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid') %>%
       addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                        overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '250m MODIS Grid'),
                        position = c("topleft"),
                        options = layersControlOptions(collapsed = FALSE)) %>%
-      hideGroup('500m Highlighted Pixels') %>%
-      showGroup('500m Highlighted Pixels') %>%
       hideGroup('250m Highlighted Pixels') %>%
       showGroup('250m Highlighted Pixels')
+    return (grid)
   }else{
       return (sp_lines)
     }
@@ -126,10 +128,13 @@ from_crs1_to_crs2_lon_lat = function(lon_,lat_, from_crs = "+proj=longlat +datum
 }
 
 # Creates boundary box for clipping rasters using lat/lon from phenocam site
-crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL, height=.03, width=.05, crs_str = "+proj=longlat +datum=WGS84 +no_defs"){
-  e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
-  crs(e) <- crs_str
-  r        = raster::crop(r_, e, snap='near')
+crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL, height=.03, width=.05, crs_str = "+proj=longlat +datum=WGS84 +no_defs", crop=TRUE){
+  
+  if (crop==TRUE){
+    e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
+    crs(e) <- crs_str
+    r        = raster::crop(r_, e, snap='near')
+  } else { r = r_}
   
   if (reclassify == FALSE){
     return (r)
