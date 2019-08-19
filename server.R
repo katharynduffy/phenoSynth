@@ -955,34 +955,34 @@ server = function(input, output, session) {
     # rownames(ndvi_pixel_data_df) = NULL
     print (as_tibble(sd))
     
-    if ('Transition Dates' %in% selected_data){
-      if ('tds_sat' %in% selected_plots){
-        OGMa = data$OGMa
-        OGMi = data$OGMi
-        OGI  = data$OGI
-        OGD  = data$OGD
-        
-        clean_OGMa = OGMa %>%
-          subset(OGMa$pixel %in% sd$Pixel) %>%
-          mutate(pixel = paste0('TD_OGMa_', pixel), Date = dates) %>%
-          select(pixel, Date, value) %>%
-          arrange(pixel, Date) 
-        clean_OGMi = OGMi %>%
-          subset(OGMi$pixel %in% sd$Pixel)%>%
-          mutate(pixel = paste0('TD_OGMi_', pixel), Date = dates) %>%
-          select(pixel, Date, value) %>%
-          arrange(pixel, Date) 
-        clean_OGI = OGI %>%
-          subset(OGI$pixel %in% sd$Pixel)%>%
-          mutate(pixel = paste0('TD_OGI_', pixel), Date = dates) %>%
-          select(pixel, Date, value) %>%
-          arrange(pixel, Date) 
-        clean_OGD = OGD %>%
-          subset(OGD$pixel %in% sd$Pixel)%>%
-          mutate(pixel = paste0('TD_OGD_', pixel), Date = dates) %>%
-          select(pixel, Date, value) %>%
-          arrange(pixel, Date) 
-      }}
+    # if ('Transition Dates' %in% selected_data){
+    #   if ('tds_sat' %in% selected_plots){
+    #     OGMa = data$OGMa
+    #     OGMi = data$OGMi
+    #     OGI  = data$OGI
+    #     OGD  = data$OGD
+    #     
+    #     clean_OGMa = OGMa %>%
+    #       subset(OGMa$pixel %in% sd$Pixel) %>%
+    #       mutate(pixel = paste0('TD_OGMa_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date) 
+    #     clean_OGMi = OGMi %>%
+    #       subset(OGMi$pixel %in% sd$Pixel)%>%
+    #       mutate(pixel = paste0('TD_OGMi_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date) 
+    #     clean_OGI = OGI %>%
+    #       subset(OGI$pixel %in% sd$Pixel)%>%
+    #       mutate(pixel = paste0('TD_OGI_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date) 
+    #     clean_OGD = OGD %>%
+    #       subset(OGD$pixel %in% sd$Pixel)%>%
+    #       mutate(pixel = paste0('TD_OGD_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date) 
+    #   }}
     
     if ('NDVI' %in% selected_data){
       # NDVI HIGH QUALITY
@@ -1056,56 +1056,56 @@ server = function(input, output, session) {
             showlegend = TRUE
           )%>%layout(xaxis = list(title = "Date"))
         
-        if ('Transition Dates' %in% selected_data){
-          if ('tds_sat' %in% selected_plots){
-                
-                p_ndvi_raw = p_ndvi_raw %>%
-                  add_markers(data = clean_OGMa,
-                              inherit = FALSE,
-                              x = ~Date,
-                              y = ~value,
-                              name = ~pixel,
-                              type = "scatter",
-                              mode = 'markers',
-                              marker = list(color = 'green', size= 10, symbol=2),
-                              showlegend = TRUE,
-                              text = ~paste("Date: ", Date,
-                                            '<br>Pixel: ', pixel,
-                                            '<br>Data: Onset Greenness Maximum')) %>%
-                  add_trace(data = clean_OGMi,
-                            x = ~Date,
-                            y = ~value,
-                            name = ~pixel,
-                            type = "scatter",
-                            mode = 'markers',
-                            marker = list(color = 'brown', size= 10, symbol=25),
-                            showlegend = TRUE,
-                            text = ~paste("Date: ", Date,
-                                          '<br>Pixel: ', pixel,
-                                          '<br>Data: Onset Greenness Minimum')) %>%
-                  add_trace(data = clean_OGI,
-                            x = ~Date,
-                            y = .5,
-                            name = ~pixel,
-                            type = "scatter",
-                            mode = 'markers',
-                            marker = list(color ='green', size= 10, symbol=5),
-                            showlegend = TRUE,
-                            text = ~paste("Date: ", Date,
-                                          '<br>Pixel: ', pixel,
-                                          '<br>Data: Onset Greenness Increase')) %>%
-                  add_trace(data = clean_OGD,
-                            x = ~Date,
-                            y = .5,
-                            name = ~pixel,
-                            type = "scatter",
-                            mode = 'markers',
-                            marker = list(color ='orange', size= 10, symbol=6),
-                            showlegend = TRUE,
-                            text = ~paste("Date: ", Date,
-                                          '<br>Pixel: ', pixel,
-                                          '<br>Data: Onset Greenness Decrease'))
-          }}
+        # if ('Transition Dates' %in% selected_data){
+        #   if ('tds_sat' %in% selected_plots){
+        #         
+        #         p_ndvi_raw = p_ndvi_raw %>%
+        #           add_markers(data = clean_OGMa,
+        #                       inherit = FALSE,
+        #                       x = ~Date,
+        #                       y = ~value,
+        #                       name = ~pixel,
+        #                       type = "scatter",
+        #                       mode = 'markers',
+        #                       marker = list(color = 'green', size= 10, symbol=2),
+        #                       showlegend = TRUE,
+        #                       text = ~paste("Date: ", Date,
+        #                                     '<br>Pixel: ', pixel,
+        #                                     '<br>Data: Onset Greenness Maximum')) %>%
+        #           add_trace(data = clean_OGMi,
+        #                     x = ~Date,
+        #                     y = ~value,
+        #                     name = ~pixel,
+        #                     type = "scatter",
+        #                     mode = 'markers',
+        #                     marker = list(color = 'brown', size= 10, symbol=25),
+        #                     showlegend = TRUE,
+        #                     text = ~paste("Date: ", Date,
+        #                                   '<br>Pixel: ', pixel,
+        #                                   '<br>Data: Onset Greenness Minimum')) %>%
+        #           add_trace(data = clean_OGI,
+        #                     x = ~Date,
+        #                     y = .5,
+        #                     name = ~pixel,
+        #                     type = "scatter",
+        #                     mode = 'markers',
+        #                     marker = list(color ='green', size= 10, symbol=5),
+        #                     showlegend = TRUE,
+        #                     text = ~paste("Date: ", Date,
+        #                                   '<br>Pixel: ', pixel,
+        #                                   '<br>Data: Onset Greenness Increase')) %>%
+        #           add_trace(data = clean_OGD,
+        #                     x = ~Date,
+        #                     y = .5,
+        #                     name = ~pixel,
+        #                     type = "scatter",
+        #                     mode = 'markers',
+        #                     marker = list(color ='orange', size= 10, symbol=6),
+        #                     showlegend = TRUE,
+        #                     text = ~paste("Date: ", Date,
+        #                                   '<br>Pixel: ', pixel,
+        #                                   '<br>Data: Onset Greenness Decrease'))
+        #   }}
         p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
                                        x_title_ = 'NDVI (All data)',
                                        y_title_ = 'NDVI value')
@@ -1183,55 +1183,55 @@ server = function(input, output, session) {
             showlegend = TRUE
           ) %>% layout(xaxis = list(title = "Date"))
             
-        if ('Transition Dates' %in% selected_data){
-          if ('tds_sat' %in% selected_plots){
-            p_evi_raw = p_evi_raw %>%
-              add_markers(data = clean_OGMa,
-                        inherit = FALSE,
-                        x = ~Date,
-                        y = ~value,
-                        name = ~pixel,
-                        type = "scatter",
-                        mode = 'markers',
-                        marker = list(color = 'green', size= 10, symbol=2),
-                        showlegend = TRUE,
-                        text = ~paste("Date: ", Date,
-                                      '<br>Pixel: ', pixel,
-                                      '<br>Data: Onset Greenness Maximum')) %>%
-              add_trace(data = clean_OGMi,
-                        x = ~Date,
-                        y = ~value,
-                        name = ~pixel,
-                        type = "scatter",
-                        mode = 'markers',
-                        marker = list(color = 'brown', size= 10, symbol=25),
-                        showlegend = TRUE,
-                        text = ~paste("Date: ", Date,
-                                      '<br>Pixel: ', pixel,
-                                      '<br>Data: Onset Greenness Minimum')) %>%
-              add_trace(data = clean_OGI,
-                        x = ~Date,
-                        y = .4,
-                        name = ~pixel,
-                        type = "scatter",
-                        mode = 'markers',
-                        marker = list(color ='green', size= 10, symbol=5),
-                        showlegend = TRUE,
-                        text = ~paste("Date: ", Date,
-                                      '<br>Pixel: ', pixel,
-                                      '<br>Data: Onset Greenness Increase')) %>%
-              add_trace(data = clean_OGD,
-                        x = ~Date,
-                        y = .4,
-                        name = ~pixel,
-                        type = "scatter",
-                        mode = 'markers',
-                        marker = list(color ='orange', size= 10, symbol=6),
-                        showlegend = TRUE,
-                        text = ~paste("Date: ", Date,
-                                      '<br>Pixel: ', pixel,
-                                      '<br>Data: Onset Greenness Decrease'))
-          }}
+        # if ('Transition Dates' %in% selected_data){
+        #   if ('tds_sat' %in% selected_plots){
+        #     p_evi_raw = p_evi_raw %>%
+        #       add_markers(data = clean_OGMa,
+        #                 inherit = FALSE,
+        #                 x = ~Date,
+        #                 y = ~value,
+        #                 name = ~pixel,
+        #                 type = "scatter",
+        #                 mode = 'markers',
+        #                 marker = list(color = 'green', size= 10, symbol=2),
+        #                 showlegend = TRUE,
+        #                 text = ~paste("Date: ", Date,
+        #                               '<br>Pixel: ', pixel,
+        #                               '<br>Data: Onset Greenness Maximum')) %>%
+        #       add_trace(data = clean_OGMi,
+        #                 x = ~Date,
+        #                 y = ~value,
+        #                 name = ~pixel,
+        #                 type = "scatter",
+        #                 mode = 'markers',
+        #                 marker = list(color = 'brown', size= 10, symbol=25),
+        #                 showlegend = TRUE,
+        #                 text = ~paste("Date: ", Date,
+        #                               '<br>Pixel: ', pixel,
+        #                               '<br>Data: Onset Greenness Minimum')) %>%
+        #       add_trace(data = clean_OGI,
+        #                 x = ~Date,
+        #                 y = .4,
+        #                 name = ~pixel,
+        #                 type = "scatter",
+        #                 mode = 'markers',
+        #                 marker = list(color ='green', size= 10, symbol=5),
+        #                 showlegend = TRUE,
+        #                 text = ~paste("Date: ", Date,
+        #                               '<br>Pixel: ', pixel,
+        #                               '<br>Data: Onset Greenness Increase')) %>%
+        #       add_trace(data = clean_OGD,
+        #                 x = ~Date,
+        #                 y = .4,
+        #                 name = ~pixel,
+        #                 type = "scatter",
+        #                 mode = 'markers',
+        #                 marker = list(color ='orange', size= 10, symbol=6),
+        #                 showlegend = TRUE,
+        #                 text = ~paste("Date: ", Date,
+        #                               '<br>Pixel: ', pixel,
+        #                               '<br>Data: Onset Greenness Decrease'))
+        #   }}
             
         p_evi_raw = add_title_to_plot(df = p_evi_raw,
                                       x_title_ = 'EVI (All data)',
