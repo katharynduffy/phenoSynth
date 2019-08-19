@@ -35,13 +35,13 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
+                         actionButton('plotDataButton', 'Plot Data'),
                          selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
                          # selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
                          sliderInput('dataDateRange', 'Date start to end',
                                      min = as.Date('2000-01-01'),
                                      max = Sys.Date(),
                                      value = c(as.Date('2000-01-01'), Sys.Date())),
-                         actionButton('plotDataButton', 'Plot Data'),
                          helpText(id = 'noPixelWarning', 'No Pixels selected')
                          # actionButton('genDF', 'Download Data')
                          )
@@ -115,7 +115,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                                       ),
 
                         absolutePanel(id = 'mouseBox', class = 'panel panel-default', fixed = TRUE,
-                                      draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 85,
+                                      draggable = FALSE,  top = 'auto', left = 'auto', right = 20 , bottom = 185,
                                       width = 240, height = 40, style="z-index:500;",
                                       verbatimTextOutput("mouse")
                                       ),
