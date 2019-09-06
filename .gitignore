@@ -21,3 +21,5 @@ testLOESSdata2.rds
 testEVI.rds
 testLOESSdata.rds
 .html
+*.rds
+LandSatLandCover/
