@@ -112,6 +112,9 @@ build_raster_grid = function(raster_, map_ = NULL, crs='wgs'){
       showGroup('250m Highlighted Pixels')
     return (grid)
   }else{
+    if (crs=='merc'){
+      sp_lines = spTransform(sp_lines, crs(wgs_crs))
+    }
       return (sp_lines)
     }
 }

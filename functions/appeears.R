@@ -41,7 +41,7 @@ download_bundle_file = function(site_task_id_, filepath_){
 # Returns a AppEEARS task id bundle dataframe
 get_appeears_bundle_df = function(site_task_id_){
   response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
-  bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+  bundle_response = jsonlite::toJSON(content(response), auto_unbox = TRUE)
   document = jsonlite::fromJSON(txt=bundle_response)
   files = document$files
   return (files)
@@ -51,50 +51,16 @@ get_appeears_bundle_df = function(site_task_id_){
 # Given a site name, function returns the appeears task record
 get_appeears_task = function(name, type){
   if (type == 'ndvi_tera'){
-    task_pos = grep(name, appeears_tasks_ndvi_tera$task_name)
-    print (task_pos)
-    for (i in c(1:length(task_pos))){
-      row = get_site_from_task(appeears_tasks_ndvi_tera[task_pos[i],]$task_name, 5)
-      if (row == name){
-        task_ = appeears_tasks_ndvi_tera[task_pos[i],]$task_name
-        return (subset(appeears_tasks_ndvi_tera, appeears_tasks_ndvi_tera$task_name == task_))
-      }
-    }
+    return (subset(appeears_tasks_ndvi_tera, as.character(strsplit(appeears_tasks_ndvi_tera$task_name, '_NDVI_v6_tera_sinu')) == name))
   }else if (type == 'ndvi_aqua'){
-    task_pos = grep(name, appeears_tasks_ndvi_aqua$task_name)
-    for (i in c(1:length(task_pos))){
-      row = get_site_from_task(appeears_tasks_ndvi_aqua[task_pos[i],]$task_name, 5)
-      if (row == name){
-        task_ = appeears_tasks_ndvi_aqua[task_pos[i],]$task_name
-        return (subset(appeears_tasks_ndvi_aqua, appeears_tasks_ndvi_aqua$task_name == task_))
-      }
-    }
+    return (subset(appeears_tasks_ndvi_aqua, as.character(strsplit(appeears_tasks_ndvi_aqua$task_name, '_NDVI_v6_aqua_sinu')) == name))
   }else if (type == 'tds'){
-    task_pos = grep(name, appeears_tasks_tds$task_name)
-    for (i in c(1:length(task_pos))){
-      row = get_site_from_task(appeears_tasks_tds[task_pos[i],]$task_name, 3)
-      if (row == name){
-        task_ = appeears_tasks_tds[task_pos[i],]$task_name
-        return (subset(appeears_tasks_tds, appeears_tasks_tds$task_name == task_))
-      }
-    }
+    return (subset(appeears_tasks_tds, as.character(strsplit(appeears_tasks_tds$task_name, '_TDs_v6')) == name))
   }else if (type == 'evi_tera'){
-    task_pos = grep(name, appeears_tasks_evi_tera$task_name)
-    for (i in c(1:length(task_pos))){
-      row = get_site_from_task(appeears_tasks_evi_tera[task_pos[i],]$task_name, 5)
-      if (row == name){
-        task_ = appeears_tasks_evi_tera[task_pos[i],]$task_name
-        return (subset(appeears_tasks_evi_tera, appeears_tasks_evi_tera$task_name == task_))
-      }
-    }
+    return (subset(appeears_tasks_evi_tera, as.character(strsplit(appeears_tasks_evi_tera$task_name, '_EVI_v6_tera_sinu')) == name))
   }else if (type == 'evi_aqua'){
-    task_pos = grep(name, appeears_tasks_evi_aqua$task_name)
-    for (i in c(1:length(task_pos))){
-      row = get_site_from_task(appeears_tasks_evi_aqua[task_pos[i],]$task_name, 5)
-      if (row == name){
-        task_ = appeears_tasks_evi_aqua[task_pos[i],]$task_name
-        return (subset(appeears_tasks_evi_aqua, appeears_tasks_evi_aqua$task_name == task_))
-      }
-    }
+    return (subset(appeears_tasks_evi_aqua, as.character(strsplit(appeears_tasks_evi_aqua$task_name, '_EVI_v6_aqua_sinu')) == name))
+  }else if (type == 'landcover'){
+    return (subset(appeears_tasks_lc, as.character(strsplit(appeears_tasks_lc$task_name, '_LC_nc_v6')) == name))
   }else {print (paste0('failed to grab task: ',name , ', ', type))}
 }

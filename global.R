@@ -107,11 +107,17 @@ appeears_tasks_ndvi_tera = readRDS(file = './www/cache_df_ndvi_tera.df')
 appeears_tasks_ndvi_aqua = readRDS(file = './www/cache_df_ndvi_aqua.df')
 appeears_tasks_evi_tera  = readRDS(file = './www/cache_df_evi_tera.df')
 appeears_tasks_evi_aqua  = readRDS(file = './www/cache_df_evi_aqua.df')
-appeears_tasks_tds  = readRDS(file = './www/cache_df_tds.df')
+appeears_tasks_tds       = readRDS(file = './www/cache_df_tds.df')
+appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
+
+# Sites with data
+sites_with_data = as.character(strsplit(appeears_tasks_lc$task_name, '_LC_nc_v6'))
+cams_ = cams_[match(sites_with_data, cams_$Sitename),]
+cams_ = cams_[seq(dim(cams_)[1],1),]
 
 # AppEEARS products page: https://lpdaacsvc.cr.usgs.gov/appeears/products
 
 # defining CRS strings to use for geospatial conversions within the app
 sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
 merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
-wgs_crs  = "+proj=longlat +datum=WGS84"
+wgs_crs  = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"

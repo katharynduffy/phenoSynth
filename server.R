@@ -8,7 +8,7 @@ server = function(input, output, session) {
   variables = reactiveValues(
                       filter   = 'All',
                       sites_df = cams_,
-                      sites    = site_names,
+                      sites    = sites_with_data,
                       color_count = 1,
                       color = 'blue')
   appeears = reactiveValues(
@@ -572,11 +572,71 @@ server = function(input, output, session) {
     variables$color_list = c()
     variables$color_list_reserve = rainbow(20)
 
-    # Landcover layer
-    # data$global_pth = './www/MCD12Q1.006_LC_type_1_2017.tif'
-    data$global_pth = './www/MCD12Q1.006_LC_Type1_doy2016001_aid0001.tif'
-    global_r   = raster::raster(data$global_pth)
+    # Set up directories to store data
+    file_path     = paste0('./www/site_data/', site, '/data_layers/')
+    main          = './www/site_data'
+    npn_grid_dir  = './www/npn_grid_data'
+    lc_filepath        = paste0(file_path, 'lc/')
+    ndvi_filepath      = paste0(file_path,'ndvi/')
+    ndvi_tera_filepath = paste0(ndvi_filepath, 'tera/')
+    if (!file.exists(main)){
+      dir.create(file.path(main))
+    }
+    if (!file.exists(npn_grid_dir)){
+      dir.create(npn_grid_dir)
+    }
+    main_site = paste0(main, '/', site)
+    if (!file.exists(main_site)){
+      dir.create(file.path(main_site))
+    }
+    if (!file.exists(file_path)){
+      dir.create(file.path(file_path))
+    }
+    if (!file.exists(ndvi_filepath)){
+      dir.create(file.path(ndvi_filepath))
+    }
+    if (!file.exists(ndvi_tera_filepath)){
+      dir.create(file.path(ndvi_tera_filepath))
+    }
+    if (!file.exists(lc_filepath)){
+      dir.create(file.path(lc_filepath))
+    }
+    
 
+    # Landcover layer
+    # Download or Import landcover for this site
+    print ('Importing Landcover')
+    appeears$landcover = get_appeears_task(site, type = 'landcover')
+    if (length(list.files(lc_filepath))==0){
+      lc_bundle_df = download_bundle_file(appeears$landcover$task_id, lc_filepath)
+    }else {
+      lc_bundle_df = get_appeears_bundle_df(appeears$landcover$task_id)
+    }
+    # NDVI layer
+    # Download or Import NDVI for this site to use to resample landcover
+    appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
+    if (length(list.files(ndvi_tera_filepath))==0){
+      ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
+    }else {
+      ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
+    }
+    
+    # Bringing in 250m sinu and re-projecting to merc
+    ndvi_tera_name   = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
+    ndvi_tera_path   = paste0(ndvi_tera_filepath, ndvi_tera_name)
+    ndvi_tera_brick  = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI', crs=sinu_crs)
+    ndvi_raster_t    = raster::subset(ndvi_tera_brick, 1)
+    ndvi_raster_merc = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
+    # Bringing in 500m sinu, resampling to 250m, and then re-projecting back to 500m to merc
+    lc_name  = subset(lc_bundle_df, file_type == 'nc')$file_name
+    lc_path  = paste0(lc_filepath, lc_name)
+    lc_brick  = raster::brick(lc_path, crs=sinu_crs)
+    lc_raster = raster::subset(lc_brick, 18)
+    lc_raster_ = raster::resample(x = lc_raster, y = ndvi_raster_t, crs = sinu_crs, method='ngb')
+    lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t))
+    # lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)*2)
+    
+    
     veg_types  = c()
     print ('Switching to Analyze Mode')
     zoom_to_site(site, site_data, TRUE, cams_, input$drawROI)
@@ -603,7 +663,6 @@ server = function(input, output, session) {
       data$veg_types = veg_types
 
       # Building Landcover layer and color pallette for specific pft composition in clipped raster
-      
       lat_wgs = site_data$Lat
       lng_wgs = site_data$Lon
       # from wgs to sinusoidal
@@ -615,14 +674,11 @@ server = function(input, output, session) {
       data$lat_merc = pt_merc@coords[2]
       data$lng_merc = pt_merc@coords[1]
       
-      cropped_landcover_v6_sinu = crop_raster(lat_ = data$lat_sin, lon_ = data$lng_sin , r_ = global_r, height = 15000, width = 15000, crs_str = sinu_crs)
-      data$cropped_landcover_v6_merc = projectRaster(from = cropped_landcover_v6_sinu, crs = merc_crs, method='ngb')
-      cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$cropped_landcover_v6_merc, height = 5000, width = 5000, crs_str = merc_crs)
-      c3 = build_pft_palette(cropped_landcover_v6_merc_box)
-      
-      # r  = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=FALSE)
-      # c3 = build_pft_palette(r)
-      data$r_landcover = cropped_landcover_v6_merc_box
+      # cropped_landcover_v6_sinu = crop_raster(lat_ = data$lat_sin, lon_ = data$lng_sin , r_ = global_r, height = 20000, width = 20000, crs_str = sinu_crs)
+      # cropped_landcover_v6_merc = projectRaster(from = cropped_landcover_v6_sinu, crs = merc_crs, method='ngb', res = 463.312716527775)
+      # cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs)
+      r_500_m_cropped_merc_20 = crop_raster(data$lat_merc, data$lng_merc, lc_raster_merc, height = 20000, width = 20000, crs_str = merc_crs)
+      data$r_landcover = r_500_m_cropped_merc_20
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       data$veg_types = veg_types
@@ -633,8 +689,8 @@ server = function(input, output, session) {
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
       print (as.numeric(pft_key))
 
-      rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, height = 5000, width = 5000, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
-      # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+      c3 = build_pft_palette(data$r_landcover)
+      rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
@@ -661,15 +717,14 @@ server = function(input, output, session) {
         site_data  = get_site_info(site)
         pft        = input$pftSelection
 
-        c3 = build_pft_palette(data$r_landcover)
         pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
         pft_abbr = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
         data$pft_abbr = pft_abbr
         # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
         print (as.numeric(pft_key))
-        rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, height = 5000, width = 5000, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
-        
+        c3 = build_pft_palette(data$r_landcover)
+        rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
 
         leafletProxy('map') %>%
           clearImages() %>%
@@ -1508,9 +1563,8 @@ server = function(input, output, session) {
 
       # Grab first observation of NDVI and Quality datasets
       r_for_grid = raster::raster(ndvi_tera_path)
-      crs(r_for_grid) = sinu_crs
-      r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs)
-      r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 5000, width = 5000, crs_str = merc_crs)
+      r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
+      r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 20000, width = 20000, crs_str = merc_crs)
       data$r_ndvi_cropped = r_for_grid_cropped_merc
       
       grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
@@ -1630,8 +1684,8 @@ server = function(input, output, session) {
         # Grab first observation of evi and Quality datasets
         r_for_grid = raster::raster(evi_tera_path)
         crs(r_for_grid) = sinu_crs
-        r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs)
-        r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 5000, width = 5000, crs_str = merc_crs)
+        r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
+        r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 20000, width = 20000, crs_str = merc_crs)
         data$r_evi_cropped = r_for_grid_cropped_merc
         
         grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
