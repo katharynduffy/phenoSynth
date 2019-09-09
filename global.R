@@ -94,18 +94,29 @@ Landsat_Landcover <- read_csv("Landsat.Landcover.csv")
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
-# Load in dataframe with cached AppEEARS tasks
-appeears_tasks_ndvi     = readRDS(file = './www/cache_df_ndvi.df')
-# Load in df with cached AppEEARS Transition Dates (dts)
-appeears_tasks_tds      = readRDS(file = './www/cache_df_tds.df')
-# Load in df with cached AppEEARS EVI data
-appeears_tasks_evi      = readRDS(file = './www/cache_df_evi.df')
-
-# New
 # Load in dataframes with evi/ndvi for aqua and tera modis data
 appeears_tasks_ndvi_tera = readRDS(file = './www/cache_df_ndvi_tera.df')
 appeears_tasks_ndvi_aqua = readRDS(file = './www/cache_df_ndvi_aqua.df')
 appeears_tasks_evi_tera  = readRDS(file = './www/cache_df_evi_tera.df')
 appeears_tasks_evi_aqua  = readRDS(file = './www/cache_df_evi_aqua.df')
+appeears_tasks_tds       = readRDS(file = './www/cache_df_tds.df')
+appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
+
+# check differences between the landcover and all other cached data.
+setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_ndvi_tera$task_name, '_NDVI_v6_tera_sinu')))
+setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_ndvi_aqua$task_name, '_NDVI_v6_aqua_sinu')))
+setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_evi_tera$task_name, '_EVI_v6_tera_sinu')))    
+setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_evi_aqua$task_name, '_EVI_v6_aqua_sinu')))
+setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_tds$task_name, '_TDs_v6')))
+
+# Sites with data
+sites_with_data = as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6'))
+cams_ = cams_[match(sites_with_data, cams_$Sitename),]
+cams_ = cams_[seq(dim(cams_)[1],1),]
 
 # AppEEARS products page: https://lpdaacsvc.cr.usgs.gov/appeears/products
+
+# defining CRS strings to use for geospatial conversions within the app
+sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
+wgs_crs  = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
