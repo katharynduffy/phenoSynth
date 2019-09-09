@@ -632,7 +632,7 @@ server = function(input, output, session) {
     lc_name  = subset(lc_bundle_df, file_type == 'nc')$file_name
     lc_path  = paste0(lc_filepath, lc_name)
     lc_brick  = raster::brick(lc_path, crs=sinu_crs)
-    lc_raster = raster::subset(lc_brick, 18)
+    lc_raster = raster::subset(lc_brick, 1)
     lc_raster_ = raster::resample(x = lc_raster, y = ndvi_raster_t, crs = sinu_crs, method='ngb')
     lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t))
     # lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)*2)
