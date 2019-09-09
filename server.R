@@ -124,11 +124,12 @@ server = function(input, output, session) {
       lat_merc = pt_merc@coords[2]
       lng_merc = pt_merc@coords[1]
       paste0("Lat: ", input$hover_coordinates[1],
-             "\nLng: ", input$hover_coordinates[2],
-             "\nsin Lat: ", lat_sin,
-             "\nsin Lon: ", lng_sin,
-             "\nmerc Lat: ", lat_merc,
-             "\nmerc Lon: ", lng_merc)
+             "\nLng: ", input$hover_coordinates[2]#,
+             # "\nsin Lat: ", lat_sin,
+             # "\nsin Lon: ", lng_sin,
+             # "\nmerc Lat: ", lat_merc,
+             # "\nmerc Lon: ", lng_merc
+             )
     }
   })
 
@@ -1543,10 +1544,8 @@ server = function(input, output, session) {
       ndvi_qc_tera_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
       ndvi_qc_tera_path  = paste0(ndvi_tera_filepath, ndvi_qc_tera_name)
       # bricks
-      data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI')
-      crs(data$ndvi_tera_brick) = sinu_crs
-      data$ndvi_qc_tera_brick = raster::brick(ndvi_tera_path, varname='_250m_16_days_VI_Quality')
-      crs(data$ndvi_qc_tera_brick) = sinu_crs
+      data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
+      data$ndvi_qc_tera_brick = raster::brick(ndvi_tera_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
       data$ndvi_qc_csv_tera   = read.csv(ndvi_qc_tera_path)
       
       # AQUA data (ndvi)
@@ -1555,14 +1554,12 @@ server = function(input, output, session) {
       ndvi_qc_aqua_name  = ndvi_bundle_df_aqua[grep('Quality-lookup', ndvi_bundle_df_aqua$file_name),]$file_name
       ndvi_qc_aqua_path  = paste0(ndvi_aqua_filepath, ndvi_qc_aqua_name)
       # bricks
-      data$ndvi_aqua_brick    = raster::brick(ndvi_aqua_path, varname='_250m_16_days_NDVI')
-      crs(data$ndvi_aqua_brick) = sinu_crs
-      data$ndvi_qc_aqua_brick = raster::brick(ndvi_aqua_path, varname='_250m_16_days_VI_Quality')
-      crs(data$ndvi_qc_aqua_brick) = sinu_crs
+      data$ndvi_aqua_brick    = raster::brick(ndvi_aqua_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
+      data$ndvi_qc_aqua_brick = raster::brick(ndvi_aqua_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
       data$ndvi_qc_csv_aqua   = read.csv(ndvi_qc_aqua_path)
 
       # Grab first observation of NDVI and Quality datasets
-      r_for_grid = raster::raster(ndvi_tera_path)
+      r_for_grid = raster::raster(ndvi_tera_path,  crs = sinu_crs)
       r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
       r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 20000, width = 20000, crs_str = merc_crs)
       data$r_ndvi_cropped = r_for_grid_cropped_merc
@@ -1662,10 +1659,8 @@ server = function(input, output, session) {
       evi_qc_tera_name  = evi_bundle_df_tera[grep('Quality-lookup', evi_bundle_df_tera$file_name),]$file_name
       evi_qc_tera_path  = paste0(evi_tera_filepath, evi_qc_tera_name)
       # bricks
-      data$evi_tera_brick    = raster::brick(evi_tera_path, varname='_250m_16_days_EVI')
-      crs(data$evi_tera_brick) = sinu_crs
-      data$evi_qc_tera_brick = raster::brick(evi_tera_path, varname='_250m_16_days_VI_Quality')
-      crs(data$evi_qc_tera_brick) = sinu_crs
+      data$evi_tera_brick    = raster::brick(evi_tera_path, varname='_250m_16_days_EVI', crs = sinu_crs)
+      data$evi_qc_tera_brick = raster::brick(evi_tera_path, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
       data$evi_qc_csv_tera   = read.csv(evi_qc_tera_path)
       
       # AQUA data (evi)
@@ -1674,15 +1669,13 @@ server = function(input, output, session) {
       evi_qc_aqua_name  = evi_bundle_df_aqua[grep('Quality-lookup', evi_bundle_df_aqua$file_name),]$file_name
       evi_qc_aqua_path  = paste0(evi_aqua_filepath, evi_qc_aqua_name)
       # bricks
-      data$evi_aqua_brick    = raster::brick(evi_aqua_path, varname='_250m_16_days_EVI')
-      crs(data$evi_aqua_brick) = sinu_crs
-      data$evi_qc_aqua_brick = raster::brick(evi_aqua_path, varname='_250m_16_days_VI_Quality')
-      crs(data$evi_qc_aqua_brick) = sinu_crs
+      data$evi_aqua_brick    = raster::brick(evi_aqua_path, varname='_250m_16_days_EVI', crs = sinu_crs)
+      data$evi_qc_aqua_brick = raster::brick(evi_aqua_path, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
       data$evi_qc_csv_aqua   = read.csv(evi_qc_aqua_path)
       
       if ('NDVI' %!in% selected_data){
         # Grab first observation of evi and Quality datasets
-        r_for_grid = raster::raster(evi_tera_path)
+        r_for_grid = raster::raster(evi_tera_path, crs = sinu_crs)
         crs(r_for_grid) = sinu_crs
         r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
         r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 20000, width = 20000, crs_str = merc_crs)

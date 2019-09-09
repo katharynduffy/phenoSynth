@@ -61,6 +61,6 @@ get_appeears_task = function(name, type){
   }else if (type == 'evi_aqua'){
     return (subset(appeears_tasks_evi_aqua, as.character(strsplit(appeears_tasks_evi_aqua$task_name, '_EVI_v6_aqua_sinu')) == name))
   }else if (type == 'landcover'){
-    return (subset(appeears_tasks_lc, as.character(strsplit(appeears_tasks_lc$task_name, '_LC_nc_v6')) == name))
+    return (subset(appeears_tasks_lc, as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')) == name))
   }else {print (paste0('failed to grab task: ',name , ', ', type))}
 }
