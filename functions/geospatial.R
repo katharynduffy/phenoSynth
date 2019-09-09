@@ -103,7 +103,7 @@ build_raster_grid = function(raster_, map_ = NULL, crs='wgs'){
     if (crs=='merc'){
       grid = spTransform(sp_lines, crs(wgs_crs))
     }else{grid = sp_lines}
-    leafletProxy(map_) %>% addPolylines(data = grid, weight = 1.8, opacity = 1, color = 'grey', group = '250m MODIS Grid') %>%
+    leafletProxy(map_) %>% addPolylines(data = grid, weight = 1.5, opacity = 1, color = 'grey', group = '250m MODIS Grid') %>%
       addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                        overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '250m MODIS Grid'),
                        position = c("topleft"),

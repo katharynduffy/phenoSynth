@@ -61,7 +61,7 @@ server = function(input, output, session) {
 
   # Create the map
   output$map = renderLeaflet({
-    leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE, doubleClickZoom = FALSE)) %>%
+    leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=TRUE, doubleClickZoom = FALSE)) %>%
       addTiles(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.jpg",
         attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
@@ -431,7 +431,7 @@ server = function(input, output, session) {
     print('Running BUTTON Zoom to Selected Site')
     site       = isolate(input$site)
     site_data  = get_site_info(site)
-    zoom_to_site(site, site_data, zoom=TRUE, cams_, input$drawROI)
+    zoom_to_site(site, site_data, zoom_ = TRUE, cams_, input$drawROI)
 
 
   })
@@ -502,7 +502,10 @@ server = function(input, output, session) {
 
     if (is_not_null(event$id)){
       if (isolate(input$map_zoom) < 5){
-        zoom_to_site(event$id, site_data, zoom=TRUE, cams_, input$drawROI)
+        zoom_to_site(site_ = event$id, site_data_ = site_data, 
+                     zoom_  =  TRUE, 
+                     data_ = cams_, 
+                     draw_ = input$drawROI)
       }
     }
     if(is.null(event))
@@ -640,7 +643,7 @@ server = function(input, output, session) {
     
     veg_types  = c()
     print ('Switching to Analyze Mode')
-    zoom_to_site(site, site_data, TRUE, cams_, input$drawROI)
+    zoom_to_site(site, site_data, TRUE, cams_, input$drawROI, zoom_value = 14)
     highlighted$group = paste0(site, ' Highlighted Pixels')
 
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
@@ -675,11 +678,10 @@ server = function(input, output, session) {
       data$lat_merc = pt_merc@coords[2]
       data$lng_merc = pt_merc@coords[1]
       
-      # cropped_landcover_v6_sinu = crop_raster(lat_ = data$lat_sin, lon_ = data$lng_sin , r_ = global_r, height = 20000, width = 20000, crs_str = sinu_crs)
+      # cropped_landcover_v6_sinu = crop_raster(lat_ = data$lat_sin, lon_ = data$lng_sin , r_ = global_r, height = 10000, width = 10000, crs_str = sinu_crs)
       # cropped_landcover_v6_merc = projectRaster(from = cropped_landcover_v6_sinu, crs = merc_crs, method='ngb', res = 463.312716527775)
       # cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs)
-      r_500_m_cropped_merc_20 = crop_raster(data$lat_merc, data$lng_merc, lc_raster_merc, height = 20000, width = 20000, crs_str = merc_crs)
-      data$r_landcover = r_500_m_cropped_merc_20
+      data$r_landcover = crop_raster(data$lat_merc, data$lng_merc, lc_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       data$veg_types = veg_types
@@ -1561,7 +1563,7 @@ server = function(input, output, session) {
       # Grab first observation of NDVI and Quality datasets
       r_for_grid = raster::raster(ndvi_tera_path,  crs = sinu_crs)
       r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
-      r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 20000, width = 20000, crs_str = merc_crs)
+      r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
       data$r_ndvi_cropped = r_for_grid_cropped_merc
       
       grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
@@ -1678,7 +1680,7 @@ server = function(input, output, session) {
         r_for_grid = raster::raster(evi_tera_path, crs = sinu_crs)
         crs(r_for_grid) = sinu_crs
         r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
-        r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 20000, width = 20000, crs_str = merc_crs)
+        r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
         data$r_evi_cropped = r_for_grid_cropped_merc
         
         grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
