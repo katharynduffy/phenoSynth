@@ -70,7 +70,7 @@ get_marker_style = function(){
 
 
 # Zoom to site
-zoom_to_site = function(site_, site_data_, zoom_, data_, draw_ = NULL, map_ = 'map'){
+zoom_to_site = function(site_, site_data_, zoom_, data_, draw_ = NULL, map_ = 'map', zoom_value = 13){
   description        = site_data_$site_description
   camera_orientation = site_data_$camera_orientation
   lat                = site_data_$Lat
@@ -87,11 +87,15 @@ zoom_to_site = function(site_, site_data_, zoom_, data_, draw_ = NULL, map_ = 'm
     leafletProxy(map_, data = data_) %>%
       clearPopups() %>%
       clearMarkers() %>%
-      # Can add differen't markers when we zoom in at some point, but for now we will use these circle markers from above
-      addCircleMarkers(lng=lon,lat=lat,label=camera, layerId=camera, labelOptions = labelOptions(noHide = F, direction = "bottom",
-                                                                                                 style = get_marker_style()), opacity = .80, fillColor = get_color(cams=site_data_), color = get_color(cams=site_data_),
+      # Can add different markers when we zoom in at some point, but for now we will use these circle markers from above
+      addCircleMarkers(lng=lon,lat=lat,label=camera, 
+                       layerId=camera, 
+                       labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                                   style = get_marker_style()), 
+                       opacity = .80, fillColor = get_color(cams=site_data_), 
+                       color = get_color(cams=site_data_),
                        radius = 10, fillOpacity = .20, weight=3.5) %>%
-      setView(lng = lon, lat = lat, zoom = 13)
+      setView(lng = lon, lat = lat, zoom = zoom_value)
   }
   if (drawROI){
     run_add_polyline(site_data_, degrees)

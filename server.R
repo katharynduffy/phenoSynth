@@ -8,7 +8,7 @@ server = function(input, output, session) {
   variables = reactiveValues(
                       filter   = 'All',
                       sites_df = cams_,
-                      sites    = site_names,
+                      sites    = sites_with_data,
                       color_count = 1,
                       color = 'blue')
   appeears = reactiveValues(
@@ -61,7 +61,7 @@ server = function(input, output, session) {
 
   # Create the map
   output$map = renderLeaflet({
-    leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=FALSE, doubleClickZoom = FALSE)) %>%
+    leaflet('map', data = variables$sites_df, options= leafletOptions(zoomControl=TRUE, doubleClickZoom = FALSE)) %>%
       addTiles(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.jpg",
         attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
@@ -117,8 +117,19 @@ server = function(input, output, session) {
     if(is.null(input$hover_coordinates)) {
       "Mouse outside of map"
     } else {
+      pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = input$hover_coordinates[2], lat_ = input$hover_coordinates[1], from_crs = wgs_crs, to_crs = sinu_crs)
+      lat_sin = pt_sinu@coords[2]
+      lng_sin = pt_sinu@coords[1]
+      pt_merc = from_crs1_to_crs2_lon_lat(lon_ = input$hover_coordinates[2], lat_ = input$hover_coordinates[1], from_crs = wgs_crs, to_crs = merc_crs)
+      lat_merc = pt_merc@coords[2]
+      lng_merc = pt_merc@coords[1]
       paste0("Lat: ", input$hover_coordinates[1],
-             "\nLng: ", input$hover_coordinates[2])
+             "\nLng: ", input$hover_coordinates[2]#,
+             # "\nsin Lat: ", lat_sin,
+             # "\nsin Lon: ", lng_sin,
+             # "\nmerc Lat: ", lat_merc,
+             # "\nmerc Lon: ", lng_merc
+             )
     }
   })
 
@@ -152,6 +163,7 @@ server = function(input, output, session) {
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
     #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
+    data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     panel$mode = 'explorer'
     data$paois_df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
   })
@@ -355,11 +367,12 @@ server = function(input, output, session) {
     email_body = toString(WGScoor)
     
     sender <- EMAIL_UN
-    recipients <- c("kyle.enns13@alumni.colostate.edu")
+    # recipients <- c("kyle.enns13@alumni.colostate.edu")
+    recipients <- c(EMAIL_UN)
     mailR::send.mail(from = sender,
                      to = recipients,
-                     subject = paste0("Phenosynth Shapefile, site: ", site_name),
-                     body = paste0(input$paoiUser,'\n', input$paoiNotes, '\n', email_body),
+                     subject = paste0("Phenosynth Shapefile"),
+                     body = paste0('<site_name>',site_name , '<name>',input$paoiUser,'\n<comment>', input$paoiNotes, '\n', email_body),
                      smtp = list(host.name = "smtp.gmail.com", port = 465,
                                  user.name = EMAIL_UN, # UN and PW stored in the config.R file
                                  passwd = EMAIL_PW, ssl = TRUE),
@@ -418,7 +431,7 @@ server = function(input, output, session) {
     print('Running BUTTON Zoom to Selected Site')
     site       = isolate(input$site)
     site_data  = get_site_info(site)
-    zoom_to_site(site, site_data, zoom=TRUE, cams_, input$drawROI)
+    zoom_to_site(site, site_data, zoom_ = TRUE, cams_, input$drawROI)
 
 
   })
@@ -489,7 +502,10 @@ server = function(input, output, session) {
 
     if (is_not_null(event$id)){
       if (isolate(input$map_zoom) < 5){
-        zoom_to_site(event$id, site_data, zoom=TRUE, cams_, input$drawROI)
+        zoom_to_site(site_ = event$id, site_data_ = site_data, 
+                     zoom_  =  TRUE, 
+                     data_ = cams_, 
+                     draw_ = input$drawROI)
       }
     }
     if(is.null(event))
@@ -560,13 +576,74 @@ server = function(input, output, session) {
     variables$color_list = c()
     variables$color_list_reserve = rainbow(20)
 
-    # Landcover layer
-    data$global_pth = './www/MCD12Q1.006_LC_type_1_2017.tif'
-    global_r   = raster::raster(data$global_pth)
+    # Set up directories to store data
+    file_path     = paste0('./www/site_data/', site, '/data_layers/')
+    main          = './www/site_data'
+    npn_grid_dir  = './www/npn_grid_data'
+    lc_filepath        = paste0(file_path, 'lc/')
+    ndvi_filepath      = paste0(file_path,'ndvi/')
+    ndvi_tera_filepath = paste0(ndvi_filepath, 'tera/')
+    if (!file.exists(main)){
+      dir.create(file.path(main))
+    }
+    if (!file.exists(npn_grid_dir)){
+      dir.create(npn_grid_dir)
+    }
+    main_site = paste0(main, '/', site)
+    if (!file.exists(main_site)){
+      dir.create(file.path(main_site))
+    }
+    if (!file.exists(file_path)){
+      dir.create(file.path(file_path))
+    }
+    if (!file.exists(ndvi_filepath)){
+      dir.create(file.path(ndvi_filepath))
+    }
+    if (!file.exists(ndvi_tera_filepath)){
+      dir.create(file.path(ndvi_tera_filepath))
+    }
+    if (!file.exists(lc_filepath)){
+      dir.create(file.path(lc_filepath))
+    }
+    
 
+    # Landcover layer
+    # Download or Import landcover for this site
+    print ('Importing Landcover')
+    appeears$landcover = get_appeears_task(site, type = 'landcover')
+    if (length(list.files(lc_filepath))==0){
+      lc_bundle_df = download_bundle_file(appeears$landcover$task_id, lc_filepath)
+    }else {
+      lc_bundle_df = get_appeears_bundle_df(appeears$landcover$task_id)
+    }
+    # NDVI layer
+    # Download or Import NDVI for this site to use to resample landcover
+    appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
+    if (length(list.files(ndvi_tera_filepath))==0){
+      ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
+    }else {
+      ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
+    }
+    
+    # Bringing in 250m sinu and re-projecting to merc
+    ndvi_tera_name   = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
+    ndvi_tera_path   = paste0(ndvi_tera_filepath, ndvi_tera_name)
+    ndvi_tera_brick  = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI', crs=sinu_crs)
+    ndvi_raster_t    = raster::subset(ndvi_tera_brick, 1)
+    ndvi_raster_merc = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
+    # Bringing in 500m sinu, resampling to 250m, and then re-projecting back to 500m to merc
+    lc_name  = subset(lc_bundle_df, file_type == 'nc')$file_name
+    lc_path  = paste0(lc_filepath, lc_name)
+    lc_brick  = raster::brick(lc_path, crs=sinu_crs)
+    lc_raster = raster::subset(lc_brick, 1)
+    lc_raster_ = raster::resample(x = lc_raster, y = ndvi_raster_t, crs = sinu_crs, method='ngb')
+    lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t))
+    # lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)*2)
+    
+    
     veg_types  = c()
     print ('Switching to Analyze Mode')
-    zoom_to_site(site, site_data, TRUE, cams_, input$drawROI)
+    zoom_to_site(site, site_data, TRUE, cams_, input$drawROI, zoom_value = 14)
     highlighted$group = paste0(site, ' Highlighted Pixels')
 
     output$analyzerTitle = renderText({paste0('Site:: ', site)})
@@ -590,9 +667,21 @@ server = function(input, output, session) {
       data$veg_types = veg_types
 
       # Building Landcover layer and color pallette for specific pft composition in clipped raster
-      r  = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=FALSE)
-      c3 = build_pft_palette(r)
-      data$r_landcover = r
+      lat_wgs = site_data$Lat
+      lng_wgs = site_data$Lon
+      # from wgs to sinusoidal
+      pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
+      data$lat_sin = pt_sinu@coords[2]
+      data$lng_sin = pt_sinu@coords[1]
+      # from wgs to web mercator
+      pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+      data$lat_merc = pt_merc@coords[2]
+      data$lng_merc = pt_merc@coords[1]
+      
+      # cropped_landcover_v6_sinu = crop_raster(lat_ = data$lat_sin, lon_ = data$lng_sin , r_ = global_r, height = 10000, width = 10000, crs_str = sinu_crs)
+      # cropped_landcover_v6_merc = projectRaster(from = cropped_landcover_v6_sinu, crs = merc_crs, method='ngb', res = 463.312716527775)
+      # cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs)
+      data$r_landcover = crop_raster(data$lat_merc, data$lng_merc, lc_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       data$veg_types = veg_types
@@ -603,7 +692,8 @@ server = function(input, output, session) {
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
       print (as.numeric(pft_key))
 
-      rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+      c3 = build_pft_palette(data$r_landcover)
+      rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
@@ -614,7 +704,7 @@ server = function(input, output, session) {
                   colors = c('green', 'grey'), labels = c('ROI-Match', 'No-Match')) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                          overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
-                         position = c("topleft"),
+                         position = c("topleft"), 
                          options = layersControlOptions(collapsed = FALSE))
     }
   })
@@ -625,18 +715,19 @@ server = function(input, output, session) {
     if (panel$mode == 'analyzer'){
         # Change vegetation cover agreement to match selected ROI in pftSelection
         print ('Running pft Selection')
-        global_r   = raster::raster(data$global_pth)
-
+        # global_r   = raster::raster(data$global_pth)
         site       = input$site
         site_data  = get_site_info(site)
         pft        = input$pftSelection
 
-        c3 = build_pft_palette(data$r_landcover)
         pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
         pft_abbr = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
         data$pft_abbr = pft_abbr
-        rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+        # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
+        print (as.numeric(pft_key))
+        c3 = build_pft_palette(data$r_landcover)
+        rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
 
         leafletProxy('map') %>%
           clearImages() %>%
@@ -662,8 +753,8 @@ server = function(input, output, session) {
     updateCheckboxInput(session, inputId = 'drawROI', value=FALSE)
     switch_to_explorer_panel()
     data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
+    data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
   })
 
   # Button that plots selected Data Types
@@ -671,8 +762,10 @@ server = function(input, output, session) {
     shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
     
     # Selected pixels
-    sm_pixels = data$pixel_sps_250m
-    print (sm_pixels)
+    # sm_pixels = data$pixel_sps_250m
+    # print (sm_pixels)
+    
+    sm_pixels = data$midcell_pixel_sin
     
     # Empty dataframes to use for plotting
     pixel_data_df = data
@@ -708,7 +801,7 @@ server = function(input, output, session) {
     
     print (paste0('Plotting: ', selected_data))
     
-    if (is.null(sm_pixels@polygons[1][[1]])){
+    if (is.null(sm_pixels@coords[1][[1]])){
       output$plotTable <- DT::renderDataTable(
         data.frame(Empty='empty')
       )
@@ -756,30 +849,39 @@ server = function(input, output, session) {
     
     # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
     if ('Transition Dates' %in% selected_data){
-      withProgress(message = 'Compiling Transition Dates', value = .1, {
+      # withProgress(message = 'Compiling Transition Dates', value = .1, {
       # Extracting lat/lng values for selected 250m or 500m pixels
-      pixels = subset(data$pixel_df, data$pixel_df$Type == '250m')
-
-      # Inputs of pixels required for get_tds_modis_df function to extract Transition date data
-      lats = pixels$Lat
-      lngs = pixels$Lon
-      pixels = pixels$Pixel
+      data$tds_path
+      data$tds_nc
       
-      tds_modis_df = get_tds_modis_df(pixels, lats, lngs, data$tds_nc,progress_bar=TRUE)
-      # Transition date data under selected pixels
-      data$OGD      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Decrease')
-      data$OGI      = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Increase')
-      data$OGMa     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Maximum')
-      data$OGMi     = subset(tds_modis_df, tds_modis_df$layer == 'Onset_Greenness_Minimum')
-      }) #END WITH PROGRESS BAR
+      # all raster bricks for transition date data
+      td_v6_names = c('Dormancy', 'Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'Senescence','QA_Overall', 'QA_Detailed')
+      # Get start date to add values from transition date data to
+      dunits = ncatt_get(data$tds_nc,'Greenup', "units")$value
+      start_date = as.Date(strsplit(dunits, 'days since ')[[1]][2], format = '%m-%d-%Y')
+      pixel_df_all_tds = data.frame()
+      for (name in td_v6_names){
+        pixel_ids = as.vector(sm_pixels@data$ID)
+        dormancy_values = extract(data$td_v6_ncs$Dormancy, sm_pixels)
+        rownames(dormancy_values) = pixel_ids
+        for (pixel in pixel_ids){
+          dates_at_pixel = as.vector(dormancy_values[pixel,]) + start_date
+          pixel_df = data.frame(dates = dates_at_pixel, layer = name, pixel = pixel, value = NA)
+          pixel_df_all_tds = rbind(pixel_df_all_tds, pixel_df)
+        }
+      }
+      data$pixel_df_all_tds = pixel_df_all_tds
+      as_tibble(pixel_df_all_tds)
+
+      # }) #END WITH PROGRESS BAR
     } # END TRANSITION DATE EXTRATION FOR PIXELS
     
     # ------------------PLOT NDVI------------------------------------
     if ('NDVI' %in% selected_data){
-      withProgress(message = 'Building NDVI Plot', value = .4, {
+      # withProgress(message = 'Building NDVI Plot', value = .4, {
       print ('Plotting NDVI')
     
-      if (is.null(sm_pixels@polygons[1][[1]])){
+      if (is.null(sm_pixels@coords[1][[1]])){
         print ('No pixels selected')
         ndvi_p = plot_ly()
       }else{
@@ -790,29 +892,29 @@ server = function(input, output, session) {
         qc_ndvi_under_pixel_aqua = extract(data$ndvi_qc_aqua_brick, sm_pixels)
 
         ndvi_p = plot_ly()
-        
-        for (num in c(1:length(ndvi_under_pixel_tera))){
-          incProgress(amount = (1/length(ndvi_under_pixel_tera))*.8)
-          pixel_id = sm_pixels@polygons[[num]]@ID
+
+        for (num in c(1:length(sm_pixels@data$ID))){
+          incProgress(amount = (1/length(sm_pixels@data$ID))*.8)
+          pixel_id = sm_pixels@data$ID[num]
           
-          ndvi_tera = ndvi_under_pixel_tera[[num]][1,]
-          ndvi_qc_tera = qc_ndvi_under_pixel_tera[[num]][1,]
+          ndvi_tera = ndvi_under_pixel_tera[num,]
+          ndvi_qc_tera = qc_ndvi_under_pixel_tera[num,]
           
-          ndvi_aqua = ndvi_under_pixel_aqua[[num]][1,]
-          ndvi_qc_aqua = qc_ndvi_under_pixel_aqua[[num]][1,]
+          ndvi_aqua = ndvi_under_pixel_aqua[num,]
+          ndvi_qc_aqua = qc_ndvi_under_pixel_aqua[num,]
           
           dates_tera = as.Date(names(ndvi_tera),format='X%Y.%m.%d')
           dates_aqua = as.Date(names(ndvi_aqua),format='X%Y.%m.%d')
           
           ndvi_brick_df_tera = data.frame(date = dates_tera, 
                                      pixel = pixel_id, 
-                                     ndvi_raw = ndvi_tera, 
-                                     ndvi_qc = ndvi_qc_tera,
+                                     ndvi_raw = as.vector(ndvi_tera), 
+                                     ndvi_qc = as.vector(ndvi_qc_tera),
                                      type    = 'TERA')
           ndvi_brick_df_aqua = data.frame(date = dates_aqua, 
                                           pixel = pixel_id, 
-                                          ndvi_raw = ndvi_aqua, 
-                                          ndvi_qc = ndvi_qc_aqua,
+                                          ndvi_raw = as.vector(ndvi_aqua), 
+                                          ndvi_qc = as.vector(ndvi_qc_aqua),
                                           type    = 'AQUA')
           ndvi_brick_df = rbind(ndvi_brick_df_tera, ndvi_brick_df_aqua)
           
@@ -821,15 +923,14 @@ server = function(input, output, session) {
             ndvi_pixel_data_df = ndvi_brick_df
           }else {
             ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
-          }
-          }
+          }}
           
         ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 2114, 
                                                   ndvi_pixel_data_df$ndvi_raw, NA)
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
-        }
-        })# END WITH PROGRESS BAR
+      }
+        # })# END WITH PROGRESS BAR
       } #END NDVI PLOT
     
     # ------------------PLOT EVI------------------------------------
@@ -837,7 +938,7 @@ server = function(input, output, session) {
       withProgress(message = 'Building EVI Plot', value = .4, {
       print ('Plotting EVI')
       
-      if (is.null(sm_pixels@polygons[1][[1]])){
+      if (is.null(sm_pixels@coords[1][[1]])){
         print ('No pixels selected')
         evi_p = plot_ly()
       }else{
@@ -850,15 +951,15 @@ server = function(input, output, session) {
       
         evi_p = plot_ly()
         
-        for (num in c(1:length(evi_under_pixel_tera))){
-          incProgress(amount = (1/length(evi_under_pixel_tera))*.8)
-          pixel_id = sm_pixels@polygons[[num]]@ID
+        for (num in c(1:length(sm_pixels@data$ID))){
+          incProgress(amount = (1/length(sm_pixels@data$ID))*.8)
+          pixel_id = sm_pixels@data$ID[num]
           
-          evi_tera = evi_under_pixel_tera[[num]][1,]
-          evi_qc_tera = qc_evi_under_pixel_tera[[num]][1,]
+          evi_tera = evi_under_pixel_tera[num,]
+          evi_qc_tera = qc_evi_under_pixel_tera[num,]
           
-          evi_aqua = evi_under_pixel_aqua[[num]][1,]
-          evi_qc_aqua = qc_evi_under_pixel_aqua[[num]][1,]
+          evi_aqua = evi_under_pixel_aqua[num,]
+          evi_qc_aqua = qc_evi_under_pixel_aqua[num,]
           
           dates_tera = as.Date(names(evi_tera),format='X%Y.%m.%d')
           dates_aqua = as.Date(names(evi_aqua),format='X%Y.%m.%d')
@@ -897,7 +998,7 @@ server = function(input, output, session) {
   
   
   # Plot the data
-  output$data_plot <- renderPlotly({
+  output$data_plot = renderPlotly({
     selected_data = input$dataTypes_plot
     
     selected_plots = input$plotTheseBoxes
@@ -905,65 +1006,47 @@ server = function(input, output, session) {
 
     print (selected_plots)
 
-    s <- req(input$plotTable_rows_all)
+    s  = req(input$plotTable_rows_all)
     sd = data$plotTable[s, , drop = FALSE]
-
-
-    ndvi_pixel_data_df = data$ndvi_pixels
-    rownames(ndvi_pixel_data_df) = NULL
-    saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
-    #add logic to skip if all poor quality
     
-    mNDVI=ndvi_pixel_data_df %>%
-      filter(!is.na(ndvi_pixel_data_df$ndvi_raw)) %>%
-      group_by(date) %>%
-      summarise(meanNDVI = mean(ndvi_raw))
-    evi_pixel_data_df = data$evi_pixels
-    rownames(evi_pixel_data_df) = NULL
-    saveRDS(evi_pixel_data_df, 'testLOESSdata2.rds')
-    mEVI=evi_pixel_data_df %>%
-      filter(!is.na(evi_pixel_data_df$evi_raw)) %>%
-      group_by(date) %>%
-      summarise(meanEVI = mean(evi_raw))
-    #saveRDS(mEVI, 'testmEVI.rds')
-
+    ndvi_pixel_data_df = data$ndvi_pixels
+    # rownames(ndvi_pixel_data_df) = NULL
     print (as_tibble(sd))
     
-    if ('Transition Dates' %in% selected_data){
-      if ('tds_sat' %in% selected_plots){
-        OGMa = data$OGMa
-        OGMi = data$OGMi
-        OGI  = data$OGI
-        OGD  = data$OGD
-        
-        clean_OGMa = OGMa %>%
-          subset(OGMa$pixel %in% sd$Pixel) %>%
-          mutate(pixel = paste0('TD_OGMa_', pixel), Date = dates) %>%
-          select(pixel, Date, value) %>%
-          arrange(pixel, Date) 
-        clean_OGMi = OGMi %>%
-          subset(OGMi$pixel %in% sd$Pixel)%>%
-          mutate(pixel = paste0('TD_OGMi_', pixel), Date = dates) %>%
-          select(pixel, Date, value) %>%
-          arrange(pixel, Date) 
-        clean_OGI = OGI %>%
-          subset(OGI$pixel %in% sd$Pixel)%>%
-          mutate(pixel = paste0('TD_OGI_', pixel), Date = dates) %>%
-          select(pixel, Date, value) %>%
-          arrange(pixel, Date) 
-        clean_OGD = OGD %>%
-          subset(OGD$pixel %in% sd$Pixel)%>%
-          mutate(pixel = paste0('TD_OGD_', pixel), Date = dates) %>%
-          select(pixel, Date, value) %>%
-          arrange(pixel, Date) 
-      }}
+    # if ('Transition Dates' %in% selected_data){
+    #   if ('tds_sat' %in% selected_plots){
+    #     OGMa = data$OGMa
+    #     OGMi = data$OGMi
+    #     OGI  = data$OGI
+    #     OGD  = data$OGD
+    #     
+    #     clean_OGMa = OGMa %>%
+    #       subset(OGMa$pixel %in% sd$Pixel) %>%
+    #       mutate(pixel = paste0('TD_OGMa_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date) 
+    #     clean_OGMi = OGMi %>%
+    #       subset(OGMi$pixel %in% sd$Pixel)%>%
+    #       mutate(pixel = paste0('TD_OGMi_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date) 
+    #     clean_OGI = OGI %>%
+    #       subset(OGI$pixel %in% sd$Pixel)%>%
+    #       mutate(pixel = paste0('TD_OGI_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date) 
+    #     clean_OGD = OGD %>%
+    #       subset(OGD$pixel %in% sd$Pixel)%>%
+    #       mutate(pixel = paste0('TD_OGD_', pixel), Date = dates) %>%
+    #       select(pixel, Date, value) %>%
+    #       arrange(pixel, Date) 
+    #   }}
     
     if ('NDVI' %in% selected_data){
       # NDVI HIGH QUALITY
       ndvi_pixel_data_df = data$ndvi_pixels
       print (as_tibble(ndvi_pixel_data_df))
       rownames(ndvi_pixel_data_df) = NULL
-      #saveRDS(ndvi_pixel_data_df, 'testLOESSdata.rds')
       mNDVI=ndvi_pixel_data_df %>%
         filter(!is.na(ndvi_pixel_data_df$ndvi_raw)) %>%
         group_by(date) %>%
@@ -1031,56 +1114,56 @@ server = function(input, output, session) {
             showlegend = TRUE
           )%>%layout(xaxis = list(title = "Date"))
         
-        if ('Transition Dates' %in% selected_data){
-          if ('tds_sat' %in% selected_plots){
-                
-                p_ndvi_raw = p_ndvi_raw %>%
-                  add_markers(data = clean_OGMa,
-                              inherit = FALSE,
-                              x = ~Date,
-                              y = ~value,
-                              name = ~pixel,
-                              type = "scatter",
-                              mode = 'markers',
-                              marker = list(color = 'green', size= 10, symbol=2),
-                              showlegend = TRUE,
-                              text = ~paste("Date: ", Date,
-                                            '<br>Pixel: ', pixel,
-                                            '<br>Data: Onset Greenness Maximum')) %>%
-                  add_trace(data = clean_OGMi,
-                            x = ~Date,
-                            y = ~value,
-                            name = ~pixel,
-                            type = "scatter",
-                            mode = 'markers',
-                            marker = list(color = 'brown', size= 10, symbol=25),
-                            showlegend = TRUE,
-                            text = ~paste("Date: ", Date,
-                                          '<br>Pixel: ', pixel,
-                                          '<br>Data: Onset Greenness Minimum')) %>%
-                  add_trace(data = clean_OGI,
-                            x = ~Date,
-                            y = .5,
-                            name = ~pixel,
-                            type = "scatter",
-                            mode = 'markers',
-                            marker = list(color ='green', size= 10, symbol=5),
-                            showlegend = TRUE,
-                            text = ~paste("Date: ", Date,
-                                          '<br>Pixel: ', pixel,
-                                          '<br>Data: Onset Greenness Increase')) %>%
-                  add_trace(data = clean_OGD,
-                            x = ~Date,
-                            y = .5,
-                            name = ~pixel,
-                            type = "scatter",
-                            mode = 'markers',
-                            marker = list(color ='orange', size= 10, symbol=6),
-                            showlegend = TRUE,
-                            text = ~paste("Date: ", Date,
-                                          '<br>Pixel: ', pixel,
-                                          '<br>Data: Onset Greenness Decrease'))
-          }}
+        # if ('Transition Dates' %in% selected_data){
+        #   if ('tds_sat' %in% selected_plots){
+        #         
+        #         p_ndvi_raw = p_ndvi_raw %>%
+        #           add_markers(data = clean_OGMa,
+        #                       inherit = FALSE,
+        #                       x = ~Date,
+        #                       y = ~value,
+        #                       name = ~pixel,
+        #                       type = "scatter",
+        #                       mode = 'markers',
+        #                       marker = list(color = 'green', size= 10, symbol=2),
+        #                       showlegend = TRUE,
+        #                       text = ~paste("Date: ", Date,
+        #                                     '<br>Pixel: ', pixel,
+        #                                     '<br>Data: Onset Greenness Maximum')) %>%
+        #           add_trace(data = clean_OGMi,
+        #                     x = ~Date,
+        #                     y = ~value,
+        #                     name = ~pixel,
+        #                     type = "scatter",
+        #                     mode = 'markers',
+        #                     marker = list(color = 'brown', size= 10, symbol=25),
+        #                     showlegend = TRUE,
+        #                     text = ~paste("Date: ", Date,
+        #                                   '<br>Pixel: ', pixel,
+        #                                   '<br>Data: Onset Greenness Minimum')) %>%
+        #           add_trace(data = clean_OGI,
+        #                     x = ~Date,
+        #                     y = .5,
+        #                     name = ~pixel,
+        #                     type = "scatter",
+        #                     mode = 'markers',
+        #                     marker = list(color ='green', size= 10, symbol=5),
+        #                     showlegend = TRUE,
+        #                     text = ~paste("Date: ", Date,
+        #                                   '<br>Pixel: ', pixel,
+        #                                   '<br>Data: Onset Greenness Increase')) %>%
+        #           add_trace(data = clean_OGD,
+        #                     x = ~Date,
+        #                     y = .5,
+        #                     name = ~pixel,
+        #                     type = "scatter",
+        #                     mode = 'markers',
+        #                     marker = list(color ='orange', size= 10, symbol=6),
+        #                     showlegend = TRUE,
+        #                     text = ~paste("Date: ", Date,
+        #                                   '<br>Pixel: ', pixel,
+        #                                   '<br>Data: Onset Greenness Decrease'))
+        #   }}
         p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
                                        x_title_ = 'NDVI (All data)',
                                        y_title_ = 'NDVI value')
@@ -1088,18 +1171,14 @@ server = function(input, output, session) {
       }
     }
     
-    
     if ('EVI' %in% selected_data){
       # EVI HIGH QUALITY
       evi_pixel_data_df = data$evi_pixels
       print (as_tibble(evi_pixel_data_df))
-      rownames(evi_pixel_data_df) = NULL
-      #saveRDS(evi_pixel_data_df, 'testLOESSdata2.rds')
       mEVI=evi_pixel_data_df %>%
         filter(!is.na(evi_pixel_data_df$evi_raw)) %>%
         group_by(date) %>%
         summarise(meanEVI = mean(evi_raw))
-      #saveRDS(mEVI, 'testmEVI.rds')
       if ('hiq_evi' %in% selected_plots){
         if (length(unique(evi_pixel_data_df$evi_filtered)) == 1){
           selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_evi')]
@@ -1162,55 +1241,55 @@ server = function(input, output, session) {
             showlegend = TRUE
           ) %>% layout(xaxis = list(title = "Date"))
             
-        if ('Transition Dates' %in% selected_data){
-          if ('tds_sat' %in% selected_plots){
-            p_evi_raw = p_evi_raw %>%
-              add_markers(data = clean_OGMa,
-                        inherit = FALSE,
-                        x = ~Date,
-                        y = ~value,
-                        name = ~pixel,
-                        type = "scatter",
-                        mode = 'markers',
-                        marker = list(color = 'green', size= 10, symbol=2),
-                        showlegend = TRUE,
-                        text = ~paste("Date: ", Date,
-                                      '<br>Pixel: ', pixel,
-                                      '<br>Data: Onset Greenness Maximum')) %>%
-              add_trace(data = clean_OGMi,
-                        x = ~Date,
-                        y = ~value,
-                        name = ~pixel,
-                        type = "scatter",
-                        mode = 'markers',
-                        marker = list(color = 'brown', size= 10, symbol=25),
-                        showlegend = TRUE,
-                        text = ~paste("Date: ", Date,
-                                      '<br>Pixel: ', pixel,
-                                      '<br>Data: Onset Greenness Minimum')) %>%
-              add_trace(data = clean_OGI,
-                        x = ~Date,
-                        y = .4,
-                        name = ~pixel,
-                        type = "scatter",
-                        mode = 'markers',
-                        marker = list(color ='green', size= 10, symbol=5),
-                        showlegend = TRUE,
-                        text = ~paste("Date: ", Date,
-                                      '<br>Pixel: ', pixel,
-                                      '<br>Data: Onset Greenness Increase')) %>%
-              add_trace(data = clean_OGD,
-                        x = ~Date,
-                        y = .4,
-                        name = ~pixel,
-                        type = "scatter",
-                        mode = 'markers',
-                        marker = list(color ='orange', size= 10, symbol=6),
-                        showlegend = TRUE,
-                        text = ~paste("Date: ", Date,
-                                      '<br>Pixel: ', pixel,
-                                      '<br>Data: Onset Greenness Decrease'))
-          }}
+        # if ('Transition Dates' %in% selected_data){
+        #   if ('tds_sat' %in% selected_plots){
+        #     p_evi_raw = p_evi_raw %>%
+        #       add_markers(data = clean_OGMa,
+        #                 inherit = FALSE,
+        #                 x = ~Date,
+        #                 y = ~value,
+        #                 name = ~pixel,
+        #                 type = "scatter",
+        #                 mode = 'markers',
+        #                 marker = list(color = 'green', size= 10, symbol=2),
+        #                 showlegend = TRUE,
+        #                 text = ~paste("Date: ", Date,
+        #                               '<br>Pixel: ', pixel,
+        #                               '<br>Data: Onset Greenness Maximum')) %>%
+        #       add_trace(data = clean_OGMi,
+        #                 x = ~Date,
+        #                 y = ~value,
+        #                 name = ~pixel,
+        #                 type = "scatter",
+        #                 mode = 'markers',
+        #                 marker = list(color = 'brown', size= 10, symbol=25),
+        #                 showlegend = TRUE,
+        #                 text = ~paste("Date: ", Date,
+        #                               '<br>Pixel: ', pixel,
+        #                               '<br>Data: Onset Greenness Minimum')) %>%
+        #       add_trace(data = clean_OGI,
+        #                 x = ~Date,
+        #                 y = .4,
+        #                 name = ~pixel,
+        #                 type = "scatter",
+        #                 mode = 'markers',
+        #                 marker = list(color ='green', size= 10, symbol=5),
+        #                 showlegend = TRUE,
+        #                 text = ~paste("Date: ", Date,
+        #                               '<br>Pixel: ', pixel,
+        #                               '<br>Data: Onset Greenness Increase')) %>%
+        #       add_trace(data = clean_OGD,
+        #                 x = ~Date,
+        #                 y = .4,
+        #                 name = ~pixel,
+        #                 type = "scatter",
+        #                 mode = 'markers',
+        #                 marker = list(color ='orange', size= 10, symbol=6),
+        #                 showlegend = TRUE,
+        #                 text = ~paste("Date: ", Date,
+        #                               '<br>Pixel: ', pixel,
+        #                               '<br>Data: Onset Greenness Decrease'))
+        #   }}
             
         p_evi_raw = add_title_to_plot(df = p_evi_raw,
                                       x_title_ = 'EVI (All data)',
@@ -1277,10 +1356,6 @@ server = function(input, output, session) {
   })
   
   
-  
-  
-  
-
 
   # Button that hides GCC Plot
   observeEvent(input$hidePlot, {
@@ -1313,7 +1388,10 @@ server = function(input, output, session) {
               lon_ = click$lng
               lat_ = click$lat
               if(input$highlightPixelModeNDVI == TRUE){
-                showpos(x = lon_ , y = lat_, site, data$r_ndvi_cropped, '250m')
+                pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lon_, lat_ = lat_, from_crs = wgs_crs, to_crs = merc_crs)
+                lat_merc = pt_merc@coords[2]
+                lng_merc = pt_merc@coords[1]
+                showpos(x = lng_merc , y = lat_merc, site, data$r_ndvi_cropped, '250m')
               }}}
           if (dim(data$pixel_df)[1] == 0){
             shinyjs::hide(id = 'clearPixels')
@@ -1334,8 +1412,8 @@ server = function(input, output, session) {
     variables$color_list_reserve = rainbow(20)
     
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
+    data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     shinyjs::hide(id = 'clearPixels')
   })
 
@@ -1432,7 +1510,7 @@ server = function(input, output, session) {
       # Import [NDVI] 
       #------------------------------------------------------------------------
     if ('NDVI' %in% selected_data){
-      withProgress(message = 'Importing NDVI', value = .4, {
+      # withProgress(message = 'Importing NDVI', value = .4, {
         
       print ('Importing NDVI')
       # Bring in tera and aqua data
@@ -1468,8 +1546,8 @@ server = function(input, output, session) {
       ndvi_qc_tera_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
       ndvi_qc_tera_path  = paste0(ndvi_tera_filepath, ndvi_qc_tera_name)
       # bricks
-      data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI')
-      data$ndvi_qc_tera_brick = raster::brick(ndvi_tera_path, varname='_250m_16_days_VI_Quality')
+      data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
+      data$ndvi_qc_tera_brick = raster::brick(ndvi_tera_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
       data$ndvi_qc_csv_tera   = read.csv(ndvi_qc_tera_path)
       
       # AQUA data (ndvi)
@@ -1478,38 +1556,24 @@ server = function(input, output, session) {
       ndvi_qc_aqua_name  = ndvi_bundle_df_aqua[grep('Quality-lookup', ndvi_bundle_df_aqua$file_name),]$file_name
       ndvi_qc_aqua_path  = paste0(ndvi_aqua_filepath, ndvi_qc_aqua_name)
       # bricks
-      data$ndvi_aqua_brick    = raster::brick(ndvi_aqua_path, varname='_250m_16_days_NDVI')
-      data$ndvi_qc_aqua_brick = raster::brick(ndvi_aqua_path, varname='_250m_16_days_VI_Quality')
+      data$ndvi_aqua_brick    = raster::brick(ndvi_aqua_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
+      data$ndvi_qc_aqua_brick = raster::brick(ndvi_aqua_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
       data$ndvi_qc_csv_aqua   = read.csv(ndvi_qc_aqua_path)
-      
-      ####
-      # 
-      # ndvi_name = subset(ndvi_bundle_df, file_type == 'nc')$file_name
-      # ndvi_path = paste0(ndvi_filepath, ndvi_name)
-      # 
-      # ndvi_qc_name = ndvi_bundle_df[grep('Quality-lookup', ndvi_bundle_df$file_name),]$file_name
-      # ndvi_qc_path = paste0(ndvi_filepath, ndvi_qc_name)
-      # 
-      # ndvi_brick    = raster::brick(ndvi_path, varname='_250m_16_days_NDVI')
-      # ndvi_qc_brick = raster::brick(ndvi_path, varname='_250m_16_days_VI_Quality')
-      # ndvi_qc_csv   = read.csv(ndvi_qc_path)
-      # 
-      # # Add ndvi_nc file to memory
-      # data$ndvi_brick    = ndvi_brick
-      # data$ndvi_qc_brick = ndvi_qc_brick
-      # data$ndvi_qc_csv   = ndvi_qc_csv
 
       # Grab first observation of NDVI and Quality datasets
-      raster_1_brick_ndvi = raster(subset(data$ndvi_tera_brick, 1))
-      data$r_ndvi_cropped = crop_raster(site_data$Lat, site_data$Lon, raster_1_brick_ndvi)
-      build_raster_grid(data$r_ndvi_cropped, map = 'map')
+      r_for_grid = raster::raster(ndvi_tera_path,  crs = sinu_crs)
+      r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
+      r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
+      data$r_ndvi_cropped = r_for_grid_cropped_merc
+      
+      grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
 
       shinyjs::show(id = 'highlightPixelModeNDVI')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
 
       shinyjs::show(id = 'plotRemoteData')
       
-      }) #END WITH PROGRESS BAR
+      # }) #END WITH PROGRESS BAR
     } #END IMPORT NDVI
 
 
@@ -1528,8 +1592,31 @@ server = function(input, output, session) {
           }
         
         tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name
-        tds_path = paste0(tds_filepath, tds_name)
-        data$tds_nc    = nc_open(tds_path)
+        data$tds_path = paste0(tds_filepath, tds_name)
+        data$tds_nc    = nc_open(data$tds_path)
+        
+        lon_td = ncvar_get(data$tds_nc, "xdim")
+        nlon = length(lon_td)
+        lat_td = ncvar_get(data$tds_nc, "ydim")
+        nlat = length(lat_td)
+        
+        xmin = lon_td[1]
+        xmax = lon_td[length(lon_td)]
+        ymin = lat_td[length(lat_td)]
+        ymax = lat_td[1]
+        
+        td_v6_names = c('Dormancy', 'Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'Senescence','QA_Overall', 'QA_Detailed')
+        td_v6_ncs   = list()
+        for (name in td_v6_names){
+          array = ncvar_get(data$tds_nc, name)
+          this_layer = raster::brick(data$tds_path, varname=name)
+          this_layer_1 = setExtent(this_layer, extent(xmin,xmax,ymin,ymax))
+          dim(this_layer_1) = c(dim(array)[3],dim(array)[2],dim(array)[4])
+          crs(this_layer_1) = sinu_crs
+          this_layer_2 = setValues(this_layer_1, values = array[1,,,]) 
+          td_v6_ncs[name] = this_layer_2
+        }
+        data$td_v6_ncs = td_v6_ncs
       # }
       shinyjs::show(id = 'plotRemoteData')
       }) #END WITH PROGRESS BAR
@@ -1564,7 +1651,7 @@ server = function(input, output, session) {
         setProgress(value = .1, detail = 'Importing EVI AQUA')
         evi_bundle_df_aqua = get_appeears_bundle_df(appeears$evi_aqua$task_id)
       }
-      
+   
       print (as_tibble(evi_bundle_df_tera))
       print (as_tibble(evi_bundle_df_aqua))
       
@@ -1574,8 +1661,8 @@ server = function(input, output, session) {
       evi_qc_tera_name  = evi_bundle_df_tera[grep('Quality-lookup', evi_bundle_df_tera$file_name),]$file_name
       evi_qc_tera_path  = paste0(evi_tera_filepath, evi_qc_tera_name)
       # bricks
-      data$evi_tera_brick    = raster::brick(evi_tera_path, varname='_250m_16_days_EVI')
-      data$evi_qc_tera_brick = raster::brick(evi_tera_path, varname='_250m_16_days_VI_Quality')
+      data$evi_tera_brick    = raster::brick(evi_tera_path, varname='_250m_16_days_EVI', crs = sinu_crs)
+      data$evi_qc_tera_brick = raster::brick(evi_tera_path, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
       data$evi_qc_csv_tera   = read.csv(evi_qc_tera_path)
       
       # AQUA data (evi)
@@ -1584,60 +1671,35 @@ server = function(input, output, session) {
       evi_qc_aqua_name  = evi_bundle_df_aqua[grep('Quality-lookup', evi_bundle_df_aqua$file_name),]$file_name
       evi_qc_aqua_path  = paste0(evi_aqua_filepath, evi_qc_aqua_name)
       # bricks
-      data$evi_aqua_brick    = raster::brick(evi_aqua_path, varname='_250m_16_days_EVI')
-      data$evi_qc_aqua_brick = raster::brick(evi_aqua_path, varname='_250m_16_days_VI_Quality')
+      data$evi_aqua_brick    = raster::brick(evi_aqua_path, varname='_250m_16_days_EVI', crs = sinu_crs)
+      data$evi_qc_aqua_brick = raster::brick(evi_aqua_path, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
       data$evi_qc_csv_aqua   = read.csv(evi_qc_aqua_path)
-      
-      # appeears$evi  = get_appeears_task(site, type = 'evi')
-      # 
-      # # if (input$localDownload){
-      #   if (length(list.files(evi_filepath))==0){
-      #     setProgress(value = .1, detail = 'Downloading EVI')
-      #     evi_bundle_df = download_bundle_file(appeears$evi$task_id, evi_filepath)
-      #     setProgress(value = .1, detail = 'EVI Downloaded')
-      #   }else {
-      #     setProgress(value = .1, detail = 'Importing EVI')
-      #     evi_bundle_df = get_appeears_bundle_df(appeears$evi$task_id)
-      #     setProgress(value = .1, detail = 'EVI Imported')
-      #     }
-      #   print (evi_bundle_df)
-      #   evi_name = subset(evi_bundle_df, file_type == 'nc')$file_name
-      #   evi_path = paste0(evi_filepath, evi_name)
-      #   
-      #   evi_qc_name = evi_bundle_df[grep('Quality-lookup', evi_bundle_df$file_name),]$file_name
-      #   evi_qc_path = paste0(evi_filepath, evi_qc_name)
-      #   
-      #   evi_brick    = raster::brick(evi_path, varname='_250m_16_days_EVI')
-      #   evi_qc_brick = raster::brick(evi_path, varname='_250m_16_days_VI_Quality')
-      #   evi_qc_csv   = read.csv(evi_qc_path)
-      # # }
-      # 
-      # # Add evi_nc file to memory
-      # data$evi_brick    = evi_brick
-      # data$evi_qc_brick = evi_qc_brick
-      # data$evi_qc_csv   = evi_qc_csv
       
       if ('NDVI' %!in% selected_data){
         # Grab first observation of evi and Quality datasets
-        raster_1_brick_evi = raster(subset(evi_brick, 1))
-        data$r_evi_cropped = crop_raster(site_data$Lat, site_data$Lon, raster_1_brick_evi)
-        build_raster_grid(data$r_evi_cropped, map = 'map')
+        r_for_grid = raster::raster(evi_tera_path, crs = sinu_crs)
+        crs(r_for_grid) = sinu_crs
+        r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
+        r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
+        data$r_evi_cropped = r_for_grid_cropped_merc
+        
+        grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
+        
+        shinyjs::show(id = 'highlightPixelModeNDVI')
+        updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
+        
+        shinyjs::show(id = 'plotRemoteData')
+        
+        grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
+        shinyjs::show(id = 'highlightPixelModeNDVI')
+        updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
+        
+        shinyjs::show(id = 'plotRemoteData')
       }
-      
-      shinyjs::show(id = 'highlightPixelModeNDVI')
-      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
-      
-      shinyjs::show(id = 'plotRemoteData')
       # }) #END WITH PROGRESS BAR
     } #END IMPORT EVI
     
 
-    
-    
-    
-    
-    
-    
     # Import [GCC] splined Data from phenocam (csv)
     #------------------------------------------------------------------------
     if ('GCC' %in% selected_data){
@@ -1793,17 +1855,42 @@ server = function(input, output, session) {
          col = ncols
        }
 
-       xclose = ((col - 1) * resolution) + xmin
-       xfar   = (col * resolution) + xmin
-       yclose = -((row - 1) * resolution) + ymax
-       yfar   = -(row * resolution) + ymax
+       # Mercator Coordinates
+       xclose_merc = ((col - 1) * resolution) + xmin
+       xfar_merc   = (col * resolution) + xmin
+       yclose_merc = -((row - 1) * resolution) + ymax
+       yfar_merc   = -(row * resolution) + ymax
 
-       midcellx = xclose + (resolution * .5)
-       midcelly = yclose - (resolution * .5)
-       midcell  = c(midcellx, midcelly)
+       midcellx_merc = xclose_merc + (resolution * .5)
+       midcelly_merc = yclose_merc - (resolution * .5)
+       midcell_merc  = c(midcellx_merc, midcelly_merc)
+       
+       # Sinusoidal coordinates
+       midcell_pt_sin  = from_crs1_to_crs2_lon_lat(lon_ = midcellx_merc, lat_ = midcelly_merc, from_crs = merc_crs, to_crs = sinu_crs)
+       midcellx_sin = midcell_pt_sin@coords[1]
+       midcelly_sin = midcell_pt_sin@coords[2]
+       midcell_sin  = c(midcellx_sin, midcelly_sin)
+       
+       xyclosefar_pts_sin = from_crs1_to_crs2_lon_lat(lon_ = c(xclose_merc,xfar_merc), lat_ = c(yclose_merc,yfar_merc), from_crs = merc_crs, to_crs = sinu_crs)
+       xclose_sin = xyclosefar_pts_sin@coords[1,1]
+       xfar_sin   = xyclosefar_pts_sin@coords[2,1]
+       yclose_sin = xyclosefar_pts_sin@coords[1,2]
+       yfar_sin   = xyclosefar_pts_sin@coords[2,2]
+       
+       # WGS coordinates
+       midcell_pt_wgs  = from_crs1_to_crs2_lon_lat(lon_ = midcellx_merc, lat_ = midcelly_merc, from_crs = merc_crs, to_crs = wgs_crs)
+       midcellx_wgs = midcell_pt_wgs@coords[1]
+       midcelly_wgs = midcell_pt_wgs@coords[2]
+       midcell_wgs  = c(midcellx_wgs, midcelly_wgs)
 
-       datalon = c(xclose, xfar, xfar, xclose ,xclose)
-       datalat = c(yclose, yclose, yfar, yfar, yclose)
+       xyclosefar_pts_wgs = from_crs1_to_crs2_lon_lat(lon_ = c(xclose_merc,xfar_merc), lat_ = c(yclose_merc,yfar_merc), from_crs = merc_crs, to_crs = wgs_crs)
+       xclose_wgs = xyclosefar_pts_wgs@coords[1,1]
+       xfar_wgs   = xyclosefar_pts_wgs@coords[2,1]
+       yclose_wgs = xyclosefar_pts_wgs@coords[1,2]
+       yfar_wgs   = xyclosefar_pts_wgs@coords[2,2]
+
+       datalon_wgs = c(xclose_wgs, xfar_wgs, xfar_wgs, xclose_wgs ,xclose_wgs)
+       datalat_wgs = c(yclose_wgs, yclose_wgs, yfar_wgs, yfar_wgs, yclose_wgs)
        id_     = paste0(row, '_', col)
 
        # Check to see if already drawn, and if so remove it from df and leaflet map
@@ -1818,15 +1905,7 @@ server = function(input, output, session) {
          variables$color_list_reserve = c(color_to_remove, variables$color_list_reserve)
          variables$color_list = variables$color_list[!variables$color_list %in% color_to_remove]
 
-         if (type_ == '500m'){
-           # Remove polygon from data$pixel_sps_500m
-           ids_500m = unique(ggplot2::fortify(data$pixel_sps_500m)$id)
-           len = length(ids_500m)
-           lst = c(1:len)
-           pos = which(unique(ggplot2::fortify(data$pixel_sps_500m)$id) %in% c(id_))
-           lst_ = lst[-(pos)]
-           data$pixel_sps_500m = data$pixel_sps_500m[lst_]
-         }else if (type_ == '250m'){
+         if (type_ == '250m'){
            # Remove polygon from data$pixel_sps_250m
            ids_250m = unique(ggplot2::fortify(data$pixel_sps_250m)$id)
            len = length(ids_250m)
@@ -1834,9 +1913,9 @@ server = function(input, output, session) {
            pos = which(unique(ggplot2::fortify(data$pixel_sps_250m)$id) %in% c(id_))
            lst_ = lst[-(pos)]
            data$pixel_sps_250m = data$pixel_sps_250m[lst_]
+           # Remove point from data$midcell_pixel_sin
+           data$midcell_pixel_sin = data$midcell_pixel_sin[data$midcell_pixel_sin@data$ID != id_,]
          }
-         # print ('Dataframe of all highlighted pixels (250m)')
-         # print (data$pixel_df)
 
        }else{
          # Draw the pixel polygon on the leaflet map
@@ -1854,50 +1933,48 @@ server = function(input, output, session) {
            }
            
            leafletProxy("map") %>%
-             addPolygons(datalon, datalat, layerId = id_, weight = 4,  opacity = .95, color = variables$color, group = '250m Highlighted Pixels', fillOpacity = .1)
+             addPolygons(datalon_wgs, datalat_wgs, layerId = id_, weight = 4,  opacity = .95, color = variables$color, group = '250m Highlighted Pixels', fillOpacity = .1)
          }
 
          ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,
                      ' --Row: ', row, ' --Column: ', col, ' --Pft Number: ', vegindex,
-                     ' --Middle of Cell lon: ', midcell[1], ' lat: ', midcell[2])
+                     ' --Middle of Cell lon: ', midcell_wgs[1], ' lat: ', midcell_wgs[2])
          print (ps)
 
          # Build Dataframe   reactive value = data$pixel_df
-         data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, Type = type_, Lat = midcelly, Lon = midcellx, pft = vegindex,
-                                                         pt1_lat = datalat[1], pt1_lon = datalon[1],
-                                                         pt2_lat = datalat[2], pt2_lon = datalon[2],
-                                                         pt3_lat = datalat[3], pt3_lon = datalon[3],
-                                                         pt4_lat = datalat[4], pt4_lon = datalon[4],
-                                                         pt5_lat = datalat[5], pt5_lon = datalon[5]))
+         data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, 
+                                                         Type = type_, Lat_wgs = midcelly_wgs, Lon_wgs = midcellx_wgs, 
+                                                         pft = vegindex, Lat_sin = midcelly_sin, Lon_sin = midcellx_sin,
+                                                         pt1_lat = datalat_wgs[1], pt1_lon = datalon_wgs[1],
+                                                         pt2_lat = datalat_wgs[2], pt2_lon = datalon_wgs[2],
+                                                         pt3_lat = datalat_wgs[3], pt3_lon = datalon_wgs[3],
+                                                         pt4_lat = datalat_wgs[4], pt4_lon = datalon_wgs[4],
+                                                         pt5_lat = datalat_wgs[5], pt5_lon = datalon_wgs[5]))
          
          data$pixel_df_table = data$pixel_df %>%  subset(Type == '250m') %>%
-           select(Site, Pixel, Type, Lat, Lon) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10),
+           select(Site, Pixel, Type, Lat_wgs, Lon_wgs) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10),
                                                              filter = 'top') %>%
                formatStyle('Pixel', fontWeight = 'bold', 
                            backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
 
-         pixel  = matrix_to_polygon(rbind(c(datalon[1], datalat[1]),
-                                          c(datalon[2], datalat[2]),
-                                          c(datalon[3], datalat[3]),
-                                          c(datalon[4], datalat[4]),
-                                          c(datalon[5], datalat[5])), id_, as.character(type_))
-
-         if (type_ == '500m'){
-             if (length(data$pixel_sps_500m) == 0){
-               data$pixel_sps_500m = pixel
-             }else{
-               data$pixel_sps_500m = rbind(data$pixel_sps_500m, pixel)
-
-           }}else if(type_ == '250m'){
+         pixel  = matrix_to_polygon(rbind(c(datalon_wgs[1], datalat_wgs[1]),
+                                          c(datalon_wgs[2], datalat_wgs[2]),
+                                          c(datalon_wgs[3], datalat_wgs[3]),
+                                          c(datalon_wgs[4], datalat_wgs[4]),
+                                          c(datalon_wgs[5], datalat_wgs[5])), id_, as.character(type_))
+         
+         coords_ = data.frame(x = midcellx_sin, y = midcelly_sin)
+         row.names(coords_) = id_ 
+         center_point = SpatialPointsDataFrame(coords_, data=data.frame(ID=id_), proj4string=CRS(sinu_crs))
+         
+          if(type_ == '250m'){
              if (length(data$pixel_sps_250m) == 0){
                data$pixel_sps_250m = pixel
+               data$midcell_pixel_sin = center_point
              }else{
                data$pixel_sps_250m = rbind(data$pixel_sps_250m, pixel)
+               data$midcell_pixel_sin = rbind(data$midcell_pixel_sin, center_point)
              }}
-
-         # print ('250m Grid Sp Object info:')
-         # print ((data$pixel_sps_250m))
-         # print ('Dataframe of all highlighted pixels (250m)')
          print (data$pixel_df)
        }
      }

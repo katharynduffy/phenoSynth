@@ -39,6 +39,97 @@ add_title_to_plot = function(df,
   return (df_)
 }
 
+extract_df_tds_v6 = function(pixels_, lats_, lngs_, tds_nc_, progress_bar = FALSE){
+  # Store the transition date layers to extract for each pixel
+  td_v6_names = c('Dormancy', 'Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'QA_Overall', 'Senescence')
+  td_fnames = c()
+  data_df   = data.frame()
+  # Store lon, lat, and time variables from .nc file to help create sub .nc files for each layer above
+  lon_td = ncvar_get(tds_nc_, "lon")
+  nlon = length(lon_td)
+  lat_td = ncvar_get(tds_nc_, "lat")
+  nlat = length(lat_td)
+  time_td = ncvar_get(tds_nc_, 'time')
+  
+  start_date = as.Date('1970-01-01')
+  crs = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0")
+  
+  # Loop through layers and build the individual .nc files for each
+  for (td_type in td_v6_names){
+    nc_layer = ncvar_get(tds_nc_, td_type)[1,,,]
+    nc_layer_dim = dim (ncvar_get(tds_nc_, td_type)[1,,,])
+    
+    lon1_td = ncdim_def("longitude", "degrees_east", lon_td)
+    lat2_td = ncdim_def("latitude", "degrees_north", lat_td)
+    
+    time = ncdim_def("Time","days since 1970-01-01 00:00:00", time_td, unlim=TRUE)
+    mv   = 32767 # Fill value
+    
+    var_nc = ncvar_def(td_type, "pheno_metric", list(lon1_td, lat2_td, time), 
+                       longname=td_type, mv)
+    
+    tmp_dir   = './www/'
+    var_fname = paste0(tmp_dir, td_type, '.nc')
+    print (var_fname)
+    td_fnames = c(td_fnames, var_fname)
+    ncnew = nc_create(var_fname, list(var_nc))
+    
+    data = nc_layer
+    data[data == mv] = NA
+    ncvar_put(ncnew, var_nc, data, start=c(1,1,1), count=c(nlon,nlat,16))
+    nc_close(ncnew)
+  }
+  
+  # Loop through pixels
+  for (x in c(1:length(lats_))){
+    if (progress_bar == TRUE){
+      incProgress(amount = (1/length(lats_))*.8)
+    }
+    print (paste0('pixel #: ',x))
+    this_pixel_ll = c(lngs_[x], lats_[x])
+    xy              = data.frame(matrix(this_pixel_ll, ncol=2))
+    colnames(xy)    = c('lon', 'lat')
+    coordinates(xy) = ~ lon + lat
+    proj4string(xy) = crs
+    
+    pixel_id = pixels_[x]
+    
+    for (n in c(1:length(td_fnames))){
+      fname   = td_fnames[n]
+      td_type = td_v6_names[n]
+      data_nc = raster::brick(fname)
+      print (fname)
+      data    = extract(data_nc, xy)
+      if (td_type == 'QA_Overall'){
+        v = as.integer(data)
+        print (v)
+        if (length(unique(v)) <2 & is.na(unique(v)[1])){
+          date_data = NA
+        }else {
+          date_data = seq(as.Date("2001-01-01"), as.Date("2016-01-01"), by="years") 
+        }
+      }else{
+        v = NA
+        date_data = start_date + as.integer(data)
+      }
+      
+      if (length(unique(date_data))<2 & is.na(unique(date_data)[1])){
+        print (unique(date_data))
+        df = data.frame(dates = as.Date(NA), layer = td_type, pixel = pixel_id, value = NA)
+        print (paste0('Empty list of data in, ',td_type, '. Pixel: ', pixel_id))
+      }else {
+        df = data.frame(dates = date_data, layer = td_type, pixel = pixel_id, value = v)
+      }
+      data_df = rbind(data_df, df)
+    }
+  }
+  
+  # Remove .nc files
+  for (file in td_fnames){
+    file.remove(file)
+  }
+  return (data_df)
+}
 
 
 # Builds a dataframe from a list of lat/lngs and the netcdf from AppEEARS with the 6 layers
