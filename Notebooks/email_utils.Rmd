@@ -16,11 +16,10 @@ library(mailR)
 source('../config.R')
 # Download a shapefile into your downloads file first through the shiny app
 #   and add the file path here
-# filename = '/file/path/to/file/like/acadia_paoi/acadia_1'
-filename = '/users/kenns/downloads/acadia_paoi/acadia_test5'
+filename = '/file/path/to/file/like/acadia_paoi/acadia_1'
 
 sender = EMAIL_UN
-recipients = c('kyle.enns13@alumni.colostate.edu')
+recipients = c(EMAIL_UN)
 
 mailR::send.mail(from = sender,
                to = recipients,
