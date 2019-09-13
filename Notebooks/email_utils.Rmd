@@ -1,0 +1,39 @@
+---
+title: "email_utils.Rmd"
+author: "K. Enns"
+date: "7/12/2019"
+output: html_document
+---
+
+# Code for writing and reading email information using mailr
+
+# send gmail emails
+```{r}
+# This is the one we are using for the app
+library(rJava)
+library(mailR)
+
+source('../config.R')
+# Download a shapefile into your downloads file first through the shiny app
+#   and add the file path here
+# filename = '/file/path/to/file/like/acadia_paoi/acadia_1'
+filename = '/users/kenns/downloads/acadia_paoi/acadia_test5'
+
+sender = EMAIL_UN
+recipients = c('kyle.enns13@alumni.colostate.edu')
+
+mailR::send.mail(from = sender,
+               to = recipients,
+               subject = paste0("Phenosynth Shapefile, site: ", 'acadia'),
+               body = paste0('<name>','Name from PI input','\n<comment>', 'Any notes written in text input for comments', '\n', 'Message'),
+               smtp = list(host.name = "smtp.gmail.com", port = 465,
+                           user.name = EMAIL_UN, # UN and PW stored in the config.R file
+                           passwd = EMAIL_PW, ssl = TRUE),
+               attach.files = c(paste0(filename,'.shp'),
+                                paste0(filename,'.dbf'),
+                                paste0(filename,'.prj'),
+                                paste0(filename,'.shx')),
+               authenticate = TRUE,
+               send = TRUE)
+
+```
