@@ -1,5 +1,10 @@
-# Returns site name from a cached task
-# name_length :  the length of most task names submitted.  kelloggswitchgrass_09_06_18_0839 would be name_length = 5
+#' get_site_from_task
+#'
+#' @param task_name_ 
+#' @param name_length - the length of most task names submitted.  kelloggswitchgrass_09_06_18_0839 would be name_length = 5
+#'
+#' @return# site name from a cached task
+#' 
 get_site_from_task = function(task_name_, name_length){
   elements = strsplit(task_name_, split = '_', fixed=TRUE)
   element_length = length(elements[[1]])
@@ -20,7 +25,12 @@ get_site_from_task = function(task_name_, name_length){
 }
 
 
-# Downloads full bundle of data from AppEEARS for site_task_id_
+#' download_bundle_file
+#'Downloads full bundle of data from AppEEARS for site_task_id_
+#' @param site_task_id_ 
+#' @param filepath_ - the path of a file
+#'
+#' @return Return dataframe of files
 download_bundle_file = function(site_task_id_, filepath_){
   files = get_appeears_bundle_df(site_task_id_)
   # Loop through all files in document and download
@@ -38,7 +48,12 @@ download_bundle_file = function(site_task_id_, filepath_){
   return (files)
 }
 
-# Returns a AppEEARS task id bundle dataframe
+#' get_appeears_bundle_df
+#'
+#' @param site_task_id_ 
+#'
+#' @return Returns a AppEEARS task id bundle dataframe
+#' 
 get_appeears_bundle_df = function(site_task_id_){
   response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id_, sep = ""))
   bundle_response = jsonlite::toJSON(content(response), auto_unbox = TRUE)
@@ -48,7 +63,13 @@ get_appeears_bundle_df = function(site_task_id_){
 }
 
 
-# Given a site name, function returns the appeears task record
+#' get_appeears_task
+#'
+#' @param name - site name
+#' @param type - site type
+#'
+#' @return the appeears task record
+#' 
 get_appeears_task = function(name, type){
   if (type == 'ndvi_tera'){
     return (subset(appeears_tasks_ndvi_tera, as.character(strsplit(appeears_tasks_ndvi_tera$task_name, '_NDVI_v6_tera_sinu')) == name))

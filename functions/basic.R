@@ -1,4 +1,7 @@
-# Switch to explorer panel
+#' switch_to_explorer_panel
+#' @param map_ 
+#' Switch to explorer panel
+#' 
 switch_to_explorer_panel = function(map_ = 'map'){
   shiny::hideTab('navbar', 'PlotPanel')
   shiny::hideTab('navbar', 'paoiTab')
@@ -41,7 +44,9 @@ switch_to_explorer_panel = function(map_ = 'map'){
                      options = layersControlOptions(collapsed = TRUE))
 }
 
-# Switches the main panel over to analyzer mode
+#' switch_to_analyzer_panel
+#' Switches the main panel over to analyzer mode
+#' 
 switch_to_analyzer_panel = function(){
   # Ids to show:
   shinyjs::show(id = 'analyzerTitle')
@@ -78,7 +83,10 @@ is_not_null = function(x) ! is.null(x)
   ! ('%in%'(x, y))
 }
 
-# Returns Downloads folder for windows/macos
+#' get_download_folder
+#'
+#' @return Downloads folder for windows/macos
+#' 
 get_download_folder = function(){
   if (Sys.info()['sysname'] == 'Darwin'){
     folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
@@ -90,14 +98,22 @@ get_download_folder = function(){
   return (folder)
 }
 
-
-# Deletes the netcdf from input filepath
+#' delete_file
+#'
+#' @param filepath_ 
+#' Deletes the netcdf from input filepath
+#' 
 delete_file = function(filepath_){
   if (file.exists(filepath_)) file.remove(filepath_)
 }
 
 
-# Given a length, return a vector with different RGB values
+#' get_custom_color_list
+#'
+#' @param len - length of list
+#'
+#' @return a vector with different RGB values
+#' 
 get_custom_color_list = function(len){
   colors = c()
   len = len +2

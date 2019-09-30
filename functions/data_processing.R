@@ -1,4 +1,11 @@
-# Adds a title to a plotly plot
+#' add_title_to_plot
+#'
+#' @param df 
+#' @param x_title_ 
+#' @param y_title_ 
+#' Adds a title to a plotly plot
+#' @return df_
+#' 
 add_title_to_plot = function(df,
                              x_title_,
                              y_title_){
@@ -39,6 +46,16 @@ add_title_to_plot = function(df,
   return (df_)
 }
 
+#' extract_df_tds_v6
+#'
+#' @param pixels_ 
+#' @param lats_ 
+#' @param lngs_ 
+#' @param tds_nc_ 
+#' @param progress_bar 
+#'
+#' @return - data_df
+#' 
 extract_df_tds_v6 = function(pixels_, lats_, lngs_, tds_nc_, progress_bar = FALSE){
   # Store the transition date layers to extract for each pixel
   td_v6_names = c('Dormancy', 'Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'QA_Overall', 'Senescence')
@@ -132,7 +149,16 @@ extract_df_tds_v6 = function(pixels_, lats_, lngs_, tds_nc_, progress_bar = FALS
 }
 
 
-# Builds a dataframe from a list of lat/lngs and the netcdf from AppEEARS with the 6 layers
+#' get_tds_modis_df
+#'
+#' @param pixels_ 
+#' @param lats_ 
+#' @param lngs_ 
+#' @param netcdf_ 
+#' @param progress_bar 
+#' Builds a dataframe from a list of lat/lngs and the netcdf from AppEEARS with the 6 layers
+#' @return - final_df
+#' 
 get_tds_modis_df = function(pixels_, lats_, lngs_, netcdf_, progress_bar = FALSE){
   print ('START EXTRACTION OF TDS')
   lat_td = ncvar_get(netcdf_, "lat")
@@ -319,7 +345,18 @@ get_tds_modis_df = function(pixels_, lats_, lngs_, netcdf_, progress_bar = FALSE
 }# END BUILD TRANSITION DATE DATAFRAME FOR MODIS DATA
 
 
-# Grabs the list of 3_day or 1_day csv data from phenocam website with spring and fall
+#' get_site_roi_csvs
+#'
+#' @param name 
+#' @param roi_files_ 
+#' @param frequency_ 
+#' @param metrics_ 
+#' @param percentile_ 
+#' @param roi_type_ 
+#' Grabs the list of 3_day or 1_day csv data from phenocam website with spring and fall
+
+#' @return the list of 3_day or 1_day csv data from phenocam website with spring and fall
+#' 
 get_site_roi_csvs = function(name, roi_files_, frequency_, 
                              metrics_ = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), 
                              percentile_, roi_type_){
@@ -416,7 +453,15 @@ get_site_roi_csvs = function(name, roi_files_, frequency_,
 
 
 
-# Smoothes ndvi, evi or gccc data  (uses the optimal span function)
+#' smooth_ts
+#'
+#' @param data 
+#' @param metrics 
+#' @param force 
+#' @param frequency 
+#' Smoothes ndvi, evi or gccc data  (uses the optimal span function)
+#' @return - data
+#' 
 smooth_ts = function(data,
                      metrics = c("gcc_mean",
                                  "gcc_50",
@@ -677,7 +722,17 @@ smooth_ts = function(data,
 
 
 
-# Calculates optimal span for smooth
+#' optimal_span
+#'
+#' @param y 
+#' @param x 
+#' @param weights 
+#' @param step 
+#' @param label 
+#' @param plot 
+#' Calculates optimal span for smooth
+#' @return check if the fit failed if so return NA else return myAIC(fit)
+#' 
 optimal_span = function(y,
                         x = NULL,
                         weights = NULL,

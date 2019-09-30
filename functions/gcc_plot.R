@@ -1,4 +1,12 @@
 
+#' gcc_plot
+#'
+#' @param gcc 
+#' @param spring 
+#' @param fall 
+#'
+#' @return - p
+#' 
 gcc_plot = function(gcc, spring, fall){
   unix = "1970-01-01"
   spring[, 2:9] = apply(spring[, 2:9], 2, function(x)

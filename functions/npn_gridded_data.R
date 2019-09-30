@@ -1,5 +1,12 @@
-
-# Function that builds and saves out a Raster brick for a specific layer from npn
+#' download_npn_brick
+#'
+#' @param tmp_name 
+#' @param out_file 
+#' @param layer 
+#' @param number_of_years 
+#' Function that builds and saves out a Raster brick for a specific layer from npn
+#' @return - geoserver url
+#' 
 download_npn_brick = function(tmp_name,
                               out_file,
                               layer = 'si-x:average_leaf_prism',

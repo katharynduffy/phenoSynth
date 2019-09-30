@@ -1,5 +1,13 @@
 
-# Converts the highlighted pixel coords into a spatialpolygon class
+#' matrix_to_polygon
+#'
+#' @param matrix 
+#' @param id 
+#' @param type_ 
+#' @param crs 
+#' Converts the highlighted pixel coords into a spatialpolygon class
+#' @return - sps
+#' 
 matrix_to_polygon = function(matrix, id, type_, crs = '+proj=longlat +datum=WGS84'){
   p   = Polygon(matrix)
   ps  = Polygons(list(p), ID = id)
@@ -9,7 +17,12 @@ matrix_to_polygon = function(matrix, id, type_, crs = '+proj=longlat +datum=WGS8
 }
 
 
-# Builds a color palet for the modis landcover raster layer
+#' build_pft_palette
+#'
+#' @param raster_ 
+#' Builds a color palet for the modis landcover raster layer
+#' @return - list of colors
+#' 
 build_pft_palette = function(raster_){
   print ('building palet')
   colors = c()
@@ -37,7 +50,14 @@ build_pft_palette = function(raster_){
 }
 
 
-# Build grid for any input raster
+#' build_raster_grid
+#'
+#' @param raster_ 
+#' @param map_ 
+#' @param crs 
+#' Build grid for any input raster
+#' @return - grid or sp_lines
+#' 
 build_raster_grid = function(raster_, map_ = NULL, crs='wgs'){
   r_         = raster_
   xmin       = xmin(extent(r_))
@@ -119,7 +139,15 @@ build_raster_grid = function(raster_, map_ = NULL, crs='wgs'){
     }
 }
 
-# Function to convert any crs lat/lon coordinates into any crs lat/lon sp object (default is wgs to sinu)
+#' from_crs1_to_crs2_lon_lat
+#'
+#' @param lon_ 
+#' @param lat_ 
+#' @param from_crs 
+#' @param to_crs 
+#' Function to convert any crs lat/lon coordinates into any crs lat/lon sp object (default is wgs to sinu)
+#' @return - p
+#' 
 from_crs1_to_crs2_lon_lat = function(lon_,lat_, from_crs = "+proj=longlat +datum=WGS84", 
                                      to_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"){
   xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
@@ -130,7 +158,20 @@ from_crs1_to_crs2_lon_lat = function(lon_,lat_, from_crs = "+proj=longlat +datum
   return (p)
 }
 
-# Creates boundary box for clipping rasters using lat/lon from phenocam site
+#' crop_raster
+#'
+#' @param lat_ 
+#' @param lon_ 
+#' @param r_ 
+#' @param reclassify 
+#' @param primary 
+#' @param height 
+#' @param width 
+#' @param crs_str 
+#' @param crop 
+#' Creates boundary box for clipping rasters using lat/lon from phenocam site
+#' @return - rc
+#' 
 crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL, height=.03, width=.05, crs_str = "+proj=longlat +datum=WGS84 +no_defs", crop=TRUE){
   
   if (crop==TRUE){
@@ -200,7 +241,13 @@ crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL, height=.0
 
 
 
-# Creates a reprojection of a lat/lon WGS84 point into sinusoidal Modis projection
+#' get_x_y_sinu_from_wgs_pt
+#'
+#' @param lon_ 
+#' @param lat_ 
+#' Creates a reprojection of a lat/lon WGS84 point into sinusoidal Modis projection
+#' @return - p
+#' 
 get_x_y_sinu_from_wgs_pt = function(lon_,lat_){
   xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
   colnames(xy)    = c('lon', 'lat')
@@ -211,7 +258,13 @@ get_x_y_sinu_from_wgs_pt = function(lon_,lat_){
 }
 
 
-# Creates a reprojection of a lat/lon WGS84 point into sinusoidal Modis projection
+#' get_lat_lon_wgs_from_sinu_pt
+#'
+#' @param lon_ 
+#' @param lat_ 
+#' Creates a reprojection of a lat/lon WGS84 point into sinusoidal Modis projection
+#' @return - p
+#' 
 get_lat_lon_wgs_from_sinu_pt = function(lon_,lat_){
   print ('Reprojecting coords to WGS84')
   xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
@@ -225,15 +278,24 @@ get_lat_lon_wgs_from_sinu_pt = function(lon_,lat_){
 }
 
 
-# Radians to degrees
+#' rad_to_deg
+#'
+#' @param rad - value in radians
+#' converts radians to degrees
+#' 
 rad_to_deg = function(rad) {
   (rad * 180) / (pi)
 }
 
 
-# Given row from sites, create points for polyline from site.
+#' run_add_polyline
+#'
+#' @param site_data_ 
+#' @param azm_ 
+#' Given row from sites, create points for polyline from site.
 #   This function uses angle for field of view and los as the
 #   far distance of the FOV.
+#'
 run_add_polyline = function(site_data_, azm_){
   los = .01
   lat =  site_data_$Lat
@@ -254,7 +316,15 @@ run_add_polyline = function(site_data_, azm_){
 }
 
 
-# Rotate a point based on AZM
+#' rotate_pt
+#'
+#' @param lon 
+#' @param lat 
+#' @param azm 
+#' @param r 
+#' Rotate a point based on AZM
+#' @return - list of longitude and latitude
+#' 
 rotate_pt = function(lon, lat, azm, r){
   rad  = azm * (pi / 180)
   lon_ = lon + (r * sin(rad))
@@ -262,6 +332,13 @@ rotate_pt = function(lon, lat, azm, r){
   return (list(lon_, lat_))
 }
 
+#' get_x_y_albers_from_wgs84
+#'
+#' @param lon_ 
+#' @param lat_ 
+#'
+#' @return - p
+#' 
 get_x_y_albers_from_wgs84 = function(lon_,lat_){
   xy              = data.frame(matrix(c(lon_,lat_), ncol=2))
   colnames(xy)    = c('lon', 'lat')
@@ -271,6 +348,14 @@ get_x_y_albers_from_wgs84 = function(lon_,lat_){
   return (p)
 }
 
+#' build_landsat_lc_pallet
+#'
+#' @param raster_ 
+#' @param us_landsat_lc 
+#' @param landsat_key 
+#'
+#' @return - list of colors
+#' 
 build_landsat_lc_pallet = function(raster_, us_landsat_lc, landsat_key){
   print ('building landsat landcover palette')
   landsat_atts_ = us_landsat_lc@data@attributes

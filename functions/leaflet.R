@@ -1,4 +1,10 @@
-# add all of these sites back to the leaflet map
+#' show_all_sites
+#'
+#' @param map_ 
+#' @param data_ 
+#' add all of these sites back to the leaflet map
+#' @return
+#' 
 show_all_sites = function(map_, data_){
   leafletProxy(map_, data = data_) %>%
     clearMarkers() %>%
@@ -10,7 +16,17 @@ show_all_sites = function(map_, data_){
 }
 
 
-# Add a polyline layer to the map
+#' add_polyline
+#'
+#' @param datalon_ 
+#' @param datalat_ 
+#' @param id_ 
+#' @param opacity_ 
+#' @param color_ 
+#' @param map_ 
+#' @param group_ 
+#' Add a polyline layer to the map
+#' 
 add_polyline = function(datalon_, datalat_, id_, opacity_, color_='red', map_ = 'map', group_=NULL){
   leafletProxy(map_) %>%
     addPolylines( datalon_,
@@ -22,6 +38,16 @@ add_polyline = function(datalon_, datalat_, id_, opacity_, color_='red', map_ = 
 }
 
 
+#' add_polygon
+#'
+#' @param datalon_ 
+#' @param datalat_ 
+#' @param id_ 
+#' @param opacity_ 
+#' @param color_ 
+#' @param map_ 
+#' @param group_ 
+#' 
 add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red', map_ = 'map', group_ = NULL){
   leafletProxy(map_) %>%
     addPolygons( datalon_,
@@ -33,7 +59,13 @@ add_polygon = function(datalon_, datalat_, id_, opacity_, color_='red', map_ = '
 }
 
 
-# remove all polylines
+#' remove_polyline
+#'
+#' @param id_ 
+#' @param all 
+#' @param map_ 
+#' remove all polylines
+#' 
 remove_polyline = function(id_=NULL, all=TRUE, map_ = 'map'){
   if (all == TRUE){
     leafletProxy(map_) %>%
@@ -43,7 +75,11 @@ remove_polyline = function(id_=NULL, all=TRUE, map_ = 'map'){
   }
 }
 
-# custom markers created for Active/nonActive
+#' get_color
+#'
+#' @param cams 
+#' custom markers created for Active/nonActive
+#' 
 get_color <- function(cams) {
   sapply(cams$active, function(active) {
     if(active == 'TRUE') {
@@ -56,6 +92,10 @@ get_color <- function(cams) {
 }
 
 # Style marker to add to the map when redrawing
+#' get_marker_style
+#' Style marker to add to the map when redrawing
+#' @return - style
+#' 
 get_marker_style = function(){
   style = list(
     "color" = "black",
@@ -69,7 +109,18 @@ get_marker_style = function(){
 }
 
 
-# Zoom to site
+#' zoom_to_site
+#'
+#' @param site_ 
+#' @param site_data_ 
+#' @param zoom_ 
+#' @param data_ 
+#' @param draw_ 
+#' @param map_ 
+#' @param zoom_value 
+#' Zoom to site
+#' @return - site data
+
 zoom_to_site = function(site_, site_data_, zoom_, data_, draw_ = NULL, map_ = 'map', zoom_value = 13){
   description        = site_data_$site_description
   camera_orientation = site_data_$camera_orientation
@@ -104,7 +155,22 @@ zoom_to_site = function(site_, site_data_, zoom_, data_, draw_ = NULL, map_ = 'm
 }
 
 
-# Displays the site info when a site is clicked
+#' get_site_popup
+#'
+#' @param camera_ 
+#' @param lat_ 
+#' @param lng_ 
+#' @param description_ 
+#' @param elevation_ 
+#' @param site_type_ 
+#' @param camera_orientation_ 
+#' @param degrees_ 
+#' @param active_ 
+#' @param date_end_ 
+#' @param date_start_ 
+#' @param map_ 
+#' Displays the site info when a site is clicked
+#' 
 get_site_popup <- function(camera_, lat_, lng_, description_, elevation_, site_type_,
                            camera_orientation_, degrees_,
                            active_, date_end_, date_start_,

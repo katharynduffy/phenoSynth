@@ -1,3 +1,10 @@
+#' multiplot
+#'
+#' @param ... 
+#' @param plotlist 
+#' @param layout 
+#' @param ncol 
+#'
 multiplot <- function(..., plotlist=NULL, layout=NULL, ncol=1) {
   library(grid)
   

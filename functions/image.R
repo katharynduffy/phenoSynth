@@ -1,10 +1,21 @@
-# Grabs img url from sitename
+#' get_img_url
+#'
+#' @param name 
+#' Grabs img url from sitename
+#' @return - image url
+#' 
 get_img_url = function(name){
   url = paste("https://phenocam.sr.unh.edu/data/latest/", name, ".jpg",sep = '')
   return (url)
 }
 
-# grab url for roi from phenocam using name of site and abbreviated PFT
+#' get_roi_url
+#'
+#' @param name 
+#' @param pft_abr 
+#' grab url for roi from phenocam using name of site and abbreviated PFT
+#' @return - roi_url or if failed to get roi for sitename, return 'Not Found'
+#' 
 get_roi_url = function(name, pft_abr){
   
   roi_url = tryCatch({
