@@ -1,0 +1,653 @@
+---
+title: "find_best_pixel_match_sinu.Rmd"
+author: "K. Enns"
+date: "4/10/2019"
+output: html_document
+---
+
+New version of best pixel_match notebook to use the sinusoidal data from AppEEARS instead of wgs84
+
+Get token from appeears
+```{r}
+library(jsonlite)
+library(appeears)
+library(httr)
+username = 'username'
+password = .rs.askForPassword('Password')
+token_response = appeears::appeears_start_session(username,password)
+token         = paste("Bearer", token_response$token)
+token
+rm(password)
+```
+
+```{r}
+response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
+task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+tasks = jsonlite::fromJSON(txt=task_response)
+tasks
+```
+color palette
+```{r}
+library(plotly)
+n = 400
+colors_ = colorRampPalette(c('grey','black'))(n)
+# colors_ = colorRampPalette(brewer.pal(n, 'Purples'))(n)
+# colors_ = colorRampPalette(brewer.pal(n, 'RdYlBu'))(n)
+a = rep(1, n)
+b = seq(1, n)
+# plot_ly(x = b, y = a, color = b, colors = colors_, type = 'bar')
+```
+
+reading in data
+```{r}
+#------------------------------------------------------------------------------------------
+# Add your file path to phenosynth here:
+# '/path/to/folder/with/app/phenosynth'
+file_root = '/path/to/folder/with/app/phenosynth'
+#------------------------------------------------------------------------------------------
+
+test_download_dir = paste0(file_root, '/www/downloads_test')
+if (!file.exists(test_download_dir)){
+  dir.create(file.path(test_download_dir))
+}
+# Load in dataframe with cached AppEEARS tasks
+appeears_tasks_ndvi_t     = readRDS(file = paste0(file_root,'/www/cache_df_ndvi_tera.df'))
+appeears_tasks_ndvi_a     = readRDS(file = paste0(file_root,'/www/cache_df_ndvi_aqua.df'))
+# Load in df with cached AppEEARS Transition Dates (dts)
+appeears_tasks_tds        = readRDS(file = paste0(file_root,'/www/cache_df_tds.df'))
+# Load in df with cached AppEEARS EVI data
+appeears_tasks_evi_t      = readRDS(file = paste0(file_root,'/www/cache_df_evi_tera.df'))
+appeears_tasks_evi_a      = readRDS(file = paste0(file_root,'/www/cache_df_evi_aqua.df'))
+```
+
+grab acadia data
+```{r}
+# Grab acadia tasks for ndvi/evi/tds from cached AppEEARS dataframes
+ndvi_task_t = appeears_tasks_ndvi_t[grep('acadia' ,appeears_tasks_ndvi_t$task_name),]
+ndvi_task_a = appeears_tasks_ndvi_a[grep('acadia' ,appeears_tasks_ndvi_a$task_name),]
+tds_task  = appeears_tasks_tds[grep('acadia' ,appeears_tasks_tds$task_name),]
+evi_task_t  = appeears_tasks_evi_t[grep('acadia' ,appeears_tasks_evi_t$task_name),]
+evi_task_a  = appeears_tasks_evi_a[grep('acadia' ,appeears_tasks_evi_a$task_name),]
+```
+
+get task id for acadia datasets
+```{r}
+# Store the ID's specific to acadia and their data layer
+ndvi_task_id_t = ndvi_task_t$task_id
+ndvi_task_id_a = ndvi_task_a$task_id
+tds_task_id  = tds_task$task_id
+evi_task_id_t  = evi_task_t$task_id
+evi_task_id_a  = evi_task_a$task_id
+lc_task_id_nc   = '3b788e45-6ed4-4d66-9dbe-38f5fea98f08'
+lc_task_id_tiff = '519fc322-a80c-4373-a036-b7aa6223892c'
+
+ndvi_task_id_a
+```
+
+download data
+```{r}
+# Get bundle responses for ndvi tera
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", ndvi_task_id_t, sep = ""))
+ndvi_bundle_response_t = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=ndvi_bundle_response_t)
+ndvi_files_t = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_ndvi_t'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_ndvi_t')))
+}
+
+# Get bundle responses for ndvi aqua
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", ndvi_task_id_a, sep = ""))
+ndvi_bundle_response_a = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=ndvi_bundle_response_a)
+ndvi_files_a = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_ndvi_a'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_ndvi_a')))
+}
+
+# Get bundle responses for transition dates
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", tds_task_id, sep = ""))
+tds_bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=tds_bundle_response)
+tds_files = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_tds'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_tds')))
+}
+
+# Get bundle responses for evi tera
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", evi_task_id_t, sep = ""))
+evi_bundle_response_t = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=evi_bundle_response_t)
+evi_files_t = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_evi_t'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_evi_t')))
+}
+
+# Get bundle responses for evi aqua
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", evi_task_id_a, sep = ""))
+evi_bundle_response_a = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=evi_bundle_response_a)
+evi_files_a = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_evi_a'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_evi_a')))
+}
+
+# Get bundle responses for LC nc
+response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", lc_task_id_nc, sep = ""))
+lc_bundle_response_nc = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# all files in bundle
+document = jsonlite::fromJSON(txt=lc_bundle_response_nc)
+lc_files_nc = document$files
+if (!file.exists(paste0(test_download_dir, '/acadia_lc_nc'))){
+  dir.create(file.path(paste0(test_download_dir, '/acadia_lc_nc')))
+}
+
+# # Get bundle responses for LC tiff
+# response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", lc_task_id_tiff, sep = ""))
+# lc_bundle_response_tiff = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+# # all files in bundle
+# document = jsonlite::fromJSON(txt=lc_bundle_response_tiff)
+# lc_files_tiff = document$files
+# if (!file.exists(paste0(test_download_dir, '/acadia_lc_tiff'))){
+#   dir.create(file.path(paste0(test_download_dir, '/acadia_lc_tiff')))
+# }
+
+
+# Download Landcover nc
+lc_filepaths_nc = c()
+for (file in lc_files_nc$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(lc_bundle_response_nc)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+
+  filepath = paste0(test_download_dir, '/acadia_lc_nc/',filename)
+  print (filepath)
+  lc_filepaths_nc = c(lc_filepaths_nc, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download  NDVI-------
+  # write the file to disk using the destination directory and file name
+  # response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", lc_task_id_nc, '/',
+  #                      download_this_file, sep = ""),
+  #                write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+
+# # Download Landcover tiff
+# lc_filepaths_tiff = c()
+# for (file in lc_files_tiff$file_id){
+#   download_this_file = file
+#   # # retrieve the filename from the file_id
+#   bundle = jsonlite::fromJSON(lc_bundle_response_tiff)$files
+#   filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+#   # create a destination directory to store the file in
+#   if (length(strsplit(filename, '/')[[1]]) >1){
+#     if (!file.exists(paste0(test_download_dir, '/acadia_lc_tiff/',strsplit(filename, '/')[[1]][1]))){
+#       dir.create(file.path(paste0(test_download_dir, '/acadia_lc_tiff/',strsplit(filename, '/')[[1]][1])))
+#     }
+#   }
+# 
+#   filepath = paste0(test_download_dir, '/acadia_lc_tiff/',filename)
+#   print (filepath)
+#   lc_filepaths_tiff = c(lc_filepaths_tiff, filepath)
+#   #------------------------------------------------------------------------------------------
+#   #--------Comment out this bit of code if you don't want to download  NDVI-------
+#   # write the file to disk using the destination directory and file name
+#   # response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", lc_task_id_tiff, '/',
+#   #                      download_this_file, sep = ""),
+#   #                write_disk(filepath, overwrite = TRUE), progress())
+#   #------------------------------------------------------------------------------------------
+# }
+
+
+
+
+# Download ndvi tera
+ndvi_filepaths_t = c()
+for (file in ndvi_files_t$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(ndvi_bundle_response_t)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+
+  filepath = paste0(test_download_dir, '/acadia_ndvi_t/',filename)
+  print (filepath)
+  ndvi_filepaths_t = c(ndvi_filepaths_t, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download  NDVI-------
+  # write the file to disk using the destination directory and file name
+  # response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", ndvi_task_id_t, '/',
+  #                      download_this_file, sep = ""),
+  #                write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+# Download ndvi aqua
+ndvi_filepaths_a = c()
+for (file in ndvi_files_a$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(ndvi_bundle_response_a)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+
+  filepath = paste0(test_download_dir, '/acadia_ndvi_a/',filename)
+  print (filepath)
+  ndvi_filepaths_a = c(ndvi_filepaths_a, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download  NDVI-------
+  # write the file to disk using the destination directory and file name
+  # response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", ndvi_task_id_a, '/',
+  #                      download_this_file, sep = ""),
+  #                write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+
+
+
+# Download transition dates
+tds_filepaths = c()
+for (file in tds_files$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(tds_bundle_response)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+  filepath = paste0(test_download_dir, '/acadia_tds/',filename)
+  print (filepath)
+  tds_filepaths = c(tds_filepaths, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download transition dates-------
+  # write the file to disk using the destination directory and file name
+  # response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", tds_task_id, '/',
+  #                      download_this_file, sep = ""),
+  #                write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+
+# Download evi tera
+evi_filepaths = c()
+for (file in evi_files_t$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(evi_bundle_response_t)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+  filepath = paste0(test_download_dir, '/acadia_evi_t/',filename)
+  print (filepath)
+  evi_filepaths = c(evi_filepaths, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download EVI-------
+  # write the file to disk using the destination directory and file name
+  # response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", evi_task_id_t, '/',
+  #                      download_this_file, sep = ""),
+  #                write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+# Download evi aqua
+evi_filepaths = c()
+for (file in evi_files_a$file_id){
+  download_this_file = file
+  # # retrieve the filename from the file_id
+  bundle = jsonlite::fromJSON(evi_bundle_response_a)$files
+  filename = subset(bundle, bundle$file_id == download_this_file)$file_name
+  # create a destination directory to store the file in
+  filepath = paste0(test_download_dir, '/acadia_evi_a/',filename)
+  print (filepath)
+  evi_filepaths = c(evi_filepaths, filepath)
+  #------------------------------------------------------------------------------------------
+  #--------Comment out this bit of code if you don't want to download EVI-------
+  # write the file to disk using the destination directory and file name
+  # response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", evi_task_id_a, '/',
+  #                      download_this_file, sep = ""),
+  #                write_disk(filepath, overwrite = TRUE), progress())
+  #------------------------------------------------------------------------------------------
+}
+```
+
+Define crs strings
+```{r}
+# define number of digits to use
+options(digits=12)
+# defining CRS strings to use for geospatial conversions within the app
+sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
+wgs_crs  = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
+# coordinates for acadia center point phenocam
+lat_merc = 5523962
+lng_merc = -7598761
+lat_sin = 4934497
+lng_sin = -5425175
+lng_wgs = -68.26083
+lat_wgs = 44.37694
+
+```
+
+Read in sinusoidal landcover(500m) for acadia, display, transform, crop and compare to ndvi (250m)
+```{r}
+library(raster)
+library(leaflet)
+source('../functions/geospatial.R')
+# Read in ndvi (250m sinusoidal)
+ndvi_name = subset(ndvi_files_t, file_type == 'nc')$file_name
+ndvi_path_t   = paste0(test_download_dir, '/acadia_ndvi_t/', ndvi_name)
+ndvi_brick_t  = raster::brick(ndvi_path_t, varname='_250m_16_days_NDVI', crs = sinu_crs)
+ndvi_raster_t = raster::subset(ndvi_brick_t, 1)
+
+ndvi_name = subset(ndvi_files_a, file_type == 'nc')$file_name
+ndvi_path_a   = paste0(test_download_dir, '/acadia_ndvi_a/', ndvi_name)
+ndvi_brick_a  = raster::brick(ndvi_path_t, varname='_250m_16_days_NDVI', crs = sinu_crs)
+ndvi_raster_a = raster::subset(ndvi_brick_t, 1)
+
+
+# Read in landcover (500m sinusoidal)
+lc_brick    = raster::brick(lc_filepaths_nc[1], crs=sinu_crs)
+print (lc_brick)
+lc_raster = raster::subset(lc_brick, 18)
+lc_raster_ = raster::resample(x = lc_raster, y = ndvi_raster_t,crs = sinu_crs, method='ngb')
+
+# Plot landcover and ndvi netcdf rasters over eachother in a regular in extent
+# plot(lc_raster_, alpha = 1,col = colors_)
+# plot(ndvi_raster_t, add=TRUE, alpha = .5)
+
+# Plot landcover and ndvi netcdf rasters over eachother in a zoomed in extent
+left = -5445000
+bottom = 4925000
+# plot(lc_raster_, alpha = 1,col = colors_, ext = c(left, left+5000, bottom, bottom+5000))
+# plot(ndvi_raster_t, add=TRUE, alpha = .5, ext = c(left, left+5000, bottom, bottom+5000))
+
+# Re-Project the landcover sinusoidal and ndvi sinusoidal into mercator
+# ndvi_raster_merc  = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = 231.6563582638875)
+ndvi_raster_merc  = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
+ndvi_62           = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t)/4, method = 'ngb')
+
+lc_raster_merc_62   = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)/4)
+lc_raster_merc_125  = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)/2)
+lc_raster_merc_250  = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t))
+lc_raster_merc_500  = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)*2)
+
+# # Display Re-projected mercator ndvi and landcover 
+# leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc, opacity = 1, colors = colors_) %>% addRasterImage(ndvi_raster_merc, opacity = .2)
+
+# Crop the Re-projected mercator ndvi and landcover to 20000 m from center
+r_250_m_cropped_merc_20 = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 20000, width = 20000, crs_str = merc_crs)
+r_500_m_cropped_merc_20 = crop_raster(lat_merc, lng_merc, lc_raster_merc, height = 20000, width = 20000, crs_str = merc_crs)
+
+# # Display Cropped, Re-projected mercator ndvi and landcover
+# leaflet() %>% addTiles() %>% addRasterImage(r_500_m_cropped_merc_20, opacity = 1, colors = colors_) %>% addRasterImage(r_250_m_cropped_merc_20, opacity = .2)
+
+# Create grid for the ndvi layer (same as app)
+grid_250 = build_raster_grid(r_250_m_cropped_merc_20, crs='merc')
+grid_500 = build_raster_grid(r_500_m_cropped_merc_20, crs='merc')
+
+leaflet() %>% addTiles() %>% addRasterImage(ndvi_62, opacity = 1, colors = colors_) %>%
+  addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
+
+
+leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_62, opacity = 1, colors = colors_) %>%
+  addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
+# 
+# leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_125, opacity = 1, colors = colors_) %>% 
+#   addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
+# 
+# leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_250, opacity = 1, colors = colors_) %>%
+#   addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
+# 
+# leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_500, opacity = 1, colors = colors_) %>%
+#   addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
+```
+
+
+
+
+Extract all the pixel center points and create a dataframe with id/lat/lng 
+```{r}
+source('../functions/geospatial.R')
+# Values needed to calculate center pixels to use on analysis of netcdf data
+
+r_         = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 2500, width = 2500, crs_str = merc_crs)
+ndvi_grid  = build_raster_grid(r_, crs='merc')
+xmin       = xmin(extent(r_))
+xmax       = xmax(extent(r_))
+ymin       = ymin(extent(r_))
+ymax       = ymax(extent(r_))
+nrows      = nrow(r_)
+ncols      = ncol(r_)
+resolution = res(r_)[1]
+
+lats_merc = c()
+lngs_merc = c()
+ids = c()
+lng_start = xmin + .5*(resolution)
+lat_start = ymax + .5*(resolution)
+for (row in c(1:nrows)){
+  for (col in c(1:ncols)){
+    lng = lng_start + (resolution)*(col-1)
+    lat = lat_start - (resolution)*(row)
+    id = paste0(row, '_',col)
+    lngs_merc = c(lngs_merc,lng)
+    lats_merc = c(lats_merc,lat)
+    ids = c(ids, id)
+  }
+}
+
+coords_wgs = from_crs1_to_crs2_lon_lat(lngs_merc, lats_merc, from_crs = merc_crs, to_crs = wgs_crs)
+lngs_wgs = coordinates(coords_wgs)[,1]
+lats_wgs = coordinates(coords_wgs)[,2]
+
+coords_sin = from_crs1_to_crs2_lon_lat(lngs_merc, lats_merc, from_crs = merc_crs, to_crs = sinu_crs)
+lngs_sin = coordinates(coords_sin)[,1]
+lats_sin = coordinates(coords_sin)[,2]
+
+pixel_ids = c(1:(ncols*nrows))
+all_site_pixels_df = data.frame(pixel_id=pixel_ids, row_col = ids,
+                                lat_merc_ = lats_merc, lng_merc_ = lngs_merc , 
+                                lat_wgs_  = lats_wgs,  lng_wgs_  = lngs_wgs, 
+                                lat_sin_  = lats_sin,  lng_sin_  = lngs_sin, 
+                                site='acadia')
+all_site_pixels_df
+
+```
+
+Check to make sure we are using the correct lats/lngs for the site
+  - sanity check
+```{r}
+# leaflet() %>% addTiles() %>% addRasterImage(r_) %>%
+#   addCircleMarkers(lat = all_site_pixels_df$lat_wgs_, lng = all_site_pixels_df$lng_wgs_, radius = 1, weight=3, opacity = 1, color='black') %>%
+#   addPolylines(data = ndvi_grid, weight = 1.8, opacity = 1, group = '250m MODIS Grid', color = 'darkgrey') %>%
+#   setView(lng = lng_wgs, lat = lat_wgs, zoom = 14)
+```
+
+build points to use for extracting aginst NDVI
+```{r}
+# use the all_site_pixels_df dataframe
+coords_ = data.frame(x = all_site_pixels_df$lng_sin_, y = all_site_pixels_df$lat_sin_)
+row.names(coords_) = all_site_pixels_df$row_col
+center_points = SpatialPointsDataFrame(coords_, data=data.frame(ID=all_site_pixels_df$pixel_id, row_col = all_site_pixels_df$row_col ), proj4string=CRS(sinu_crs))
+```
+
+
+extract using a projected raster from sinusoidal into mercator 
+- ngb method for qc (categorical)
+- bilinear interpolation for ndvi (continous)
+```{r}
+# Read in ndvi (250m sinusoidal)
+ndvi_name = subset(ndvi_files_t, file_type == 'nc')$file_name
+ndvi_path_t   = paste0(test_download_dir, '/acadia_ndvi_t/', ndvi_name)
+ndvi_brick_t  = raster::brick(ndvi_path_t, varname='_250m_16_days_NDVI', crs = sinu_crs)
+ndvi_qc_brick_t  = raster::brick(ndvi_path_t, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
+# ndvi_brick_merc_t  = projectRaster(from = ndvi_brick_t, crs = merc_crs, res = res(ndvi_raster_t))
+# ndvi_qc_brick_merc_t  = projectRaster(from = ndvi_qc_brick_t, crs = merc_crs, res = res(ndvi_raster_t))
+
+ndvi_name = subset(ndvi_files_a, file_type == 'nc')$file_name
+ndvi_path_a   = paste0(test_download_dir, '/acadia_ndvi_a/', ndvi_name)
+ndvi_brick_a  = raster::brick(ndvi_path_t, varname='_250m_16_days_NDVI', crs = sinu_crs)
+ndvi_qc_brick_a  = raster::brick(ndvi_path_t, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
+# ndvi_brick_merc_a  = projectRaster(from = ndvi_brick_a, crs = merc_crs, res = res(ndvi_raster_t))
+# ndvi_qc_brick_merc_a  = projectRaster(from = ndvi_qc_brick_a, crs = merc_crs, res = res(ndvi_raster_t))
+
+```
+
+# Extract the values under the center points from the grid we are using
+```{r}
+ndvi_under_pixel_tera    = raster::extract(ndvi_brick_t, center_points)
+qc_ndvi_under_pixel_tera = raster::extract(ndvi_qc_brick_t, center_points)
+
+ndvi_under_pixel_aqua    = raster::extract(ndvi_brick_a, center_points)
+qc_ndvi_under_pixel_aqua = raster::extract(ndvi_qc_brick_a, center_points)
+```
+
+
+# Build the dataframe with all the compiled information from the extracted values
+```{r}
+ndvi_filepaths_t
+read.csv(ndvi_filepaths_t[3])
+qc_df = read.csv(ndvi_filepaths_t[2])
+unique(qc_df$VI.Usefulness)
+qc_df
+```
+
+
+```{r}
+subset(qc_df, qc_df$VI.Usefulness == 'Highest quality')
+```
+```{r}
+subset(qc_df, qc_df$VI.Usefulness == 'Decreasing quality')
+```
+
+```{r}
+names(qc_df)
+```
+
+
+```{r}
+for (num in c (1:length(center_points@data$ID))){
+  pixel_id = center_points@data$ID[num]
+  row_col  = center_points@data$row_col[num]
+  
+  ndvi_tera = ndvi_under_pixel_tera[num,]
+  ndvi_qc_tera = qc_ndvi_under_pixel_tera[num,]
+  
+  ndvi_aqua = ndvi_under_pixel_aqua[num,]
+  ndvi_qc_aqua = qc_ndvi_under_pixel_aqua[num,]
+  
+  dates_tera = as.Date(names(ndvi_tera),format='X%Y.%m.%d')
+  min_date_t = min(dates_tera)
+  max_date_t = max(dates_tera)
+  
+  dates_aqua = as.Date(names(ndvi_aqua),format='X%Y.%m.%d')
+  min_date_a = min(dates_aqua)
+  max_date_a = max(dates_aqua)
+  
+  
+  tera_qc_counts = as.data.frame(table(as.vector(ndvi_qc_tera)))
+  tera_qc_counts_merged = base::merge(tera_qc_counts, qc_df, by.x = 'Var1', by.y = 'Value')
+  
+  aqua_qc_counts = as.data.frame(table(as.vector(ndvi_qc_tera)))
+  aqua_qc_counts_merged = base::merge(tera_qc_counts, qc_df, by.x = 'Var1', by.y = 'Value')
+
+  ndvi_brick_df_tera = data.frame(date     = dates_tera, 
+                                  pixel    = pixel_id, 
+                                  row_col  = row_col,
+                                  ndvi_raw = as.vector(ndvi_tera), 
+                                  ndvi_qc  = as.vector(ndvi_qc_tera),
+                                  type     = 'TERA')
+  ndvi_brick_df_aqua = data.frame(date     = dates_aqua, 
+                                  pixel    = pixel_id, 
+                                  row_col  = row_col,
+                                  ndvi_raw = as.vector(ndvi_aqua), 
+                                  ndvi_qc  = as.vector(ndvi_qc_aqua),
+                                  type     = 'AQUA')
+  ndvi_brick_df = rbind(ndvi_brick_df_tera, ndvi_brick_df_aqua)
+  
+  
+  
+  # Add ndvi_brick_df data (one pixel worth) to a larger df with all pixels and ndvi
+  if (num == 1){
+    ndvi_pixel_data_df = ndvi_brick_df
+  }else {
+    ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
+  }}
+  
+ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 2114, 
+                                          ndvi_pixel_data_df$ndvi_raw, NA)
+
+```
+
+Lets run some basic analysis on this dataset for Acadia. 
+```{r}
+
+
+
+dim(ndvi_pixel_data_df)
+
+
+# Grab
+test_pixel = subset(ndvi_pixel_data_df, row_col == '5_5')
+
+# Grab TERA only
+tera_df = subset(test_pixel, type == 'TERA')
+
+# Display dates
+date_ = tera_df$date
+min_date = min(date_)
+max_date = max(date_)
+print (min_date)
+print (max_date)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
