@@ -1,6 +1,8 @@
 # Server file for Shiny App phenoRemote
 
 server = function(input, output, session) {
+  
+  
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  REACTIVE VALUES
@@ -136,25 +138,33 @@ server = function(input, output, session) {
   # Open landing page and initialze application
   observe({ 
     # showModal(tags$div(id = 'frontPage', modalDialog(
+    #   fade = FALSE,
     #   tags$div(id = 'row1'),
-    #   h1('Welcome to Phenosynth'),
+    #   h1('Welcome to the Curated Data Phenosynth '),
     #   fluidRow(
     #     column(6, align='center', offset = 3,
-    #            p('PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.'))),
-    #   fluidRow(
-    #     img(src='phenoSynth.png')),
-    #   # tags$div(id = 'frontPageData',
-    #   #          fluidRow(
-    #   #            column(12, align="center", offset = 0,
-    #   #                   selectInput('frontPageDataSelection', 'Choose Your Data (click in box) - Phenocam is always included', multiple = TRUE, 
-    #   #                               c('Modis Ndvi', 'Landsat Phenometrics')),
-    #   #                   tags$style(type='text/css', "#frontPageData { vertical-align: middle; height: 50px; width: 100%; font-size: 15px;}"))
-    #   #          )),
-    #   fluidRow(
-    #     column(4, align='center', offset = 4,
-    #            p('Once you have your choices pop up in the input above, press the button below to enter into the Shiny Application Interface'))),
-    #   footer = modalButton('Enter Phenosynth')
+    #             h4('This is a test branch of Phenosynth that uses a Curated Dataset created by AppEEARS to compare data extraction methods. Login Below.')),
+    #     tags$div(id = 'curatedLoginPage',
+    #       fluidRow(
+    #         column(12, align="center", offset = 0,
+    #           textInput('curatedUsername', 'Username', placeholder = '<username to earthdata>'),
+    #           passwordInput('curatedPassword', 'Password', placeholder = '<password to earthdata>'),
+    #           actionButton('curatedLoginButton', 'Login'),
+    #           tags$style(type='text/css', "#curatedLoginPage {vertical-align: middle; height: 50px; width: 50%; font-size: 15px; margin-left: 25%;}"),
+    #           tags$style(type='text/css', "#curatedUsername {height: 40px; width: 90%; margin-bottom: 8px;}"),
+    #           tags$style(type='text/css', "#curatedPassword {height: 40px; width: 90%; margin-bottom: 8px;}"),
+    #           tags$style(type='text/css', "#frontPage .modal-footer{ display:none; background-color: grey; border: grey; height:20%; text-align: center;}"))
+    #       )),
+    #     br(),
+    #     br(),
+    #     column(6, align='center', offset = 3,
+    #       p('PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.'),
+    #       p('Once you have your choices pop up in the input above, press the button below to enter into the Shiny Application Interface')
+    #     ))
+    #   # fluidRow(
+    #   #   img(src='phenoSynth.png')),
     # )))
+    
     if (EMAIL_MODE == FALSE){
       shinyjs::hide(id = 'emailShp')
     }
@@ -171,6 +181,30 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
+  
+  observeEvent(input$butLogin, {
+    print ('Loging into curated dataset')
+    
+    my_user = input$username
+    my_pass = input$pwInp
+    # Get token
+    response = httr::POST(login_url, httr::authenticate(my_user, my_pass))
+    rm(my_pass)
+    updateTextInput(session, inputId = 'username', value = '')
+    updateTextInput(session, inputId = 'pwInp', value = '')
+    
+    # Set and display token
+    response = content(response)
+    token    = response$token
+    token
+    
+    if (is.null(token)){
+      message('invalid username/password combo')
+    }else {
+      shinyBS::toggleModal(session, 'curatedDataLogin')
+    }
+    
+  })
 
   # Turns ROI off if drawImage is off
   observe({
@@ -1435,6 +1469,9 @@ server = function(input, output, session) {
     tds_filepath       = paste0(file_path,'tds/')
     gcc_filepath       = paste0(file_path,'gcc/')
     
+    # For curated dataset
+    ndvi_curated_filepath = paste0(ndvi_filepath, 'curated/')
+    
     temp_nc_ndvi = './www/deleteme/ndvi/'
     
     freq           = as.numeric(substring(input$phenocamFrequency, 1, 1))
@@ -1472,6 +1509,9 @@ server = function(input, output, session) {
     if (!file.exists(ndvi_aqua_filepath) & 'NDVI' %in% selected_data){
       dir.create(file.path(ndvi_aqua_filepath))
     }
+    if (!file.exists(ndvi_aqua_filepath) & 'Curated Dataset' %in% selected_data){
+      dir.create(file.path(ndvi_aqua_filepath))
+    }
     if (!file.exists(evi_filepath) & 'EVI' %in% selected_data){
       dir.create(file.path(evi_filepath))
     }
@@ -1506,6 +1546,20 @@ server = function(input, output, session) {
       }) #END WITH PROGRESS BAR
     } #END IMPORT NPN
 
+    
+    # Download NDVI from Curated Dataset API ---------------------------------
+    if ('Curated Dataset' %in% selected_data){
+      
+      # Steps
+      # 1. Login to curated dataset with username/password - ui Popup
+      
+      # 2. Download the data using the 3 different methods - time it (Sys.time())
+      
+      # 3. Show stats on the UI - ui Popup as well
+      
+      
+      
+    } #END IMPORT CURATED NDVI
 
       # Import [NDVI] 
       #------------------------------------------------------------------------
@@ -1521,6 +1575,7 @@ server = function(input, output, session) {
       print (as_tibble(appeears$ndvi_aqua))
       print (as_tibble(appeears$ndvi_tera))
       
+      # Download NDVI from AppEEARS -------------------------------------------
       if (length(list.files(ndvi_tera_filepath))==0){
         setProgress(value = .1, detail = 'Downloading NDVI TERA')
         ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
@@ -1536,6 +1591,7 @@ server = function(input, output, session) {
         setProgress(value = .1, detail = 'Importing NDVI AQUA')
         ndvi_bundle_df_aqua = get_appeears_bundle_df(appeears$ndvi_aqua$task_id)
       }
+
       
       print (as_tibble(ndvi_bundle_df_tera))
       print (as_tibble(ndvi_bundle_df_aqua))

@@ -1,0 +1,358 @@
+---
+title: "grab_curated_data"
+author: "K. Enns"
+date: "9/16/2019"
+output: html_document
+---
+
+
+Attempt to replicate code in Python into code in R for curated dataset (AppEEARS)
+
+import libraries
+```{r}
+# library(ncdf.tools)
+library(dplyr)
+library(leaflet)
+library(tidyr)
+```
+
+
+
+```{r}
+# client          = 'curated/client.R'
+client          = '../../functions/client.R'
+# sample_data_dir = '/path/to/downloads/or/output/dir
+sample_data_dir = '/users/kenns/downloads'
+source(client)
+
+# Import client script
+
+# Setting variables
+cd_client = new("CuratedApiClient", user = 'my_user', password = 'my_pass')
+base_url  = baseUrl(cd_client)
+login_url = paste0(baseUrl(cd_client), '/login')
+services  = sampleServices(cd_client)
+
+# Retrieving a catalog for the curated dataset
+catalog = as.data.frame(jsonlite::fromJSON(getCatalog(cd_client)))
+catalog
+
+sites_in_curated_data = unique(catalog$sites.name)
+sites_in_curated_data
+length(sites_in_curated_data)
+```
+
+Set username and password, and then grab token from appeears curated api url
+```{r}
+# Set username and password
+my_user = 'kenns'
+my_pass = .rs.askForPassword('Password')
+
+# Get token
+rm(response, token)
+response = httr::POST(login_url, httr::authenticate(my_user, my_pass))
+rm(my_pass)
+
+# Set and display token
+response = content(response)
+token    = response$token
+token
+```
+
+Download the sample data, re-write the python code into R
+```{r}
+# Set projections
+sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
+pixel_buffer = 10
+# Building JSON body for POST using list and then toJSON
+sample_params = list('site'   = 'acadia',
+                     'layers' = list(list(layer='_250m_16_days_NDVI', product = 'MOD13Q1.006'), 
+                                     list(layer='_250m_16_days_VI_Quality', product = 'MOD13Q1.006')),
+                     'start_date'   = '02-18-2004',
+                     'end_date'     = '02-18-2006',
+                     'pixel_buffer' = pixel_buffer)
+
+# List to store service and file data
+created_samples = list()
+# Loop through services
+for (svc in services){
+  # Create output file
+  start_time = Sys.time()
+  local_file = paste0(sample_data_dir, '/test_via_r_', pixel_buffer, '_', svc, '.nc')
+  
+  # Create URL API to POST to
+  url = paste0(base_url, '/' ,svc)
+  print (paste0('Getting sample from ', url, ' ...'))
+  
+  # POST to the service's url to retrieve and download 
+  response_ = httr::POST(url  = url,
+                         body = sample_params,
+                         encode= c("json"),
+                         add_headers(c('Authorization' = paste0('Bearer ', token),
+                                       'Accept'        = 'application/x-netcdf4',
+                                       'Cache-Control' = 'no-cache')))
+  # print (response_)
+  
+  # Write out binary to a file
+  binary_content = content(response_)
+  ff = file(local_file, 'wb')
+  writeBin(binary_content, ff)
+  close(ff)
+  end_time = Sys.time()
+  
+  # Project sinusoidal to web mercator to plot on leaflet map
+  test_r_nc_ndvi = suppressWarnings(raster::brick(local_file, varname = '_250m_16_days_NDVI', crs = sinu_crs))
+  test_r_nc_qc   = suppressWarnings(raster::brick(local_file, varname = '_250m_16_days_VI_Quality', crs = sinu_crs))
+  test_r_nc_ndvi_sinu  = subset(test_r_nc_ndvi, 1)
+  test_r_nc_ndvi_merc  = suppressWarnings(projectRaster(from = test_r_nc_ndvi_sinu, crs = merc_crs, res = res(test_r_nc_ndvi_sinu), method = 'bilinear'))
+  
+  # # Display in leaflet -----------
+  # m = leaflet() %>% addTiles() %>% addRasterImage(test_r_nc_ndvi_merc)
+  # print (m)
+  
+  # Store type and local file for this service
+  sum_list = list(list('type' = svc, 'local_file' = local_file, 'time' = end_time - start_time))
+  created_samples[svc] =  sum_list
+  print (sum_list)
+}
+# print (created_samples)
+
+```
+
+
+{'site': 'acadia', 'layers': [{'layer': '_250m_16_days_NDVI', 'product': 'MOD13Q1.006'}, {'layer': '_250m_16_days_VI_Quality', 'product': 'MOD13Q1.006'}], 'start_date': '02-18-2004', 'end_date': '02-18-2006', 'pixel_buffer': 1}
+
+```{r}
+
+headers_ = headers(response_)
+binary_content = content(response_)
+status_code    = response_$status_code
+
+http_status(response_)
+# content(response_, "parsed")
+# Error: No automatic parser available for application/x-netcdf.
+
+
+zzfil = '/users/kenns/downloads/testbin2.nc'
+zz = file(zzfil, 'wb')
+writeBin(binary_content, zz)
+close(zz)
+
+library(ncdf4)
+ncd_ = nc_open(zzfil)
+
+class(ncd_)
+
+ncd_$filename
+ncd_$dim$time
+ncd_$dim$xdim
+ncd_$dim$ydim
+
+ncd_$var$`_250m_16_days_NDVI`$dim[[1]]$vals
+ncd_$var$`_250m_16_days_VI_Quality`
+
+
+
+
+sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
+test_r_nc_ndvi = raster::brick(zzfil, varname = '_250m_16_days_NDVI', crs = sinu_crs)
+test_r_nc_qc   = raster::raster(zzfil, varname = '_250m_16_days_VI_Quality', crs = sinu_crs)
+test_r_nc_ndvi_sinu  = subset(test_r_nc_ndvi, 1)
+test_r_nc_ndvi_merc  = projectRaster(from = test_r_nc_ndvi_sinu, crs = merc_crs, res = res(test_r_nc_ndvi_sinu))
+
+
+plot(test_r_nc_ndvi_sinu)
+plot(test_r_nc_ndvi_merc)
+
+library(leaflet)
+leaflet() %>% addTiles() %>% addRasterImage(test_r_nc_ndvi_merc)
+
+
+# # File downloaded in Python
+# test = '/users/kenns/downloads/test_via1_scidb.nc'
+# test_py_nc_ndvi = raster::brick(test, varname = '_250m_16_days_NDVI', crs = sinu_crs)
+# test_py_nc_qc   = raster::brick(test, varname = '_250m_16_days_VI_Quality', crs = sinu_crs)
+# 
+# leaflet() %>% addTiles() %>% addRasterImage(subset(test_py_nc_ndvi, 1))
+# 
+# class(test_nc)
+# nc_open(test)
+
+```
+
+
+
+
+
+
+
+
+
+
+Download the sample data, re-write the python code into R
+```{r}
+# Building JSON body for POST using list and then toJSON
+sample_params = list('site' = 'acadia',
+                     'layers' = list(list(layer='_250m_16_days_NDVI', product = 'MOD13Q1.006'), 
+                                list(layer='_250m_16_days_VI_Quality', product = 'MOD13Q1.006')),
+                     'start_date' = '02-18-2004',
+                     'end_date'   = '02-18-2006',
+                     'pixel_buffer' = 1
+  
+)
+
+# sample_params = "
+# {
+#     'site': 'acadia',
+#     'layers': [{'layer': '_250m_16_days_NDVI', 'product': 'MOD13Q1.006'},
+#                {'layer': '_250m_16_days_VI_Quality', 'product': 'MOD13Q1.006'}],
+#     'start_date': '02-18-2004',
+#     'end_date': '02-18-2006',
+#     'pixel_buffer': 1
+# }
+# "
+
+
+sample_params_json = toJSON(sample_params, auto_unbox = TRUE)
+print (sample_params_json)
+created_samples = c()
+for (svc in services[1]){
+  
+  
+  # cd_client.sample_to_file(svc, sample_params, local_file, use_cache=False)
+  
+  local_file = paste0('/users/kenns/downloads/test_via_', svc, '.nc')
+
+  headers = list('Authorization' = paste0('Bearer ', token),
+                 'Accept'= 'application/x-netcdf4',
+                 # 'Cache-Control' = 'NetCDF4-mime-type')
+                 'Cache-Control' = 'no-cache') # NetCDF4 mime type
+  headers_json = toJSON(headers, auto_unbox = TRUE)
+  url = paste0(base_url, '/' ,svc)
+  chunk_size_bytes = 1024
+  
+  
+  print (paste0('getting sample from ', url, ' ...'))
+  
+  
+  response_ = httr::POST(url, 
+                         body = sample_params_json,
+                         add_headers(.headers = c('Authorization' = paste0('Bearer ', token),
+                                                       'Accept' = 'application/x-netcdf4',
+                                                       'Cache-Control' = 'no-cache')),
+                         encode = 'json',
+                         verbose())
+  
+  
+  response_ = httr::POST(url,
+                         headers = add_headers(.headers = c(Authorization = paste0('Bearer ', token),
+                                                           'Accept' = 'application/x-netcdf4',
+                                                           'Cache-Control' = 'no-cache')),
+                         body = sample_params_json,
+                         verbose())
+  content(response_)
+  
+    
+  response_ = httr::POST(url,
+                         body = sample_params_json,
+                         # body = gsub("\\[|\\]", "", sample_params_json),                         
+                         add_headers(Authorization = paste0('Bearer ', token)),
+                         encode= 'json',
+                         verbose())
+  content(response_)
+                         
+
+
+  
+  # created_samples = c(list(type = svc, file = local_file) ,created_samples)
+}
+
+content(response_)
+```
+
+
+
+
+
+
+
+
+# Just saving this for later just incase
+Download the sample data, re-write the python code into R
+```{r}
+library(ncdf.tools)
+pixel_buffer = 5
+# Building JSON body for POST using list and then toJSON
+sample_params = list('site'   = 'acadia',
+                     'layers' = list(list(layer='_250m_16_days_NDVI', product = 'MOD13Q1.006'), 
+                                     list(layer='_250m_16_days_VI_Quality', product = 'MOD13Q1.006')),
+                     'start_date'   = '02-18-2004',
+                     'end_date'     = '02-18-2006',
+                     'pixel_buffer' = pixel_buffer)
+
+# List to store service and file data
+created_samples = list()
+# Loop through services
+for (svc in services){
+  # Create output file
+  local_file = paste0(sample_data_dir, '/test_via_r_', pixel_buffer, '_', svc, '.nc')
+
+  # headers = list('Authorization' = paste0('Bearer ', token),
+  #                'Accept'        = 'application/x-netcdf4',
+  #                'Cache-Control' = 'no-cache')
+  
+  headers = c('Authorization'    = paste0('Bearer ', token),
+                 'Accept'        = 'application/x-netcdf4',
+                 'Cache-Control' = 'no-cache')
+  
+  
+  # headers_json = toJSON(headers, auto_unbox = TRUE)
+  
+  
+  url = paste0(base_url, '/' ,svc)
+  print (paste0('Getting sample from ', url, ' ...'))
+  
+  # POST to the service's url to retrieve and download 
+  response_ = httr::POST(url  = url,
+                         body = sample_params,
+                         add_headers(c('Authorization' = paste0('Bearer ', token),
+                                       'Accept'        = 'application/x-netcdf4',
+                                       'Cache-Control' = 'no-cache')),
+                         encode= c("json"))
+  print (response_)
+  
+  # Write out binary to a file
+  binary_content = content(response_)
+  ff = file(local_file, 'wb')
+  writeBin(binary_content, ff)
+  close(ff)
+  
+  # Display in leaflet -----------
+  sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
+  merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
+  test_r_nc_ndvi = raster::brick(local_file, varname = '_250m_16_days_NDVI', crs = sinu_crs)
+  test_r_nc_qc   = raster::raster(local_file, varname = '_250m_16_days_VI_Quality', crs = sinu_crs)
+  test_r_nc_ndvi_sinu  = subset(test_r_nc_ndvi, 1)
+  test_r_nc_ndvi_merc  = projectRaster(from = test_r_nc_ndvi_sinu, crs = merc_crs, res = res(test_r_nc_ndvi_sinu))
+  
+  m = leaflet() %>% addTiles() %>% addRasterImage(test_r_nc_ndvi_merc)
+  m
+  
+  plot(test_r_nc_ndvi)
+  # Store type and local file for this service
+  created_samples[svc] =  list(list('type' = svc, 'local_file' = local_file))
+}
+print (created_samples)
+
+```
+
+
+
+
+
+
+
+
+

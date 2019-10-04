@@ -11,6 +11,18 @@ source('./functions/normalize_ts.R')
 source('./functions/gcc_plot.R')
 source('./functions/npn_gridded_data.R')
 
+# For curated dataset
+source('./functions/client.R')
+library(shinyalert)
+
+bsModalNoClose <-function(...) {
+  b = bsModal(...)
+  b[[2]]$`data-backdrop` = "static"
+  b[[2]]$`data-keyboard` = "false"
+  return(b)
+}
+
+
 EMAIL_MODE = FALSE
 if (file.exists('./config.R')){
   source('./config.R')
@@ -46,6 +58,7 @@ library(shinycssloaders)
 library(data.table)
 library(grDevices)
 library(plotly)
+library(tidyr)
 
 library(knitr)
 library(kableExtra)
@@ -102,6 +115,19 @@ appeears_tasks_evi_aqua  = readRDS(file = './www/cache_df_evi_aqua.df')
 appeears_tasks_tds       = readRDS(file = './www/cache_df_tds.df')
 appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
 
+#------- added for curated dataset
+# Curated dataset sites available in NDVI
+cd_client = new("CuratedApiClient", user = 'my_user', password = 'my_pass')
+base_url  = baseUrl(cd_client)
+login_url = paste0(baseUrl(cd_client), '/login')
+services  = sampleServices(cd_client)
+# Retrieving a catalog for the curated dataset
+catalog = as.data.frame(jsonlite::fromJSON(getCatalog(cd_client)))
+catalog
+# get unique sites with data to only allow these to display
+sites_in_curated_data = unique(catalog$sites.name)
+#---------------------------------------------------
+
 # check differences between the landcover and all other cached data.
 setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_ndvi_tera$task_name, '_NDVI_v6_tera_sinu')))
 setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_ndvi_aqua$task_name, '_NDVI_v6_aqua_sinu')))
@@ -110,9 +136,11 @@ setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.c
 setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_tds$task_name, '_TDs_v6')))
 
 # Sites with data
-sites_with_data = as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6'))
-cams_ = cams_[match(sites_with_data, cams_$Sitename),]
-cams_ = cams_[seq(dim(cams_)[1],1),]
+# sites_with_data = as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6'))
+sites_with_data = unique(as.character(strsplit(appeears_tasks_ndvi_tera$task_name, '_NDVI_v6_tera_sinu')))
+curated_sites_with_data = intersect(sites_in_curated_data, sites_with_data)
+cams_ = cams_[match(curated_sites_with_data, cams_$Sitename),]
+# cams_ = cams_[seq(dim(cams_)[1],1),]
 
 # AppEEARS products page: https://lpdaacsvc.cr.usgs.gov/appeears/products
 
@@ -120,3 +148,7 @@ cams_ = cams_[seq(dim(cams_)[1],1),]
 sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
 merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
 wgs_crs  = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
+
+
+

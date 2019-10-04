@@ -121,7 +121,7 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
 }
 #frontPage .modal-content .modal-body{
   background-color: grey;
-  height:80%;
+  height:100%;
   text-align: center;
 }
 
@@ -129,7 +129,7 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   margin-bottom:30px;
 }
 
-#frontPageData {
+#curatedLoginPage {
   text-align:center;
 }
 
@@ -151,6 +151,7 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   height:20%;
   text-align: center;
 }
+
 /**/
 
 #currentImage, #modisLegend {

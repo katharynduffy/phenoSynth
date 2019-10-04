@@ -3,6 +3,18 @@
 ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                mainPanel(
                  img(src='phenoSynth.png', id = 'phenoSynthLogo'),
+                 bsModalNoClose("curatedDataLogin", "CuratedDataLogin",
+                   title="Enter Login Details",size='small',
+                   textInput('username', 'Username', placeholder = '<username to earthdata>'),
+                   passwordInput('pwInp', 'Password', placeholder = '<password to earthdata>'),
+                   actionButton('butLogin', 'Login', class = 'btn action-button btn-success', icon = icon('sign-in')),
+                   # footer = h4(actionLink('create_account','Create an account'),align='right'),
+                   tags$head(tags$style("#curatedDataLogin .modal-footer{display:none}
+                     .modal-header .close{display:none}"),
+                     tags$script("$(document).ready(function(){
+                       $('#curatedDataLogin').modal();
+                       });"))),
+             
                  bsModal("saveShpPopup",
                          "Download shapefile", "saveShp",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
@@ -26,7 +38,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
                          # checkboxInput("localDownload", "Download Data Locally", value = TRUE),
-                         selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
+                         selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates', 'NPN','Curated Dataset'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN','Curated Dataset')),
                          selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '3 day', c('1 day', '3 day')),
                          actionButton('getDataButton', 'Get Data'),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}")))
