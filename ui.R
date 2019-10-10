@@ -1,6 +1,6 @@
 # UI file for Shiny App phenoRemote
 # Initiate the UI
-ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
+ui = fluidPage(shinyjs::useShinyjs(),useShinyalert(), includeCSS("./Aesthetics/styles.css"),
                mainPanel(
                  img(src='phenoSynth.png', id = 'phenoSynthLogo'),
                  bsModalNoClose("curatedDataLogin", "CuratedDataLogin",
@@ -93,8 +93,8 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                                       actionButton('showSites', 'Show all Sites'),
                                       actionButton("siteZoom", "Zoom to Selected Site"),
                                       selectInput("filterSites", 'Filter Sites by', site_filters, selected = 'All', multiple = FALSE),
-                                      selectInput("site", "Phenocam Site Name", cams_$Sitename, selected = 'acadia'),
-                                      actionButton('analyzerMode', 'Enter Analyze Mode'),
+                                      selectInput("site", "Phenocam Site Name", sites_in_curated_data, selected = 'acadia'),
+                                      # actionButton('analyzerMode', 'Enter Analyze Mode'),
                                       checkboxInput("drawROI", "See PhenoCam Field of View (FOV)", value = FALSE),
                                       # sliderInput("azm", "Toggle FOV:", min = 0, max = 360, value = 0 , step = 5),
                                       numericInput('azm', 'FOV degrees (1 to 360)',value=0, min=0,max=360),
@@ -106,7 +106,7 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS Pixels (250m resolution)", value = FALSE),
                                       actionButton('getData', 'Import Data'),
-                                      actionButton('plotRemoteData', 'Plot Data'),
+                                      # actionButton('plotRemoteData', 'Plot Data'),
                                       actionButton('clearPixels', 'Clear Pixels')
                                                                             ),
 
@@ -164,14 +164,29 @@ ui = fluidPage(shinyjs::useShinyjs(), includeCSS("./Aesthetics/styles.css"),
            #          includeMarkdown('UserGuide.Rmd')
            #          ),
 
-           tabPanel('phenoSynth User Guide',
-                    # tableOutput("phenoTable")
-                    includeMarkdown('../phenoSynth/Images_for_UserGuide/UserGuide.Rmd')
-                   ),
-           tabPanel('PhenoCam Metadata',
-                    # tableOutput("phenoTable")
-                    dataTableOutput('phenoTable')
-           ),
+           # tabPanel('phenoSynth User Guide',
+           #          # tableOutput("phenoTable")
+           #          includeMarkdown('../phenoSynth/Images_for_UserGuide/UserGuide.Rmd')
+           #         ),
+           
+           # tabPanel('PhenoCam Metadata',
+           #          # tableOutput("phenoTable")
+           #          dataTableOutput('phenoTable')
+           # ),
+                 
+           tabPanel('Curated Dataset', value = 'curatedPanel',
+             absolutePanel(id = "curatedDataset", class = "panel panel-default", fixed = TRUE,
+               draggable = FALSE, top = 60, left = 25, right = 'auto', bottom = "auto",
+               selectInput('selectCuratedSite', 'Select a Phenocam Site', sites_in_curated_data),
+               selectInput('dataCuratedSite', 'Select the types of data to analyze', c('Curated scidb'='scidb', 'Curated file'='file', 'Curated opendap'='opendap', 'AppEEARS'='appeears'),
+                           multiple = TRUE, selected = c('scidb', 'file', 'opendap','appeears')),
+               sliderInput('efforts', 'Runtimes', min = 1, max = 10, step = 1, value = 3, ticks = TRUE, round = TRUE),
+               textInput('pixelBuffer', 'Select pixel buffer for Curated Data', value = 20),
+               withBusyIndicatorUI(actionButton('getCuratedData', 'Import Data', class = 'btn-primary'))
+             ),
+             # plotlyOutput('curatedPlot'),
+             dataTableOutput('curatedPlotTable')
+             ),
 
            tabPanel('Plot Data', value = 'PlotPanel',
                     checkboxGroupInput("plotTheseBoxes", label = h4("Select Plots to Display"), 

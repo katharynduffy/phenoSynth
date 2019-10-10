@@ -10,6 +10,7 @@ source('./functions/transition_dates.R')
 source('./functions/normalize_ts.R')
 source('./functions/gcc_plot.R')
 source('./functions/npn_gridded_data.R')
+source('./functions/helpers.R')
 
 # For curated dataset
 source('./functions/client.R')
@@ -148,7 +149,5 @@ cams_ = cams_[match(curated_sites_with_data, cams_$Sitename),]
 sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
 merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
 wgs_crs  = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-
-
 
 

@@ -176,11 +176,142 @@ server = function(input, output, session) {
     data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     panel$mode = 'explorer'
     data$paois_df = setNames(data.frame(matrix(ncol = 4, nrow = 0)), c('Name', 'Longitude', 'Latitude', 'LeafletId'))
+    output$curatedPlotTable = DT::renderDataTable(
+      data.frame(Empty = 'empty'))
   })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
+  
+  # Observers for Curated Dataset
+  #----------------------------------------------------------------------
+  
+  observeEvent(input$getCuratedData, {
+    
+    withProgress(message = 'Downloading Data', {
+    # List to store service and file data
+    created_samples = list()
+    
+    withBusyIndicatorServer("getCuratedData", {
+      
+    print ('Get Curated Data observer')
+    selected_data_types = input$dataCuratedSite
+    site = input$selectCuratedSite
+
+    # Set up directories to store data
+    main          = './www/curated_data'
+    main_site = paste0(main, '/', site)
+
+    # Create curated data directory
+    if (!file.exists(main)){
+      dir.create(file.path(main))
+    }
+    if (!file.exists(main_site)){
+      dir.create(file.path(main_site))
+    }
+    # Create data directories
+    for (type in selected_data_types){
+      data_dir = paste0(main_site, '/', type)
+      if (!file.exists(data_dir)){
+        dir.create(file.path(data_dir))
+      }
+    }
+    
+    pixel_buffer = as.numeric(input$pixelBuffer)
+    # Building JSON body for POST using list and then toJSON
+    sample_params = list('site'   = 'acadia', 'layers' = list(list(layer='_250m_16_days_NDVI', product = 'MOD13Q1.006'), 
+                         list(layer='_250m_16_days_VI_Quality', product = 'MOD13Q1.006')),
+                         'start_date'   = '02-18-2004',
+                         'end_date'     = '02-18-2006',
+                         'pixel_buffer' = pixel_buffer)
+    efforts      = input$efforts
+    
+    # DOWNLOAD NDVI
+    # Download Curated Data
+    # ---- scidb
+    sum_df = data.frame()
+    for (type in selected_data_types){
+      if (type %in% c('scidb', 'file', 'opendap')){
+        times = c()
+        data_dir = paste0(main_site,'/', type)
+        
+        setProgress(value = 0, detail = type)  
+        for (effort in 1:efforts){
+          incProgress(amount = ((1/efforts)*(1-.1)))
+          start_time = Sys.time()
+          local_file = paste0(data_dir, '/', pixel_buffer, '_', type, '.nc')
+          
+          # Create URL API to POST to
+          url = paste0(base_url, '/' ,type)
+          print (paste0('Getting sample from ', url, ' ...'))
+          
+          # POST to the service's url to retrieve and download
+          response_ = httr::POST(url  = url,
+            body = sample_params,
+            encode= c("json"),
+            add_headers(c('Authorization' = paste0('Bearer ', data$token),
+              'Accept'        = 'application/x-netcdf4',
+              'Cache-Control' = 'no-cache')))
+          # print (response_)
+          
+          # Write out binary to a file
+          binary_content = content(response_)
+          ff = file(local_file, 'wb')
+          writeBin(binary_content, ff)
+          close(ff)
+          end_time = Sys.time()
+          times = c(times, (end_time - start_time))
+          print (end_time - start_time)
+          
+          file.remove(local_file)
+        }
+      sum_list = as.data.frame(list(list('type' = type, 'local_file' = local_file, 'times' = times, 'average' = sum(times)/efforts)))
+      if (dim(sum_df)[1] == 0){
+        sum_df = sum_list
+      }else {
+        sum_df = rbind(sum_df, sum_list)
+      }
+      }
+    }
+    
+    # Download AppEEARS
+    # ---- AppEEARS
+    if ('appeears' %in% selected_data_types){
+      data_dir = paste0(main_site,'/appeears/')
+      ap_times = c()
+      setProgress(value = 0, detail = 'AppEEARS')
+      for (effort in 1:efforts){
+        incProgress(amount = ((1/efforts)*(1-.1)))
+        start_time = Sys.time()
+        ndvi_task = get_appeears_task(site, type = 'ndvi_tera')
+        ndvi_bundle_df_tera = download_bundle_file(ndvi_task$task_id, data_dir)
+        end_time  = Sys.time()
+        print (end_time - start_time)
+        ap_times = c(ap_times, (end_time - start_time))
+      }
+      ap_sum_list = as.data.frame(list(list('type' = 'appeears', 'local_file' = data_dir, 'times' = ap_times, 'average' = sum(ap_times)/efforts)))
+      if (dim(sum_df)[1] == 0){
+        sum_df = ap_sum_list
+      }else {
+        sum_df = rbind(sum_df, ap_sum_list)
+      }
+    }
+    # Delete folders and their files
+    unlink(paste0('./www/curated_data/', site), recursive = TRUE)
+    output$curatedPlotTable = DT::renderDataTable(
+      sum_df %>% dplyr::select(type, times, average),
+      options = list(scrollX = TRUE, scrollY = TRUE)
+      )
+    })# Close withBusyIndicator
+    })# Close with progress
+  })
+  
+  output$curatedPlot = renderPlotly({
+    plot_ly()
+  })
+  
+  
   
   observeEvent(input$butLogin, {
     print ('Loging into curated dataset')
@@ -195,16 +326,23 @@ server = function(input, output, session) {
     
     # Set and display token
     response = content(response)
-    token    = response$token
-    token
+    data$token    = response$token
+    data$token
     
-    if (is.null(token)){
+    if (is.null(data$token)){
       message('invalid username/password combo')
+      shinyalert("Login error", 'Invalid username/password combo, try again.' , type = "error")
+      
     }else {
+      message('login successful')
       shinyBS::toggleModal(session, 'curatedDataLogin')
+      updateTabsetPanel(session, 'navbar', selected = 'curatedPanel')
     }
     
   })
+  
+  #----------------------------------------------------------------------
+  
 
   # Turns ROI off if drawImage is off
   observe({
@@ -435,26 +573,67 @@ server = function(input, output, session) {
       variables$sites_df = cams_
     }else{
       if ('Active' %in% variables$filter){
-        variables$sites_df = subset(cams_, active == 'True')
+        sub = subset(cams_, active == 'TRUE')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
       }
       if ('Inactive' %in% variables$filter){
-        variables$sites_df = subset(cams_, active == 'False')
+        sub = subset(cams_, active == 'FALSE')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
+
       }
       if ('Type1' %in% variables$filter){
-        variables$sites_df = subset(cams_, site_type == 'I')
+        sub = subset(cams_, site_type == 'I')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
       }
       if ('Type2' %in% variables$filter){
-        variables$sites_df = subset(cams_, site_type == 'II')
+        sub = subset(cams_, site_type == 'II')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
       }
       if ('Type3' %in% variables$filter){
-        variables$sites_df = subset(cams_, site_type == 'III')
+        sub = subset(cams_, site_type == 'III')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
       }
       if ('NEON' %in% variables$filter){
-        variables$sites_df = subset(cams_, group == 'NEON')
+        sub = subset(cams_, group == 'NEON' | group == "NEON AMERIFLUX" | group == "NEON LTAR LTER AMERIFLUX")
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
       }
     }
-    variables$sites = variables$sites_df$Sitename
-    updateSelectInput(session, 'site', choices = variables$sites)
     show_all_sites(map_ = 'map', data_ = variables$sites_df)
   })
 
