@@ -65,8 +65,6 @@ library(knitr)
 library(kableExtra)
 options(knitr.table.format = "html")
 print ('Importing Modules and Phenocam site data')
-
-
 # Variables
 
 print ('Grabbing phenocam cameras-api')

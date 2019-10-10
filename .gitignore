@@ -6,6 +6,7 @@
 .DS_Store
 *.Rproj
 rsconnect/
+data/
 tokens/
 tokens.R
 powerpoint
