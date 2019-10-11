@@ -64,20 +64,24 @@ Download the sample data, re-write the python code into R
 # Set projections
 sinu_crs = "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
 merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
-pixel_buffer = 10
+pixel_buffer = 100 # only returns (1 by 1 degree grid) - centered on the pixel of the phenocam site lat/long
 # Building JSON body for POST using list and then toJSON
 sample_params = list('site'   = 'acadia',
                      'layers' = list(list(layer='_250m_16_days_NDVI', product = 'MOD13Q1.006'), 
                                      list(layer='_250m_16_days_VI_Quality', product = 'MOD13Q1.006')),
-                     'start_date'   = '02-18-2004',
-                     'end_date'     = '02-18-2006',
+                     'start_date'   = '02-18-2001',
+                     'end_date'     = '02-18-2018',
                      'pixel_buffer' = pixel_buffer)
 
+
+efforts = 1
 # List to store service and file data
 created_samples = list()
 # Loop through services
-for (svc in services){
+for (svc in services[1]){
   # Create output file
+  times = c()
+  for (effort in 1:efforts){
   start_time = Sys.time()
   local_file = paste0(sample_data_dir, '/test_via_r_', pixel_buffer, '_', svc, '.nc')
   
@@ -100,6 +104,9 @@ for (svc in services){
   writeBin(binary_content, ff)
   close(ff)
   end_time = Sys.time()
+  times = c(times, (end_time - start_time))
+  print (end_time - start_time)
+  }
   
   # Project sinusoidal to web mercator to plot on leaflet map
   test_r_nc_ndvi = suppressWarnings(raster::brick(local_file, varname = '_250m_16_days_NDVI', crs = sinu_crs))
@@ -108,11 +115,11 @@ for (svc in services){
   test_r_nc_ndvi_merc  = suppressWarnings(projectRaster(from = test_r_nc_ndvi_sinu, crs = merc_crs, res = res(test_r_nc_ndvi_sinu), method = 'bilinear'))
   
   # # Display in leaflet -----------
-  # m = leaflet() %>% addTiles() %>% addRasterImage(test_r_nc_ndvi_merc)
-  # print (m)
+  m = leaflet() %>% addTiles() %>% addRasterImage(test_r_nc_ndvi_merc)
+  print (m)
   
   # Store type and local file for this service
-  sum_list = list(list('type' = svc, 'local_file' = local_file, 'time' = end_time - start_time))
+  sum_list = list(list('type' = svc, 'local_file' = local_file, 'times' = times, 'average' = sum(times)/efforts))
   created_samples[svc] =  sum_list
   print (sum_list)
 }
