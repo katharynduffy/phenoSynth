@@ -1,5 +1,5 @@
-# Global file for Shiny App phenoRemote
-
+# Global file for Shiny App
+source('install.R')
 source('./functions/geospatial.R')
 source('./functions/basic.R')
 source('./functions/image.R')
@@ -105,7 +105,7 @@ appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
 # check differences between the landcover and all other cached data.
 setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_ndvi_tera$task_name, '_NDVI_v6_tera_sinu')))
 setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_ndvi_aqua$task_name, '_NDVI_v6_aqua_sinu')))
-setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_evi_tera$task_name, '_EVI_v6_tera_sinu')))    
+setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_evi_tera$task_name, '_EVI_v6_tera_sinu')))
 setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_evi_aqua$task_name, '_EVI_v6_aqua_sinu')))
 setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_tds$task_name, '_TDs_v6')))
 
