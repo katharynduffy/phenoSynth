@@ -46,7 +46,7 @@ library(shinycssloaders)
 library(data.table)
 library(grDevices)
 library(plotly)
-
+library(raster)
 library(knitr)
 library(kableExtra)
 options(knitr.table.format = "html")

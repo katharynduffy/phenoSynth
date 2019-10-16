@@ -24,12 +24,11 @@ runGitHub("phenoSynth", "katharynduffy")
 ###  Notes to current users:
 We are currently in the process of
 1) Integrating NPN data
-2) Developing a stand-alone PhenoSynth package with the same functionality, simply without the graphical interface
-3) Building a cached data archive for users
+2) Building a cached data archive for users
 
 Please hang in there with us while we get these off the ground and let us know if you have any requests or feedback.
 
 
-The R package has been developed and maintained by [Katharyn Duffy and Kyle Enns for APIS Case 2](https://esto.nasa.gov/files/solicitations/AIST_16/ROSES2016_AIST_A41_awards.html#Jeffrey) since June, 2018.
+The R shiny app has been developed and maintained by [Katharyn Duffy and Kyle Enns for APIS Case 2](https://esto.nasa.gov/files/solicitations/AIST_16/ROSES2016_AIST_A41_awards.html#Jeffrey) since June, 2018.
 
 Most recent release is available from: https://github.com/katharynduffy/phenoSynth

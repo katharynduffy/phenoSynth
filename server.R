@@ -862,7 +862,7 @@ server = function(input, output, session) {
       pixel_df_all_tds = data.frame()
       for (name in td_v6_names){
         pixel_ids = as.vector(sm_pixels@data$ID)
-        dormancy_values = extract(data$td_v6_ncs$Dormancy, sm_pixels)
+        dormancy_values = raster::extract(data$td_v6_ncs$Dormancy, sm_pixels)
         rownames(dormancy_values) = pixel_ids
         for (pixel in pixel_ids){
           dates_at_pixel = as.vector(dormancy_values[pixel,]) + start_date
@@ -885,11 +885,11 @@ server = function(input, output, session) {
         print ('No pixels selected')
         ndvi_p = plot_ly()
       }else{
-        ndvi_under_pixel_tera = extract(data$ndvi_tera_brick, sm_pixels)
-        ndvi_under_pixel_aqua = extract(data$ndvi_aqua_brick, sm_pixels)
+        ndvi_under_pixel_tera = raster::extract(data$ndvi_tera_brick, sm_pixels)
+        ndvi_under_pixel_aqua = raster::extract(data$ndvi_aqua_brick, sm_pixels)
         
-        qc_ndvi_under_pixel_tera = extract(data$ndvi_qc_tera_brick, sm_pixels)
-        qc_ndvi_under_pixel_aqua = extract(data$ndvi_qc_aqua_brick, sm_pixels)
+        qc_ndvi_under_pixel_tera = raster::extract(data$ndvi_qc_tera_brick, sm_pixels)
+        qc_ndvi_under_pixel_aqua = raster::extract(data$ndvi_qc_aqua_brick, sm_pixels)
 
         ndvi_p = plot_ly()
 
@@ -943,11 +943,11 @@ server = function(input, output, session) {
         evi_p = plot_ly()
       }else{
         
-        evi_under_pixel_tera = extract(data$evi_tera_brick, sm_pixels)
-        evi_under_pixel_aqua = extract(data$evi_aqua_brick, sm_pixels)
+        evi_under_pixel_tera = raster::extract(data$evi_tera_brick, sm_pixels)
+        evi_under_pixel_aqua = raster::extract(data$evi_aqua_brick, sm_pixels)
         
-        qc_evi_under_pixel_tera = extract(data$evi_qc_tera_brick, sm_pixels)
-        qc_evi_under_pixel_aqua = extract(data$evi_qc_aqua_brick, sm_pixels)
+        qc_evi_under_pixel_tera = raster::extract(data$evi_qc_tera_brick, sm_pixels)
+        qc_evi_under_pixel_aqua = raster::extract(data$evi_qc_aqua_brick, sm_pixels)
       
         evi_p = plot_ly()
         
