@@ -11,6 +11,7 @@ source('./functions/normalize_ts.R')
 source('./functions/gcc_plot.R')
 source('./functions/npn_gridded_data.R')
 source('./functions/helpers.R')
+source('./functions/phenocam_api.R')
 
 EMAIL_MODE = FALSE
 if (file.exists('./config.R')){
@@ -51,33 +52,18 @@ library(raster)
 library(knitr)
 library(kableExtra)
 library(shinyalert)
+
+# Set knitr table format
 options(knitr.table.format = "html")
+
 print ('Importing Modules and Phenocam site data')
 
-
 # Variables
-
 print ('Grabbing phenocam cameras-api')
-c      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=2000')
-c = c$results
-c_m=c$sitemetadata
-c$sitemetadata=NULL
-cams_=cbind(c, c_m)
-cams_[is.na(cams_)] = 'N'
-cams_[, 2:4] <- sapply(cams_[, 2:4], as.numeric) #changing lat/lon/elev from string values into numeric
-
-print ('Grabbing phenocam rois-api')
-rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
-roi_files = rois$results
-
-idx=is.element(cams_$Sitename, roi_files$site)
-cams_=cams_[idx,]
-
+roi_files = get_phenocam_roi_df()
+cams_     = get_phenocam_camera_df(pc_roi_df = roi_files)
 # All site names from table
 site_names = cams_$Sitename
-
-# Changing blank values in the camera orientation field to 'N' as a default
-cams_$camera_orientation[cams_$camera_orientation == ''] = 'N'
 
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
@@ -88,8 +74,8 @@ pft_abbreviated = c('Water','EN','EB','DN','DB','MF','SH','SH','SV','SV','GR','W
 pft_expanded = c('Water', 'Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
                  'Shrubland', 'Shrubland', 'Woody Savanna', 'Savanna','Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'No Vegetation', 'Unclassified', 'Unclassified' )
 pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded)
-#insert LandSat classes here
-Landsat_Landcover <- read_csv("Landsat.Landcover.csv")
+# Insert LandSat classes here
+Landsat_Landcover = read_csv("Landsat.Landcover.csv")
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
