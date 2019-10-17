@@ -423,6 +423,81 @@ server = function(input, output, session) {
     updateSelectInput(session, 'site', choices = variables$sites)
     show_all_sites(map_ = 'map', data_ = variables$sites_df)
   })
+  
+  # SELECT INPUT
+  # Filter based on Filter Sites dropdown
+  observeEvent(input$filterSites, {
+    variables$filter = input$filterSites
+    print ('Running Filter Sites')
+    if ('All' %in% variables$filter){
+      variables$sites_df = cams_
+    }else{
+      if ('Active' %in% variables$filter){
+        sub = subset(cams_, active == 'TRUE')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
+      }
+      if ('Inactive' %in% variables$filter){
+        sub = subset(cams_, active == 'FALSE')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
+        
+      }
+      if ('Type1' %in% variables$filter){
+        sub = subset(cams_, site_type == 'I')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
+      }
+      if ('Type2' %in% variables$filter){
+        sub = subset(cams_, site_type == 'II')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
+      }
+      if ('Type3' %in% variables$filter){
+        sub = subset(cams_, site_type == 'III')
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
+      }
+      if ('NEON' %in% variables$filter){
+        sub = subset(cams_, group == 'NEON' | group == "NEON AMERIFLUX" | group == "NEON LTAR LTER AMERIFLUX")
+        if (dim(sub)[1]==0){
+          updateSelectInput(session, 'filterSites', selected = 'All')
+          updateSelectInput(session, 'site', choices = cams_$Sitename)
+        }else {
+          variables$sites_df = sub
+          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+        }
+      }
+    }
+    variables$sites = variables$sites_df$Sitename
+    updateSelectInput(session, 'site', choices = variables$sites)
+    show_all_sites(map_ = 'map', data_ = variables$sites_df)
+  })
 
 
   # BUTTON
@@ -567,6 +642,7 @@ server = function(input, output, session) {
 
   # Button switches to Analyzer Mode
   observeEvent(input$analyzerMode,{
+    withBusyIndicatorServer("analyzerMode", {
     panel$mode = 'analyzer'
     site       = input$site
     site_data  = get_site_info(site)
@@ -707,7 +783,8 @@ server = function(input, output, session) {
                          position = c("topleft"), 
                          options = layersControlOptions(collapsed = FALSE))
     }
-  })
+    }) # End busy indicator
+  }) # End analyzerMode Observer
 
   # When ROI Vegetation type changes re-plot highlighted veg type, change roi mask to overlay, and 
   #  the csv data to import form phenocam API

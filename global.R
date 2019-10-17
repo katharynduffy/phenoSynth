@@ -10,6 +10,7 @@ source('./functions/transition_dates.R')
 source('./functions/normalize_ts.R')
 source('./functions/gcc_plot.R')
 source('./functions/npn_gridded_data.R')
+source('./functions/helpers.R')
 
 EMAIL_MODE = FALSE
 if (file.exists('./config.R')){
@@ -49,6 +50,7 @@ library(plotly)
 library(raster)
 library(knitr)
 library(kableExtra)
+library(shinyalert)
 options(knitr.table.format = "html")
 print ('Importing Modules and Phenocam site data')
 
