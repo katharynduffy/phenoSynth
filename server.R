@@ -1814,12 +1814,6 @@ server = function(input, output, session) {
     print (data$layers_df)
   }) #END GET DATA OBSERVER
   
-  # Observer for download data button
-  observeEvent(input$downloadDataButton, {
-    print ('Download button')
-  })
-
-  
   # Observer for the popup
   observeEvent(input$plotRemoteData, {
     shinyjs::hide(id = 'noPixelWarning')
@@ -1855,12 +1849,29 @@ server = function(input, output, session) {
     }
   })
 
-  output$downloadDataButton <- downloadHandler(
+  output$downloadDataButton = downloadHandler(
     filename = function() {
-      paste0(input$site, '_data.csv')
+      if (input$dataTypes_download == 'NDVI'){
+        paste0(input$site, '_ndvi_data.csv')
+      } else if (input$dataTypes_download == 'EVI'){
+        paste0(input$site, '_evi_data.csv')
+      }else if (input$dataTypes_download == 'GCC'){
+        paste0(input$site, '_gcc_data.csv')
+      }else if (input$dataTypes_download == 'Transition Dates'){
+        paste0(input$site, '_tds_data.csv')
+      }
     },
     content = function(file) {
-      write.csv(data$all_data, file)
+      if (input$dataTypes_download == 'NDVI'){
+        data = data$ndvi_pixels
+      } else if (input$dataTypes_download == 'EVI'){
+        data = data$evi_pixels
+      }else if (input$dataTypes_download == 'GCC'){
+        data = data.frame()
+      }else if (input$dataTypes_download == 'Transition Dates'){
+        data = data$pixel_df_all_tds
+      }
+      write.csv(data, file)
     }
   )
 

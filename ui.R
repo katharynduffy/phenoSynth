@@ -50,7 +50,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                          "Download Data from Plot", "downloadData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
-                         selectInput('dataTypes_download', 'Data Types',selected = 'All Data', multiple = TRUE, c('All Data', 'Transition Dates', 'EVI', 'NDVI', 'GCC', 'NPN')),
+                         selectInput('dataTypes_download', 'Data Types',selected = 'NDVI', multiple = FALSE, c('Transition Dates', 'EVI', 'NDVI', 'GCC')),
                          downloadButton('downloadDataButton', 'Download'),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}"))
                  ),
