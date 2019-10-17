@@ -391,39 +391,6 @@ server = function(input, output, session) {
     # https://stackoverflow.com/questions/26620373/spatialpolygons-creating-a-set-of-polygons-in-r-from-coordinates
   })
 
-
-  # SELECT INPUT
-  # Filter based on Filter Sites dropdown
-  observeEvent(input$filterSites, {
-    variables$filter = input$filterSites
-    print ('Running Filter Sites')
-    if ('All' %in% variables$filter){
-      variables$sites_df = cams_
-    }else{
-      if ('Active' %in% variables$filter){
-        variables$sites_df = subset(cams_, active == 'True')
-      }
-      if ('Inactive' %in% variables$filter){
-        variables$sites_df = subset(cams_, active == 'False')
-      }
-      if ('Type1' %in% variables$filter){
-        variables$sites_df = subset(cams_, site_type == 'I')
-      }
-      if ('Type2' %in% variables$filter){
-        variables$sites_df = subset(cams_, site_type == 'II')
-      }
-      if ('Type3' %in% variables$filter){
-        variables$sites_df = subset(cams_, site_type == 'III')
-      }
-      if ('NEON' %in% variables$filter){
-        variables$sites_df = subset(cams_, group == 'NEON')
-      }
-    }
-    variables$sites = variables$sites_df$Sitename
-    updateSelectInput(session, 'site', choices = variables$sites)
-    show_all_sites(map_ = 'map', data_ = variables$sites_df)
-  })
-  
   # SELECT INPUT
   # Filter based on Filter Sites dropdown
   observeEvent(input$filterSites, {
