@@ -1,6 +1,6 @@
 # UI file for Shiny App phenoRemote
 # Initiate the UI
-ui = fluidPage(shinyjs::useShinyjs(),useShinyalert(), includeCSS("./Aesthetics/styles.css"),
+ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/styles.css"),
                mainPanel(
                  img(src='phenoSynth.png', id = 'phenoSynthLogo'),
                  bsModalNoClose("curatedDataLogin", "CuratedDataLogin",

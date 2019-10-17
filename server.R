@@ -44,13 +44,6 @@ server = function(input, output, session) {
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
                                                               data=data.frame()))
-
-  # output$phenoTable <- function() {
-  #     cams_ %>%
-  #     kable() %>%
-  #     kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
-  #                   scroll_box(height='100%', width = '100%')
-  # }
   output$phenoTable = DT::renderDataTable(
         cams_ ,
         filter = 'top',
@@ -127,51 +120,18 @@ server = function(input, output, session) {
       lng_merc = pt_merc@coords[1]
       paste0("Lat: ", input$hover_coordinates[1],
              "\nLng: ", input$hover_coordinates[2]#,
-             # "\nsin Lat: ", lat_sin,
-             # "\nsin Lon: ", lng_sin,
-             # "\nmerc Lat: ", lat_merc,
-             # "\nmerc Lon: ", lng_merc
              )
     }
   })
 
   # Open landing page and initialze application
   observe({ 
-    # showModal(tags$div(id = 'frontPage', modalDialog(
-    #   fade = FALSE,
-    #   tags$div(id = 'row1'),
-    #   h1('Welcome to the Curated Data Phenosynth '),
-    #   fluidRow(
-    #     column(6, align='center', offset = 3,
-    #             h4('This is a test branch of Phenosynth that uses a Curated Dataset created by AppEEARS to compare data extraction methods. Login Below.')),
-    #     tags$div(id = 'curatedLoginPage',
-    #       fluidRow(
-    #         column(12, align="center", offset = 0,
-    #           textInput('curatedUsername', 'Username', placeholder = '<username to earthdata>'),
-    #           passwordInput('curatedPassword', 'Password', placeholder = '<password to earthdata>'),
-    #           actionButton('curatedLoginButton', 'Login'),
-    #           tags$style(type='text/css', "#curatedLoginPage {vertical-align: middle; height: 50px; width: 50%; font-size: 15px; margin-left: 25%;}"),
-    #           tags$style(type='text/css', "#curatedUsername {height: 40px; width: 90%; margin-bottom: 8px;}"),
-    #           tags$style(type='text/css', "#curatedPassword {height: 40px; width: 90%; margin-bottom: 8px;}"),
-    #           tags$style(type='text/css', "#frontPage .modal-footer{ display:none; background-color: grey; border: grey; height:20%; text-align: center;}"))
-    #       )),
-    #     br(),
-    #     br(),
-    #     column(6, align='center', offset = 3,
-    #       p('PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.'),
-    #       p('Once you have your choices pop up in the input above, press the button below to enter into the Shiny Application Interface')
-    #     ))
-    #   # fluidRow(
-    #   #   img(src='phenoSynth.png')),
-    # )))
-    
     if (EMAIL_MODE == FALSE){
       shinyjs::hide(id = 'emailShp')
     }
     
     switch_to_explorer_panel()
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     panel$mode = 'explorer'
@@ -253,7 +213,6 @@ server = function(input, output, session) {
             add_headers(c('Authorization' = paste0('Bearer ', data$token),
               'Accept'        = 'application/x-netcdf4',
               'Cache-Control' = 'no-cache')))
-          # print (response_)
           
           # Write out binary to a file
           binary_content = content(response_)
@@ -261,8 +220,8 @@ server = function(input, output, session) {
           writeBin(binary_content, ff)
           close(ff)
           end_time = Sys.time()
-          times = c(times, (end_time - start_time))
-          print (end_time - start_time)
+          times = c(times, difftime(end_time, start_time, units='secs'))
+          print (times)
           
           file.remove(local_file)
         }
@@ -288,7 +247,7 @@ server = function(input, output, session) {
         ndvi_bundle_df_tera = download_bundle_file(ndvi_task$task_id, data_dir)
         end_time  = Sys.time()
         print (end_time - start_time)
-        ap_times = c(ap_times, (end_time - start_time))
+        ap_times = c(ap_times, difftime(end_time, start_time, units='secs'))
       }
       ap_sum_list = as.data.frame(list(list('type' = 'appeears', 'local_file' = data_dir, 'times' = ap_times, 'average' = sum(ap_times)/efforts)))
       if (dim(sum_df)[1] == 0){
@@ -890,10 +849,7 @@ server = function(input, output, session) {
       pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
       data$lat_merc = pt_merc@coords[2]
       data$lng_merc = pt_merc@coords[1]
-      
-      # cropped_landcover_v6_sinu = crop_raster(lat_ = data$lat_sin, lon_ = data$lng_sin , r_ = global_r, height = 10000, width = 10000, crs_str = sinu_crs)
-      # cropped_landcover_v6_merc = projectRaster(from = cropped_landcover_v6_sinu, crs = merc_crs, method='ngb', res = 463.312716527775)
-      # cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs)
+
       data$r_landcover = crop_raster(data$lat_merc, data$lng_merc, lc_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
@@ -928,7 +884,6 @@ server = function(input, output, session) {
     if (panel$mode == 'analyzer'){
         # Change vegetation cover agreement to match selected ROI in pftSelection
         print ('Running pft Selection')
-        # global_r   = raster::raster(data$global_pth)
         site       = input$site
         site_data  = get_site_info(site)
         pft        = input$pftSelection
@@ -937,7 +892,6 @@ server = function(input, output, session) {
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
         pft_abbr = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
         data$pft_abbr = pft_abbr
-        # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
         print (as.numeric(pft_key))
         c3 = build_pft_palette(data$r_landcover)
         rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
@@ -975,9 +929,6 @@ server = function(input, output, session) {
     shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
     
     # Selected pixels
-    # sm_pixels = data$pixel_sps_250m
-    # print (sm_pixels)
-    
     sm_pixels = data$midcell_pixel_sin
     
     # Empty dataframes to use for plotting
@@ -1023,10 +974,6 @@ server = function(input, output, session) {
         data$pixel_df_table,
         filter = 'top',
         options = list(autoWidth = TRUE, scrollY = TRUE))
-        # subset(data$pixel_df, data$pixel_df$Type == '250m') %>% 
-        #   select(Site, Pixel, Type, Lat, Lon),
-        # filter = 'top',
-        # options = list(autoWidth = TRUE, scrollY = TRUE))
     }
     
     
@@ -1042,28 +989,16 @@ server = function(input, output, session) {
                        phenocam$gcc_all[[pft_abbr]]$spring, 
                        phenocam$gcc_all[[pft_abbr]]$fall)
       data$gcc_p = gcc_p
-        
-      # gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
-      # data$gcc_p = gcc_p
       }) #END WITH PROGRESS BAR
     } #END GCC PLOT
     
     # ------------------PLOT NPN------------------------------------
     if ('NPN' %in% selected_data){
       print ('Plotting NPN')
-      ############################
-      # Add the NPN data into the 
-      # Dataframe which has all 
-      # of the selected pixels
-      # and all their corresponding 
-      # data
-      ############################
     } #END NPN PLOT
     
     # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
     if ('Transition Dates' %in% selected_data){
-      # withProgress(message = 'Compiling Transition Dates', value = .1, {
-      # Extracting lat/lng values for selected 250m or 500m pixels
       data$tds_path
       data$tds_nc
       
@@ -1085,13 +1020,10 @@ server = function(input, output, session) {
       }
       data$pixel_df_all_tds = pixel_df_all_tds
       as_tibble(pixel_df_all_tds)
-
-      # }) #END WITH PROGRESS BAR
     } # END TRANSITION DATE EXTRATION FOR PIXELS
     
     # ------------------PLOT NDVI------------------------------------
     if ('NDVI' %in% selected_data){
-      # withProgress(message = 'Building NDVI Plot', value = .4, {
       print ('Plotting NDVI')
     
       if (is.null(sm_pixels@coords[1][[1]])){
@@ -1143,7 +1075,6 @@ server = function(input, output, session) {
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
       }
-        # })# END WITH PROGRESS BAR
       } #END NDVI PLOT
     
     # ------------------PLOT EVI------------------------------------
@@ -1226,35 +1157,6 @@ server = function(input, output, session) {
     # rownames(ndvi_pixel_data_df) = NULL
     print (as_tibble(sd))
     
-    # if ('Transition Dates' %in% selected_data){
-    #   if ('tds_sat' %in% selected_plots){
-    #     OGMa = data$OGMa
-    #     OGMi = data$OGMi
-    #     OGI  = data$OGI
-    #     OGD  = data$OGD
-    #     
-    #     clean_OGMa = OGMa %>%
-    #       subset(OGMa$pixel %in% sd$Pixel) %>%
-    #       mutate(pixel = paste0('TD_OGMa_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date) 
-    #     clean_OGMi = OGMi %>%
-    #       subset(OGMi$pixel %in% sd$Pixel)%>%
-    #       mutate(pixel = paste0('TD_OGMi_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date) 
-    #     clean_OGI = OGI %>%
-    #       subset(OGI$pixel %in% sd$Pixel)%>%
-    #       mutate(pixel = paste0('TD_OGI_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date) 
-    #     clean_OGD = OGD %>%
-    #       subset(OGD$pixel %in% sd$Pixel)%>%
-    #       mutate(pixel = paste0('TD_OGD_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date) 
-    #   }}
-    
     if ('NDVI' %in% selected_data){
       # NDVI HIGH QUALITY
       ndvi_pixel_data_df = data$ndvi_pixels
@@ -1327,56 +1229,6 @@ server = function(input, output, session) {
             showlegend = TRUE
           )%>%layout(xaxis = list(title = "Date"))
         
-        # if ('Transition Dates' %in% selected_data){
-        #   if ('tds_sat' %in% selected_plots){
-        #         
-        #         p_ndvi_raw = p_ndvi_raw %>%
-        #           add_markers(data = clean_OGMa,
-        #                       inherit = FALSE,
-        #                       x = ~Date,
-        #                       y = ~value,
-        #                       name = ~pixel,
-        #                       type = "scatter",
-        #                       mode = 'markers',
-        #                       marker = list(color = 'green', size= 10, symbol=2),
-        #                       showlegend = TRUE,
-        #                       text = ~paste("Date: ", Date,
-        #                                     '<br>Pixel: ', pixel,
-        #                                     '<br>Data: Onset Greenness Maximum')) %>%
-        #           add_trace(data = clean_OGMi,
-        #                     x = ~Date,
-        #                     y = ~value,
-        #                     name = ~pixel,
-        #                     type = "scatter",
-        #                     mode = 'markers',
-        #                     marker = list(color = 'brown', size= 10, symbol=25),
-        #                     showlegend = TRUE,
-        #                     text = ~paste("Date: ", Date,
-        #                                   '<br>Pixel: ', pixel,
-        #                                   '<br>Data: Onset Greenness Minimum')) %>%
-        #           add_trace(data = clean_OGI,
-        #                     x = ~Date,
-        #                     y = .5,
-        #                     name = ~pixel,
-        #                     type = "scatter",
-        #                     mode = 'markers',
-        #                     marker = list(color ='green', size= 10, symbol=5),
-        #                     showlegend = TRUE,
-        #                     text = ~paste("Date: ", Date,
-        #                                   '<br>Pixel: ', pixel,
-        #                                   '<br>Data: Onset Greenness Increase')) %>%
-        #           add_trace(data = clean_OGD,
-        #                     x = ~Date,
-        #                     y = .5,
-        #                     name = ~pixel,
-        #                     type = "scatter",
-        #                     mode = 'markers',
-        #                     marker = list(color ='orange', size= 10, symbol=6),
-        #                     showlegend = TRUE,
-        #                     text = ~paste("Date: ", Date,
-        #                                   '<br>Pixel: ', pixel,
-        #                                   '<br>Data: Onset Greenness Decrease'))
-        #   }}
         p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
                                        x_title_ = 'NDVI (All data)',
                                        y_title_ = 'NDVI value')
@@ -1454,56 +1306,6 @@ server = function(input, output, session) {
             showlegend = TRUE
           ) %>% layout(xaxis = list(title = "Date"))
             
-        # if ('Transition Dates' %in% selected_data){
-        #   if ('tds_sat' %in% selected_plots){
-        #     p_evi_raw = p_evi_raw %>%
-        #       add_markers(data = clean_OGMa,
-        #                 inherit = FALSE,
-        #                 x = ~Date,
-        #                 y = ~value,
-        #                 name = ~pixel,
-        #                 type = "scatter",
-        #                 mode = 'markers',
-        #                 marker = list(color = 'green', size= 10, symbol=2),
-        #                 showlegend = TRUE,
-        #                 text = ~paste("Date: ", Date,
-        #                               '<br>Pixel: ', pixel,
-        #                               '<br>Data: Onset Greenness Maximum')) %>%
-        #       add_trace(data = clean_OGMi,
-        #                 x = ~Date,
-        #                 y = ~value,
-        #                 name = ~pixel,
-        #                 type = "scatter",
-        #                 mode = 'markers',
-        #                 marker = list(color = 'brown', size= 10, symbol=25),
-        #                 showlegend = TRUE,
-        #                 text = ~paste("Date: ", Date,
-        #                               '<br>Pixel: ', pixel,
-        #                               '<br>Data: Onset Greenness Minimum')) %>%
-        #       add_trace(data = clean_OGI,
-        #                 x = ~Date,
-        #                 y = .4,
-        #                 name = ~pixel,
-        #                 type = "scatter",
-        #                 mode = 'markers',
-        #                 marker = list(color ='green', size= 10, symbol=5),
-        #                 showlegend = TRUE,
-        #                 text = ~paste("Date: ", Date,
-        #                               '<br>Pixel: ', pixel,
-        #                               '<br>Data: Onset Greenness Increase')) %>%
-        #       add_trace(data = clean_OGD,
-        #                 x = ~Date,
-        #                 y = .4,
-        #                 name = ~pixel,
-        #                 type = "scatter",
-        #                 mode = 'markers',
-        #                 marker = list(color ='orange', size= 10, symbol=6),
-        #                 showlegend = TRUE,
-        #                 text = ~paste("Date: ", Date,
-        #                               '<br>Pixel: ', pixel,
-        #                               '<br>Data: Onset Greenness Decrease'))
-        #   }}
-            
         p_evi_raw = add_title_to_plot(df = p_evi_raw,
                                       x_title_ = 'EVI (All data)',
                                       y_title_ = 'EVI value')
@@ -1524,9 +1326,6 @@ server = function(input, output, session) {
     if ('tds_sat' %in% selected_plots){
       vector_length = vector_length - 1
     }
-    # if('tds_npn' %in% selected_plots){
-    #   vector_length = vector_length - 1
-    # }
   
     plot_list = vector('list', vector_length)
     count = 0
@@ -1725,21 +1524,6 @@ server = function(input, output, session) {
       }) #END WITH PROGRESS BAR
     } #END IMPORT NPN
 
-    
-    # Download NDVI from Curated Dataset API ---------------------------------
-    if ('Curated Dataset' %in% selected_data){
-      
-      # Steps
-      # 1. Login to curated dataset with username/password - ui Popup
-      
-      # 2. Download the data using the 3 different methods - time it (Sys.time())
-      
-      # 3. Show stats on the UI - ui Popup as well
-      
-      
-      
-    } #END IMPORT CURATED NDVI
-
       # Import [NDVI] 
       #------------------------------------------------------------------------
     if ('NDVI' %in% selected_data){
@@ -1861,7 +1645,6 @@ server = function(input, output, session) {
     #   # Import [EVI] netcdf(evi) and csv(qa)
     #   #------------------------------------------------------------------------
     if ('EVI' %in% selected_data){
-      # withProgress(message = 'Importing EVI', value = .4, {
       print ('Importing EVI')
         
       appeears$evi_aqua = get_appeears_task(site, type = 'evi_aqua')
@@ -1931,7 +1714,6 @@ server = function(input, output, session) {
         
         shinyjs::show(id = 'plotRemoteData')
       }
-      # }) #END WITH PROGRESS BAR
     } #END IMPORT EVI
     
 
@@ -2249,7 +2031,7 @@ server = function(input, output, session) {
       j = info$col
       v = info$value
       x[i, j] <<- DT::coerceValue(v, x[i, j])
-      replaceData(proxy, x, resetPaging = FALSE)  # important
+      replaceData(proxy, x, resetPaging = FALSE)
     })
   }
 }
