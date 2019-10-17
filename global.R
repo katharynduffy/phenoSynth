@@ -27,7 +27,7 @@ library(scales)
 library(lattice)
 library(shinyjs)
 library(shinyBS)
-library(leaflet.extras) #
+library(leaflet.extras)
 library(sp)
 library(ncdf4)
 library(rvest)
@@ -80,9 +80,6 @@ cams_$camera_orientation[cams_$camera_orientation == ''] = 'N'
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
-image_sizes_h = list('Small' = 150, 'Medium' = 300, 'Large' = 600)
-image_sizes_w = list('Small' = 250, 'Medium' = 500, 'Large' = 1000)
-
 
 pft_key = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,254,255)
 pft_abbreviated = c('Water','EN','EB','DN','DB','MF','SH','SH','SV','SV','GR','WL','AG','UB','MX','TN','UN','NAN','NAN')
@@ -101,18 +98,6 @@ appeears_tasks_evi_tera  = readRDS(file = './www/cache_df_evi_tera.df')
 appeears_tasks_evi_aqua  = readRDS(file = './www/cache_df_evi_aqua.df')
 appeears_tasks_tds       = readRDS(file = './www/cache_df_tds.df')
 appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
-
-# check differences between the landcover and all other cached data.
-setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_ndvi_tera$task_name, '_NDVI_v6_tera_sinu')))
-setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_ndvi_aqua$task_name, '_NDVI_v6_aqua_sinu')))
-setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_evi_tera$task_name, '_EVI_v6_tera_sinu')))
-setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_evi_aqua$task_name, '_EVI_v6_aqua_sinu')))
-setdiff(as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')), as.character(strsplit(appeears_tasks_tds$task_name, '_TDs_v6')))
-
-# Sites with data
-sites_with_data = as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6'))
-cams_ = cams_[match(sites_with_data, cams_$Sitename),]
-cams_ = cams_[seq(dim(cams_)[1],1),]
 
 # AppEEARS products page: https://lpdaacsvc.cr.usgs.gov/appeears/products
 
