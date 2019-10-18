@@ -162,14 +162,6 @@ server = function(input, output, session) {
     }
   })
   
-  # observeEvent(input$map_draw_stop, {
-  #   print ('Map Draw Stop')
-  #   if (data$select_pixel_mode_was_on == TRUE){
-  #     updateCheckboxInput(session, 'highlightPixelModeNDVI', value=TRUE)
-  #   }
-  # })
-  
-
   # Clears plot
   observeEvent(input$clearPlot, {
     output$ndvi_pixels_plot = renderPlot({
@@ -644,7 +636,6 @@ server = function(input, output, session) {
     lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t))
     # lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)*2)
     
-    
     veg_types  = c()
     print ('Switching to Analyze Mode')
     zoom_to_site(site, site_data, TRUE, cams_, input$drawROI, zoom_value = 14)
@@ -664,7 +655,6 @@ server = function(input, output, session) {
         veg.idx   = is.element(pft_df$pft_abbreviated, veg_match$roitype[i])
         veg       = pft_df$pft_expanded[veg.idx]
         add_veg   = as.character(veg[1])
-        # veg_types = c(veg_types, paste0(add_veg, '_', i))
         veg_types = c(veg_types, add_veg)
       }
       veg_types = unique(veg_types)
@@ -682,9 +672,6 @@ server = function(input, output, session) {
       data$lat_merc = pt_merc@coords[2]
       data$lng_merc = pt_merc@coords[1]
       
-      # cropped_landcover_v6_sinu = crop_raster(lat_ = data$lat_sin, lon_ = data$lng_sin , r_ = global_r, height = 10000, width = 10000, crs_str = sinu_crs)
-      # cropped_landcover_v6_merc = projectRaster(from = cropped_landcover_v6_sinu, crs = merc_crs, method='ngb', res = 463.312716527775)
-      # cropped_landcover_v6_merc_box = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = cropped_landcover_v6_merc, height = 15000, width = 15000, crs_str = merc_crs)
       data$r_landcover = crop_raster(data$lat_merc, data$lng_merc, lc_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
@@ -799,7 +786,6 @@ server = function(input, output, session) {
                              choices  = plot_choices,
                              selected = plot_selected,
                              inline   = TRUE)
-    
     
     print (paste0('Plotting: ', selected_data))
     
