@@ -122,7 +122,7 @@ server = function(input, output, session) {
     }
     
     switch_to_explorer_panel()
-    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "lat", 'lon', 'pft'))
     data$pixel_sps_250m = SpatialPolygons(list())
     data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     panel$mode = 'explorer'
@@ -356,20 +356,20 @@ server = function(input, output, session) {
         sub = subset(cams_, active == 'TRUE')
         if (dim(sub)[1]==0){
           updateSelectInput(session, 'filterSites', selected = 'All')
-          updateSelectInput(session, 'site', choices = cams_$Sitename)
+          updateSelectInput(session, 'site', choices = cams_$site)
         }else {
           variables$sites_df = sub
-          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+          updateSelectInput(session, 'site', choices = variables$sites_df$site)
         }
       }
       if ('Inactive' %in% variables$filter){
         sub = subset(cams_, active == 'FALSE')
         if (dim(sub)[1]==0){
           updateSelectInput(session, 'filterSites', selected = 'All')
-          updateSelectInput(session, 'site', choices = cams_$Sitename)
+          updateSelectInput(session, 'site', choices = cams_$site)
         }else {
           variables$sites_df = sub
-          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+          updateSelectInput(session, 'site', choices = variables$sites_df$site)
         }
         
       }
@@ -377,44 +377,44 @@ server = function(input, output, session) {
         sub = subset(cams_, site_type == 'I')
         if (dim(sub)[1]==0){
           updateSelectInput(session, 'filterSites', selected = 'All')
-          updateSelectInput(session, 'site', choices = cams_$Sitename)
+          updateSelectInput(session, 'site', choices = cams_$site)
         }else {
           variables$sites_df = sub
-          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+          updateSelectInput(session, 'site', choices = variables$sites_df$site)
         }
       }
       if ('Type2' %in% variables$filter){
         sub = subset(cams_, site_type == 'II')
         if (dim(sub)[1]==0){
           updateSelectInput(session, 'filterSites', selected = 'All')
-          updateSelectInput(session, 'site', choices = cams_$Sitename)
+          updateSelectInput(session, 'site', choices = cams_$site)
         }else {
           variables$sites_df = sub
-          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+          updateSelectInput(session, 'site', choices = variables$sites_df$site)
         }
       }
       if ('Type3' %in% variables$filter){
         sub = subset(cams_, site_type == 'III')
         if (dim(sub)[1]==0){
           updateSelectInput(session, 'filterSites', selected = 'All')
-          updateSelectInput(session, 'site', choices = cams_$Sitename)
+          updateSelectInput(session, 'site', choices = cams_$site)
         }else {
           variables$sites_df = sub
-          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+          updateSelectInput(session, 'site', choices = variables$sites_df$site)
         }
       }
       if ('NEON' %in% variables$filter){
         sub = subset(cams_, group == 'NEON' | group == "NEON AMERIFLUX" | group == "NEON LTAR LTER AMERIFLUX")
         if (dim(sub)[1]==0){
           updateSelectInput(session, 'filterSites', selected = 'All')
-          updateSelectInput(session, 'site', choices = cams_$Sitename)
+          updateSelectInput(session, 'site', choices = cams_$site)
         }else {
           variables$sites_df = sub
-          updateSelectInput(session, 'site', choices = variables$sites_df$Sitename)
+          updateSelectInput(session, 'site', choices = variables$sites_df$site)
         }
       }
     }
-    variables$sites = variables$sites_df$Sitename
+    variables$sites = variables$sites_df$site
     updateSelectInput(session, 'site', choices = variables$sites)
     show_all_sites(map_ = 'map', data_ = variables$sites_df)
   })
@@ -509,11 +509,11 @@ server = function(input, output, session) {
     leafletProxy("map", data = variables$sites_df) %>% clearPopups()
 
     site = event$id
-    lat             = site_data$Lat
-    lon             = site_data$Lon
+    lat             = site_data$lat
+    lon             = site_data$lon
     description     = site_data$site_description
     elevation       = site_data$Elev
-    camera          = site_data$Sitename
+    camera          = site_data$site
     site_type       = site_data$site_type
     cam_orientation = as.character(site_data$camera_orientation)
     degrees         = as.numeric(orientation_key[cam_orientation])
@@ -661,8 +661,8 @@ server = function(input, output, session) {
       data$veg_types = veg_types
 
       # Building Landcover layer and color pallette for specific pft composition in clipped raster
-      lat_wgs = site_data$Lat
-      lng_wgs = site_data$Lon
+      lat_wgs = site_data$lat
+      lng_wgs = site_data$lon
       # from wgs to sinusoidal
       pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
       data$lat_sin = pt_sinu@coords[2]
@@ -742,7 +742,7 @@ server = function(input, output, session) {
     panel$mode = 'explorer'
     updateCheckboxInput(session, inputId = 'drawROI', value=FALSE)
     switch_to_explorer_panel()
-    data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df       = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "lat", 'lon', 'pft'))
     data$pixel_sps_250m = SpatialPolygons(list())
     data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
   })
@@ -1280,7 +1280,7 @@ server = function(input, output, session) {
     variables$color_list = c()
     variables$color_list_reserve = rainbow(20)
     
-    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
+    data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "lat", 'lon', 'pft'))
     data$pixel_sps_250m = SpatialPolygons(list())
     data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     shinyjs::hide(id = 'clearPixels')
@@ -1866,7 +1866,7 @@ server = function(input, output, session) {
 
   # Get specific site data and returns lon/lat/camera/description/elevation
   get_site_info = function(site_name){
-    site_data = subset(cams_, Sitename == site_name)
+    site_data = subset(cams_, site == site_name)
     return (site_data)
   }
 

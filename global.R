@@ -63,7 +63,7 @@ print ('Importing Modules and Phenocam site data')
 roi_files = get_phenocam_roi_df()
 cams_     = get_phenocam_camera_df(pc_roi_df = roi_files)
 # All site names from table
-site_names = cams_$Sitename
+site_names = cams_$site
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
