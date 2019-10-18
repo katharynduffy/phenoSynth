@@ -1,4 +1,6 @@
 # Global file for Shiny App
+
+# Import Local Functions
 source('install.R')
 source('./functions/geospatial.R')
 source('./functions/basic.R')
@@ -20,8 +22,8 @@ if (file.exists('./config.R')){
 }
 
 # Libraries
-library(shiny)          # Provides web framework for building web applications
-library(leaflet)        #
+library(shiny)    
+library(leaflet)      
 library(dplyr)
 library(readr)
 library(RColorBrewer)
@@ -57,14 +59,11 @@ library(shinyalert)
 options(knitr.table.format = "html")
 
 print ('Importing Modules and Phenocam site data')
-
 # Variables
-print ('Grabbing phenocam cameras-api')
 roi_files = get_phenocam_roi_df()
 cams_     = get_phenocam_camera_df(pc_roi_df = roi_files)
 # All site names from table
 site_names = cams_$Sitename
-
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
@@ -79,7 +78,7 @@ Landsat_Landcover = read_csv("Landsat.Landcover.csv")
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
-# Load in dataframes with evi/ndvi for aqua and tera modis data
+# Load in AppEEARS lookup dataframes for all data types
 appeears_tasks_ndvi_tera = readRDS(file = './www/cache_df_ndvi_tera.df')
 appeears_tasks_ndvi_aqua = readRDS(file = './www/cache_df_ndvi_aqua.df')
 appeears_tasks_evi_tera  = readRDS(file = './www/cache_df_evi_tera.df')
