@@ -873,7 +873,7 @@ server = function(input, output, session) {
                        phenocam$gcc_all[[pft_abbr]]$spring, 
                        phenocam$gcc_all[[pft_abbr]]$fall)
       data$gcc_p = gcc_p
-        
+      
       # gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
       # data$gcc_p = gcc_p
       }) #END WITH PROGRESS BAR
@@ -1763,7 +1763,7 @@ server = function(input, output, session) {
         fall_filepath   = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_fall_tds'), '.csv')
         
         if (file.exists(gcc_filepath)){
-          print ('Will import GCC on fly when plotting!')
+          print ('Will import GCC on fly when plotting')
           setProgress(value = .2, detail = 'Importing GCC CSV')
           phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
           phenocam$spring = read.csv(spring_filepath, header = TRUE)
@@ -1867,11 +1867,11 @@ server = function(input, output, session) {
       } else if (input$dataTypes_download == 'EVI'){
         data = data$evi_pixels
       }else if (input$dataTypes_download == 'GCC'){
-        data = data.frame()
+        data = phenocam$gcc
       }else if (input$dataTypes_download == 'Transition Dates'){
         data = data$pixel_df_all_tds
       }
-      write.csv(data, file)
+      write.csv(data, file, row.names = FALSE)
     }
   )
 
