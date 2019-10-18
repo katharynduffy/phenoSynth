@@ -1,18 +1,7 @@
 
 get_phenocam_camera_df = function(pc_roi_df){
-  #get_phenocam_camera_df = function(limit = 2000, pc_roi_df){
-  #limit = 2000
-  #c      = jsonlite::fromJSON(paste0('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=',limit))
-  # Grab results
-  #c = c$results
-  # Grab nested metadata from results
-  #c_m = c$sitemetadata
-  # Bind the two dataframes together
-  #c$sitemetadata=NULL
-  #cams = cbind(c, c_m)
-  # Changing lat/lon/elev from string values into numeric
-  #cams[, 2:4] = sapply(cams[, 2:4], as.numeric) 
-  cams=phenocamapi::get_phenos()
+  # Use the phenocamapi package to pull in the phenocams data
+  cams = phenocamapi::get_phenos()
   # Changing blank values in the camera orientation field to 'N' as a default
   cams$camera_orientation[cams$camera_orientation == ''] = 'N'
   
