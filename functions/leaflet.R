@@ -8,7 +8,7 @@
 show_all_sites = function(map_, data_){
   leafletProxy(map_, data = data_) %>%
     clearMarkers() %>%
-    addCircleMarkers(~Lon, ~Lat, label=~Sitename, layerId=~Sitename, 
+    addCircleMarkers(~lon, ~lat, label=~site, layerId=~site, 
                      labelOptions = labelOptions(noHide = F, direction = "bottom", 
                                                  style = get_marker_style()), 
                      opacity = .80, fillColor = get_color(data_), color = get_color(data_),
@@ -124,13 +124,13 @@ get_marker_style = function(){
 zoom_to_site = function(site_, site_data_, zoom_, data_, draw_ = NULL, map_ = 'map', zoom_value = 13){
   description        = site_data_$site_description
   camera_orientation = site_data_$camera_orientation
-  lat                = site_data_$Lat
-  lon                = site_data_$Lon
+  lat                = site_data_$lat
+  lon                = site_data_$lon
   cam_orientation    = as.character(site_data_$camera_orientation)
   
   degrees   = as.numeric(orientation_key[cam_orientation])
-  elevation = site_data_$Elev
-  camera    = site_data_$Sitename
+  elevation = site_data_$elev
+  camera    = site_data_$site
   drawROI   = FALSE
   
   if (zoom_ == TRUE){

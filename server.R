@@ -106,7 +106,7 @@ server = function(input, output, session) {
     })
 
   # Adds the mouse lat / lon to an output (we can change this to anything)
-  output$mouse <- renderText({
+  output$mouse = renderText({
     if(is.null(input$hover_coordinates)) {
       "Mouse outside of map"
     } else {
