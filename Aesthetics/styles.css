@@ -1,19 +1,11 @@
-/*input[type="number"] {
-  max-width: 80%;
-}*/
 
-/*.leaflet-popup-content {
-  width:280px;
-}
-
-
-/* position of phenocam metadata tab */
+/* Position of phenocam metadata tab */
 #phenoTable{
   margin-top:60px;
   padding: 0px 40px;
 }
 
-/* user created polygon tab */
+/* User created polygon tab */
 #pAOItab{
   margin-top:60px;
   padding: 0px 40px;
@@ -23,17 +15,15 @@
   border-color:white;
 }
 
-
+/* plots in plot tab */
 #plotTheseBoxes{
   margin-top: 55px;
   margin-left: 30px;
 }
-
 #plotTheseBoxes h4{
   height: 30px;
   margin-bottom: 5px;
 }
-
 
 /* PhenoSynth LOGO */
 #phenoSynthLogo{
@@ -44,7 +34,7 @@
   z-index:2000;
 }
 
-/*SETTING STANDARD WIDTH OF UNDERLYING ELEMENTS TO 100% WIDTH AND HEIGHT*/
+/* Setting standard width of underlying elements to 100% width and height */
 html, body, .col-sm-8, .tab-content, .tab-pane {
   width:100%;
   height:100%;
@@ -55,37 +45,35 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   height:100%;
   padding: 0px;
 }
-/**/
 
+/* Plot table in plot panel */
 #plotTable{
   padding: 0px 40px;
 }
+
+/* Download data button in plot panel */
 #downloadData {
   margin-left:20px;
   margin-right:20px;
 }
 
-/*Change Padding for header*/
+/* Change Padding for header */
 .navbar-header{
   padding-left:5%;
 }
-
 .plot-container.plotly{
   margin-top: 65px;
 }
-
 .navbar.navbar-default.navbar-static-top {
   margin: 0;
   width:100%;
   position:fixed;
 }
-/**/
 
-/*changing height of dataplot*/
+/* Changing height of dataplot */
 #data_plot {
   height: 100%;
 }
-/**/
 
 .leaflet-top.leaflet-left {
   margin-top: 25px;
@@ -96,22 +84,19 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   background-color:grey;
 }
 
-/*Front Page CSS to make BS modal look like a landing page*/
+/* Front Page CSS to make BS modal look like a landing page */
 #frontPage .modal-dialog {
   width: 100%;
   height: 100%;
   margin: 0px 0px 0px 0px;
   background: grey;
 }
-
 #frontPage img {
   width:200px;
 }
-
 #frontPage .modal-content{
   height: 100%;
 }
-
 #frontPage .modal-content .modal-header{
   background-color: grey;
   opacity: .5;
@@ -124,15 +109,12 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   height:80%;
   text-align: center;
 }
-
 #frontPage .modal-content .modal-body h1{
   margin-bottom:30px;
 }
-
 #frontPageData {
   text-align:center;
 }
-
 #frontPage .modal-content .modal-body .form-group{
   background-color:rgba(110, 110, 110, 1.0);
   border: solid;
@@ -140,19 +122,17 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   width: 65%;
   border-radius: 5px;
 }
-
 #frontPage .modal-content .modal-body .form-group div{
   width: 95%;
 }
-
 #frontPage .modal-content .modal-footer{
   background-color: grey;
   border: grey;
   height:20%;
   text-align: center;
 }
-/**/
 
+/* Current image */
 #currentImage, #modisLegend {
   width:375px;
   height:225px;

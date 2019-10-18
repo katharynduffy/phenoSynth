@@ -24,7 +24,6 @@ get_phenocam_camera_df = function(limit = 2000, pc_roi_df){
   return (cams_with_rois)
 }
 
-
 get_phenocam_roi_df = function(limit = 2000){
   print ('Grabbing phenocam rois-api')
   rois      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/roilists/?format=json&limit=2000')
