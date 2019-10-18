@@ -42,13 +42,6 @@ server = function(input, output, session) {
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
                                                               data=data.frame()))
-
-  # output$phenoTable <- function() {
-  #     cams_ %>%
-  #     kable() %>%
-  #     kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
-  #                   scroll_box(height='100%', width = '100%')
-  # }
   output$phenoTable = DT::renderDataTable(
         cams_ ,
         filter = 'top',
@@ -117,51 +110,19 @@ server = function(input, output, session) {
     if(is.null(input$hover_coordinates)) {
       "Mouse outside of map"
     } else {
-      pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = input$hover_coordinates[2], lat_ = input$hover_coordinates[1], from_crs = wgs_crs, to_crs = sinu_crs)
-      lat_sin = pt_sinu@coords[2]
-      lng_sin = pt_sinu@coords[1]
-      pt_merc = from_crs1_to_crs2_lon_lat(lon_ = input$hover_coordinates[2], lat_ = input$hover_coordinates[1], from_crs = wgs_crs, to_crs = merc_crs)
-      lat_merc = pt_merc@coords[2]
-      lng_merc = pt_merc@coords[1]
       paste0("Lat: ", input$hover_coordinates[1],
-             "\nLng: ", input$hover_coordinates[2]#,
-             # "\nsin Lat: ", lat_sin,
-             # "\nsin Lon: ", lng_sin,
-             # "\nmerc Lat: ", lat_merc,
-             # "\nmerc Lon: ", lng_merc
-             )
+             "\nLng: ", input$hover_coordinates[2])
     }
   })
 
   # Open landing page and initialze application
   observe({ 
-    # showModal(tags$div(id = 'frontPage', modalDialog(
-    #   tags$div(id = 'row1'),
-    #   h1('Welcome to Phenosynth'),
-    #   fluidRow(
-    #     column(6, align='center', offset = 3,
-    #            p('PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.'))),
-    #   fluidRow(
-    #     img(src='phenoSynth.png')),
-    #   # tags$div(id = 'frontPageData',
-    #   #          fluidRow(
-    #   #            column(12, align="center", offset = 0,
-    #   #                   selectInput('frontPageDataSelection', 'Choose Your Data (click in box) - Phenocam is always included', multiple = TRUE, 
-    #   #                               c('Modis Ndvi', 'Landsat Phenometrics')),
-    #   #                   tags$style(type='text/css', "#frontPageData { vertical-align: middle; height: 50px; width: 100%; font-size: 15px;}"))
-    #   #          )),
-    #   fluidRow(
-    #     column(4, align='center', offset = 4,
-    #            p('Once you have your choices pop up in the input above, press the button below to enter into the Shiny Application Interface'))),
-    #   footer = modalButton('Enter Phenosynth')
-    # )))
     if (EMAIL_MODE == FALSE){
       shinyjs::hide(id = 'emailShp')
     }
     
     switch_to_explorer_panel()
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "Lat", 'Lon', 'pft'))
-    #data$pixel_sps_500m = SpatialPolygons(list())
     data$pixel_sps_250m = SpatialPolygons(list())
     data$midcell_pixel_sin = SpatialPoints(data.frame(x = 0, y = 0), proj4string=CRS(sinu_crs))[-1,]
     panel$mode = 'explorer'
@@ -759,7 +720,6 @@ server = function(input, output, session) {
     if (panel$mode == 'analyzer'){
         # Change vegetation cover agreement to match selected ROI in pftSelection
         print ('Running pft Selection')
-        # global_r   = raster::raster(data$global_pth)
         site       = input$site
         site_data  = get_site_info(site)
         pft        = input$pftSelection
@@ -768,7 +728,6 @@ server = function(input, output, session) {
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
         pft_abbr = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
         data$pft_abbr = pft_abbr
-        # rc   = crop_raster(site_data$Lat, site_data$Lon, global_r, reclassify=TRUE, primary = as.numeric(pft_key))
         print (as.numeric(pft_key))
         c3 = build_pft_palette(data$r_landcover)
         rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
@@ -803,12 +762,10 @@ server = function(input, output, session) {
 
   # Button that plots selected Data Types
   observeEvent(input$plotDataButton, {
+    withBusyIndicatorServer("plotDataButton", {
     shinyBS::toggleModal(session, 'plotDataPopup', toggle = 'close')
     
     # Selected pixels
-    # sm_pixels = data$pixel_sps_250m
-    # print (sm_pixels)
-    
     sm_pixels = data$midcell_pixel_sin
     
     # Empty dataframes to use for plotting
@@ -837,6 +794,7 @@ server = function(input, output, session) {
       plot_choices[['Transition Dates (EVI/NDVI)']] = 'tds_sat'
       plot_selected = c(plot_selected, 'tds_sat')}
     
+  
     updateCheckboxGroupInput(session, inputId = 'plotTheseBoxes',
                              choices  = plot_choices,
                              selected = plot_selected,
@@ -847,17 +805,15 @@ server = function(input, output, session) {
     
     if (is.null(sm_pixels@coords[1][[1]])){
       output$plotTable <- DT::renderDataTable(
-        data.frame(Empty='empty')
+        data.frame(empty = 'empty'),
+        filter = 'top',
+        options = list(autoWidth = TRUE, scrollY = TRUE)
       )
     }else{
-      output$plotTable <- DT::renderDataTable(
+      output$plotTable = DT::renderDataTable(
         data$pixel_df_table,
         filter = 'top',
         options = list(autoWidth = TRUE, scrollY = TRUE))
-        # subset(data$pixel_df, data$pixel_df$Type == '250m') %>% 
-        #   select(Site, Pixel, Type, Lat, Lon),
-        # filter = 'top',
-        # options = list(autoWidth = TRUE, scrollY = TRUE))
     }
     
     
@@ -873,9 +829,11 @@ server = function(input, output, session) {
                        phenocam$gcc_all[[pft_abbr]]$spring, 
                        phenocam$gcc_all[[pft_abbr]]$fall)
       data$gcc_p = gcc_p
-      
-      # gcc_p = gcc_plot(phenocam$gcc, phenocam$spring, phenocam$fall)
-      # data$gcc_p = gcc_p
+      # Show and switch to plotpanel
+      if (length(selected_data) == 1){
+        shiny::showTab('navbar','PlotPanel')
+        updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+      }
       }) #END WITH PROGRESS BAR
     } #END GCC PLOT
     
@@ -893,7 +851,7 @@ server = function(input, output, session) {
     
     # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
     if ('Transition Dates' %in% selected_data){
-      # withProgress(message = 'Compiling Transition Dates', value = .1, {
+      withProgress(message = 'Compiling Transition Dates', value = .1, {
       # Extracting lat/lng values for selected 250m or 500m pixels
       data$tds_path
       data$tds_nc
@@ -905,6 +863,7 @@ server = function(input, output, session) {
       start_date = as.Date(strsplit(dunits, 'days since ')[[1]][2], format = '%m-%d-%Y')
       pixel_df_all_tds = data.frame()
       for (name in td_v6_names){
+        incProgress(amount = (1/length(td_v6_names)))
         pixel_ids = as.vector(sm_pixels@data$ID)
         dormancy_values = raster::extract(data$td_v6_ncs$Dormancy, sm_pixels)
         rownames(dormancy_values) = pixel_ids
@@ -917,12 +876,12 @@ server = function(input, output, session) {
       data$pixel_df_all_tds = pixel_df_all_tds
       as_tibble(pixel_df_all_tds)
 
-      # }) #END WITH PROGRESS BAR
+      }) #END WITH PROGRESS BAR
     } # END TRANSITION DATE EXTRATION FOR PIXELS
     
     # ------------------PLOT NDVI------------------------------------
     if ('NDVI' %in% selected_data){
-      # withProgress(message = 'Building NDVI Plot', value = .4, {
+      withProgress(message = 'Building NDVI Plot', value = .4, {
       print ('Plotting NDVI')
     
       if (is.null(sm_pixels@coords[1][[1]])){
@@ -974,7 +933,7 @@ server = function(input, output, session) {
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
       }
-        # })# END WITH PROGRESS BAR
+        })# END WITH PROGRESS BAR
       } #END NDVI PLOT
     
     # ------------------PLOT EVI------------------------------------
@@ -1033,58 +992,41 @@ server = function(input, output, session) {
           print (as_tibble(data$evi_pixels))
 
       }
+        
       }) #END WITH PROGRESS BAR
     } #END EVI PLOT
-    # Show and switch to plotpanel
-    shiny::showTab('navbar','PlotPanel')
-    updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+    
+    # Raise an error if no data is selected to plot
+    if (length(selected_data) == 0){
+      shinyalert("Plotting error", 'No data selected. Try again.' , type = "error")
+    }
+    
+    # Show plot panel tab if GCC, NDVI, or EVI are selected
+    if ('GCC' %in% selected_data | 'NDVI' %in% selected_data | 'EVI' %in% selected_data){
+      shiny::showTab('navbar','PlotPanel')
+      updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+    }
+    }) # END BUSY INDICATOR
   }) #END PLOTTING DATA OBSERVER
   
+  #-----------------------------------------------------------------------------------------------------------------
   
   # Plot the data
   output$data_plot = renderPlotly({
+    print ('Building plot Data tab plots')
     selected_data = input$dataTypes_plot
-    
     selected_plots = input$plotTheseBoxes
     data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
-
     print (selected_plots)
 
-    s  = req(input$plotTable_rows_all)
-    sd = data$plotTable[s, , drop = FALSE]
-    
-    ndvi_pixel_data_df = data$ndvi_pixels
-    # rownames(ndvi_pixel_data_df) = NULL
-    print (as_tibble(sd))
-    
-    # if ('Transition Dates' %in% selected_data){
-    #   if ('tds_sat' %in% selected_plots){
-    #     OGMa = data$OGMa
-    #     OGMi = data$OGMi
-    #     OGI  = data$OGI
-    #     OGD  = data$OGD
-    #     
-    #     clean_OGMa = OGMa %>%
-    #       subset(OGMa$pixel %in% sd$Pixel) %>%
-    #       mutate(pixel = paste0('TD_OGMa_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date) 
-    #     clean_OGMi = OGMi %>%
-    #       subset(OGMi$pixel %in% sd$Pixel)%>%
-    #       mutate(pixel = paste0('TD_OGMi_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date) 
-    #     clean_OGI = OGI %>%
-    #       subset(OGI$pixel %in% sd$Pixel)%>%
-    #       mutate(pixel = paste0('TD_OGI_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date) 
-    #     clean_OGD = OGD %>%
-    #       subset(OGD$pixel %in% sd$Pixel)%>%
-    #       mutate(pixel = paste0('TD_OGD_', pixel), Date = dates) %>%
-    #       select(pixel, Date, value) %>%
-    #       arrange(pixel, Date) 
-    #   }}
+    # Catches empty dataframe so that GCC can still plot
+    if (dim(data$plotTable)[1]==0){
+    }else {
+      s  = req(input$plotTable_rows_all)
+      sd = data$plotTable[s, , drop = FALSE]
+      
+      print (as_tibble(sd))
+    }
     
     if ('NDVI' %in% selected_data){
       # NDVI HIGH QUALITY
@@ -1158,56 +1100,6 @@ server = function(input, output, session) {
             showlegend = TRUE
           )%>%layout(xaxis = list(title = "Date"))
         
-        # if ('Transition Dates' %in% selected_data){
-        #   if ('tds_sat' %in% selected_plots){
-        #         
-        #         p_ndvi_raw = p_ndvi_raw %>%
-        #           add_markers(data = clean_OGMa,
-        #                       inherit = FALSE,
-        #                       x = ~Date,
-        #                       y = ~value,
-        #                       name = ~pixel,
-        #                       type = "scatter",
-        #                       mode = 'markers',
-        #                       marker = list(color = 'green', size= 10, symbol=2),
-        #                       showlegend = TRUE,
-        #                       text = ~paste("Date: ", Date,
-        #                                     '<br>Pixel: ', pixel,
-        #                                     '<br>Data: Onset Greenness Maximum')) %>%
-        #           add_trace(data = clean_OGMi,
-        #                     x = ~Date,
-        #                     y = ~value,
-        #                     name = ~pixel,
-        #                     type = "scatter",
-        #                     mode = 'markers',
-        #                     marker = list(color = 'brown', size= 10, symbol=25),
-        #                     showlegend = TRUE,
-        #                     text = ~paste("Date: ", Date,
-        #                                   '<br>Pixel: ', pixel,
-        #                                   '<br>Data: Onset Greenness Minimum')) %>%
-        #           add_trace(data = clean_OGI,
-        #                     x = ~Date,
-        #                     y = .5,
-        #                     name = ~pixel,
-        #                     type = "scatter",
-        #                     mode = 'markers',
-        #                     marker = list(color ='green', size= 10, symbol=5),
-        #                     showlegend = TRUE,
-        #                     text = ~paste("Date: ", Date,
-        #                                   '<br>Pixel: ', pixel,
-        #                                   '<br>Data: Onset Greenness Increase')) %>%
-        #           add_trace(data = clean_OGD,
-        #                     x = ~Date,
-        #                     y = .5,
-        #                     name = ~pixel,
-        #                     type = "scatter",
-        #                     mode = 'markers',
-        #                     marker = list(color ='orange', size= 10, symbol=6),
-        #                     showlegend = TRUE,
-        #                     text = ~paste("Date: ", Date,
-        #                                   '<br>Pixel: ', pixel,
-        #                                   '<br>Data: Onset Greenness Decrease'))
-        #   }}
         p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
                                        x_title_ = 'NDVI (All data)',
                                        y_title_ = 'NDVI value')
@@ -1284,57 +1176,7 @@ server = function(input, output, session) {
             name = "EVI loess fit",
             showlegend = TRUE
           ) %>% layout(xaxis = list(title = "Date"))
-            
-        # if ('Transition Dates' %in% selected_data){
-        #   if ('tds_sat' %in% selected_plots){
-        #     p_evi_raw = p_evi_raw %>%
-        #       add_markers(data = clean_OGMa,
-        #                 inherit = FALSE,
-        #                 x = ~Date,
-        #                 y = ~value,
-        #                 name = ~pixel,
-        #                 type = "scatter",
-        #                 mode = 'markers',
-        #                 marker = list(color = 'green', size= 10, symbol=2),
-        #                 showlegend = TRUE,
-        #                 text = ~paste("Date: ", Date,
-        #                               '<br>Pixel: ', pixel,
-        #                               '<br>Data: Onset Greenness Maximum')) %>%
-        #       add_trace(data = clean_OGMi,
-        #                 x = ~Date,
-        #                 y = ~value,
-        #                 name = ~pixel,
-        #                 type = "scatter",
-        #                 mode = 'markers',
-        #                 marker = list(color = 'brown', size= 10, symbol=25),
-        #                 showlegend = TRUE,
-        #                 text = ~paste("Date: ", Date,
-        #                               '<br>Pixel: ', pixel,
-        #                               '<br>Data: Onset Greenness Minimum')) %>%
-        #       add_trace(data = clean_OGI,
-        #                 x = ~Date,
-        #                 y = .4,
-        #                 name = ~pixel,
-        #                 type = "scatter",
-        #                 mode = 'markers',
-        #                 marker = list(color ='green', size= 10, symbol=5),
-        #                 showlegend = TRUE,
-        #                 text = ~paste("Date: ", Date,
-        #                               '<br>Pixel: ', pixel,
-        #                               '<br>Data: Onset Greenness Increase')) %>%
-        #       add_trace(data = clean_OGD,
-        #                 x = ~Date,
-        #                 y = .4,
-        #                 name = ~pixel,
-        #                 type = "scatter",
-        #                 mode = 'markers',
-        #                 marker = list(color ='orange', size= 10, symbol=6),
-        #                 showlegend = TRUE,
-        #                 text = ~paste("Date: ", Date,
-        #                               '<br>Pixel: ', pixel,
-        #                               '<br>Data: Onset Greenness Decrease'))
-        #   }}
-            
+        
         p_evi_raw = add_title_to_plot(df = p_evi_raw,
                                       x_title_ = 'EVI (All data)',
                                       y_title_ = 'EVI value')
@@ -1355,9 +1197,6 @@ server = function(input, output, session) {
     if ('tds_sat' %in% selected_plots){
       vector_length = vector_length - 1
     }
-    # if('tds_npn' %in% selected_plots){
-    #   vector_length = vector_length - 1
-    # }
   
     plot_list = vector('list', vector_length)
     count = 0
@@ -1397,8 +1236,8 @@ server = function(input, output, session) {
                     'lasso2d',
                     'select2d')) %>%
       layout(height = length_, inline = TRUE)
+    
   })
-  
   
 
   # Button that hides GCC Plot
@@ -1464,6 +1303,9 @@ server = function(input, output, session) {
 
   # Download/get data for desired phenocam/satellite products
   observeEvent(input$getDataButton, {
+    
+    withBusyIndicatorServer("getDataButton", {
+      
     site           = input$site
     site_data      = get_site_info(site)
     selected_data  = input$dataTypes_get
@@ -1486,7 +1328,7 @@ server = function(input, output, session) {
     
     shinyjs::hide(id = 'getData')
     
-    shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
+    # shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
 
     print ('Importing data for:')
     print (selected_data)
@@ -1538,117 +1380,47 @@ server = function(input, output, session) {
         
       npn_file_name = paste0(npn_grid_dir, '/average_leaf_prism_brick.nc')
       if (length(list.files(npn_grid_dir))==0){
-        setProgress(value = .2, detail = 'Downloading NPN')
+        incProgress(amount = .3, detail = 'Downloading NPN')
         data$npn_brick = download_npn_brick(tmp_name = paste0(npn_grid_dir,'/deleteme_npn_grid_'),
                                             out_file = npn_file_name,
                                             layer    = 'si-x:average_leaf_prism')
       }else {
-        setProgress(value = .1, detail = 'Importing NPN')
+        incProgress(amount = .2, detail = 'Importing NPN')
         data$npn_brick = raster::brick(npn_file_name)
       }
-      
       }) #END WITH PROGRESS BAR
     } #END IMPORT NPN
-
-
-      # Import [NDVI] 
-      #------------------------------------------------------------------------
-    if ('NDVI' %in% selected_data){
-      # withProgress(message = 'Importing NDVI', value = .4, {
-        
-      print ('Importing NDVI')
-      # Bring in tera and aqua data
-      appeears$ndvi_aqua = get_appeears_task(site, type = 'ndvi_aqua')
-      appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
-      appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
-      
-      print (as_tibble(appeears$ndvi_aqua))
-      print (as_tibble(appeears$ndvi_tera))
-      
-      if (length(list.files(ndvi_tera_filepath))==0){
-        setProgress(value = .1, detail = 'Downloading NDVI TERA')
-        ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
-      }else {
-        setProgress(value = .1, detail = 'Importing NDVI TERA')
-        ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
-      }
-      
-      if (length(list.files(ndvi_aqua_filepath))==0){
-        setProgress(value = .1, detail = 'Downloading NDVI AQUA')
-        ndvi_bundle_df_aqua = download_bundle_file(appeears$ndvi_aqua$task_id, ndvi_aqua_filepath)
-      }else {
-        setProgress(value = .1, detail = 'Importing NDVI AQUA')
-        ndvi_bundle_df_aqua = get_appeears_bundle_df(appeears$ndvi_aqua$task_id)
-      }
-      
-      print (as_tibble(ndvi_bundle_df_tera))
-      print (as_tibble(ndvi_bundle_df_aqua))
-      
-      # TERA data (ndvi)
-      ndvi_tera_name     = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
-      ndvi_tera_path     = paste0(ndvi_tera_filepath, ndvi_tera_name)
-      ndvi_qc_tera_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
-      ndvi_qc_tera_path  = paste0(ndvi_tera_filepath, ndvi_qc_tera_name)
-      # bricks
-      data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
-      data$ndvi_qc_tera_brick = raster::brick(ndvi_tera_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
-      data$ndvi_qc_csv_tera   = read.csv(ndvi_qc_tera_path)
-      
-      # AQUA data (ndvi)
-      ndvi_aqua_name     = subset(ndvi_bundle_df_aqua, file_type == 'nc')$file_name
-      ndvi_aqua_path     = paste0(ndvi_aqua_filepath, ndvi_aqua_name)
-      ndvi_qc_aqua_name  = ndvi_bundle_df_aqua[grep('Quality-lookup', ndvi_bundle_df_aqua$file_name),]$file_name
-      ndvi_qc_aqua_path  = paste0(ndvi_aqua_filepath, ndvi_qc_aqua_name)
-      # bricks
-      data$ndvi_aqua_brick    = raster::brick(ndvi_aqua_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
-      data$ndvi_qc_aqua_brick = raster::brick(ndvi_aqua_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
-      data$ndvi_qc_csv_aqua   = read.csv(ndvi_qc_aqua_path)
-
-      # Grab first observation of NDVI and Quality datasets
-      r_for_grid = raster::raster(ndvi_tera_path,  crs = sinu_crs)
-      r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
-      r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
-      data$r_ndvi_cropped = r_for_grid_cropped_merc
-      
-      grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
-
-      shinyjs::show(id = 'highlightPixelModeNDVI')
-      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
-
-      shinyjs::show(id = 'plotRemoteData')
-      
-      # }) #END WITH PROGRESS BAR
-    } #END IMPORT NDVI
-
-
-      # Import [Transition Dates] netcdfs
-      #------------------------------------------------------------------------
+    
+    
+    # Import [Transition Dates] netcdfs
+    # ------------------------------------------------------------------------
     if ('Transition Dates' %in% selected_data){
-      withProgress(message = 'Importing Transition Dates', value = 0, {
-      print ('Importing Transition Dates')
-      appeears$tds  = get_appeears_task(site, type = 'tds')
-      
-      # if (input$localDownload){
+      withProgress(message = 'Importing Transition Dates', value = .1, {
+        print ('Importing Transition Dates')
+        appeears$tds  = get_appeears_task(site, type = 'tds')
+        
         if (length(list.files(tds_filepath))==0){
           tds_bundle_df = download_bundle_file(appeears$tds$task_id, tds_filepath)
         }else {
           tds_bundle_df = get_appeears_bundle_df(appeears$tds$task_id)
-          }
-        
+        }
+        incProgress(amount = .1)
         tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name
         data$tds_path = paste0(tds_filepath, tds_name)
         data$tds_nc    = nc_open(data$tds_path)
-        
+        incProgress(amount = .1)
         lon_td = ncvar_get(data$tds_nc, "xdim")
         nlon = length(lon_td)
         lat_td = ncvar_get(data$tds_nc, "ydim")
         nlat = length(lat_td)
         
+        incProgress(amount = .1)
         xmin = lon_td[1]
         xmax = lon_td[length(lon_td)]
         ymin = lat_td[length(lat_td)]
         ymax = lat_td[1]
         
+        incProgress(amount = .1)
         td_v6_names = c('Dormancy', 'Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'Senescence','QA_Overall', 'QA_Detailed')
         td_v6_ncs   = list()
         for (name in td_v6_names){
@@ -1660,17 +1432,89 @@ server = function(input, output, session) {
           this_layer_2 = setValues(this_layer_1, values = array[1,,,]) 
           td_v6_ncs[name] = this_layer_2
         }
+        incProgress(amount = .2)
         data$td_v6_ncs = td_v6_ncs
-      # }
-      shinyjs::show(id = 'plotRemoteData')
+
       }) #END WITH PROGRESS BAR
     } #END IMPORT TRANSITION DATES
+
+
+      # Import [NDVI] 
+      #------------------------------------------------------------------------
+    if ('NDVI' %in% selected_data){
+      withProgress(message = 'Importing NDVI', value = .2, {
+        
+      print ('Importing NDVI')
+      # Bring in tera and aqua data
+      appeears$ndvi_aqua = get_appeears_task(site, type = 'ndvi_aqua')
+      appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
+      appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
+      
+      print (as_tibble(appeears$ndvi_aqua))
+      print (as_tibble(appeears$ndvi_tera))
+      
+      if (length(list.files(ndvi_tera_filepath))==0){
+        incProgress(amount = .1, detail = 'Downloading NDVI TERA')
+        ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
+      }else {
+        incProgress(amount = .1, detail = 'Importing NDVI TERA')
+        ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
+      }
+      
+      if (length(list.files(ndvi_aqua_filepath))==0){
+        incProgress(amount = .1, detail = 'Downloading NDVI AQUA')
+        ndvi_bundle_df_aqua = download_bundle_file(appeears$ndvi_aqua$task_id, ndvi_aqua_filepath)
+      }else {
+        incProgress(amount = .1, detail = 'Importing NDVI AQUA')
+        ndvi_bundle_df_aqua = get_appeears_bundle_df(appeears$ndvi_aqua$task_id)
+      }
+      
+      print (as_tibble(ndvi_bundle_df_tera))
+      print (as_tibble(ndvi_bundle_df_aqua))
+      
+      incProgress(amount = .1, detail = 'Processing NDVI')
+      # TERA data (ndvi)
+      ndvi_tera_name     = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
+      ndvi_tera_path     = paste0(ndvi_tera_filepath, ndvi_tera_name)
+      ndvi_qc_tera_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
+      ndvi_qc_tera_path  = paste0(ndvi_tera_filepath, ndvi_qc_tera_name)
+      # bricks
+      data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
+      data$ndvi_qc_tera_brick = raster::brick(ndvi_tera_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
+      data$ndvi_qc_csv_tera   = read.csv(ndvi_qc_tera_path)
+      
+      incProgress(amount = .1)
+      # AQUA data (ndvi)
+      ndvi_aqua_name     = subset(ndvi_bundle_df_aqua, file_type == 'nc')$file_name
+      ndvi_aqua_path     = paste0(ndvi_aqua_filepath, ndvi_aqua_name)
+      ndvi_qc_aqua_name  = ndvi_bundle_df_aqua[grep('Quality-lookup', ndvi_bundle_df_aqua$file_name),]$file_name
+      ndvi_qc_aqua_path  = paste0(ndvi_aqua_filepath, ndvi_qc_aqua_name)
+      # bricks
+      data$ndvi_aqua_brick    = raster::brick(ndvi_aqua_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
+      data$ndvi_qc_aqua_brick = raster::brick(ndvi_aqua_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
+      data$ndvi_qc_csv_aqua   = read.csv(ndvi_qc_aqua_path)
+
+      incProgress(amount = .1)
+      # Grab first observation of NDVI and Quality datasets
+      r_for_grid = raster::raster(ndvi_tera_path,  crs = sinu_crs)
+      r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
+      r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
+      data$r_ndvi_cropped = r_for_grid_cropped_merc
+      
+      incProgress(amount = .1)
+      grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
+      
+      shinyjs::show(id = 'highlightPixelModeNDVI')
+      updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
+      
+      }) #END WITH PROGRESS BAR
+    } #END IMPORT NDVI
 
 
     #   # Import [EVI] netcdf(evi) and csv(qa)
     #   #------------------------------------------------------------------------
     if ('EVI' %in% selected_data){
-      # withProgress(message = 'Importing EVI', value = .4, {
+      withProgress(message = 'Importing EVI', value = .2, {
       print ('Importing EVI')
         
       appeears$evi_aqua = get_appeears_task(site, type = 'evi_aqua')
@@ -1681,24 +1525,25 @@ server = function(input, output, session) {
       print (as_tibble(appeears$evi_tera))
       
       if (length(list.files(evi_tera_filepath))==0){
-        setProgress(value = .1, detail = 'Downloading EVI TERA')
+        incProgress(amount = .2, detail = 'Downloading EVI TERA')
         evi_bundle_df_tera = download_bundle_file(appeears$evi_tera$task_id, evi_tera_filepath)
       }else {
-        setProgress(value = .1, detail = 'Importing EVI TERA')
+        incProgress(amount = .2, detail = 'Importing EVI TERA')
         evi_bundle_df_tera = get_appeears_bundle_df(appeears$evi_tera$task_id)
       }
       
       if (length(list.files(evi_aqua_filepath))==0){
-        setProgress(value = .1, detail = 'Downloading evi AQUA')
+        incProgress(amount = .2, detail = 'Downloading EVI AQUA')
         evi_bundle_df_aqua = download_bundle_file(appeears$evi_aqua$task_id, evi_aqua_filepath)
       }else {
-        setProgress(value = .1, detail = 'Importing EVI AQUA')
+        incProgress(amount = .2, detail = 'Importing EVI AQUA')
         evi_bundle_df_aqua = get_appeears_bundle_df(appeears$evi_aqua$task_id)
       }
    
       print (as_tibble(evi_bundle_df_tera))
       print (as_tibble(evi_bundle_df_aqua))
       
+      incProgress(amount = .1, detail = 'Processing EVI')
       # TERA data (evi)
       evi_tera_name     = subset(evi_bundle_df_tera, file_type == 'nc')$file_name
       evi_tera_path     = paste0(evi_tera_filepath, evi_tera_name)
@@ -1709,6 +1554,7 @@ server = function(input, output, session) {
       data$evi_qc_tera_brick = raster::brick(evi_tera_path, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
       data$evi_qc_csv_tera   = read.csv(evi_qc_tera_path)
       
+      incProgress(amount = .1)
       # AQUA data (evi)
       evi_aqua_name     = subset(evi_bundle_df_aqua, file_type == 'nc')$file_name
       evi_aqua_path     = paste0(evi_aqua_filepath, evi_aqua_name)
@@ -1719,6 +1565,8 @@ server = function(input, output, session) {
       data$evi_qc_aqua_brick = raster::brick(evi_aqua_path, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
       data$evi_qc_csv_aqua   = read.csv(evi_qc_aqua_path)
       
+      incProgress(amount = .1)
+      # Builds the Grid for EVI when NDVI is not imported
       if ('NDVI' %!in% selected_data){
         # Grab first observation of evi and Quality datasets
         r_for_grid = raster::raster(evi_tera_path, crs = sinu_crs)
@@ -1727,20 +1575,12 @@ server = function(input, output, session) {
         r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
         data$r_evi_cropped = r_for_grid_cropped_merc
         
-        grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
-        
-        shinyjs::show(id = 'highlightPixelModeNDVI')
-        updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
-        
-        shinyjs::show(id = 'plotRemoteData')
-        
+        incProgress(amount = .1)
         grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
         shinyjs::show(id = 'highlightPixelModeNDVI')
         updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
-        
-        shinyjs::show(id = 'plotRemoteData')
       }
-      # }) #END WITH PROGRESS BAR
+      }) #END WITH PROGRESS BAR
     } #END IMPORT EVI
     
 
@@ -1764,7 +1604,7 @@ server = function(input, output, session) {
         
         if (file.exists(gcc_filepath)){
           print ('Will import GCC on fly when plotting')
-          setProgress(value = .2, detail = 'Importing GCC CSV')
+          incProgress(amount = .2, detail = 'Importing GCC CSV')
           phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
           phenocam$spring = read.csv(spring_filepath, header = TRUE)
           phenocam$fall   = read.csv(fall_filepath, header = TRUE)
@@ -1772,13 +1612,13 @@ server = function(input, output, session) {
                                               spring = phenocam$spring,
                                               fall   = phenocam$fall)
         }else{
-          setProgress(value = .2, detail = 'Downloading GCC data')
+          incProgress(amount = .2, detail = 'Downloading GCC data')
           phenocam$data = get_site_roi_csvs(name        = site,
                                             roi_files_  = roi_files,
                                             frequency_  = freq,
                                             percentile_ = percentile_gcc,
                                             roi_type_   = pft_abbr)
-          setProgress(value = .2, detail = 'GCC data Downloaded')
+          incProgress(amount = .2, detail = 'GCC data Downloaded')
           
           phenocam$gcc    = phenocam$data[[1]]
           phenocam$spring = phenocam$data[[2]]
@@ -1787,32 +1627,28 @@ server = function(input, output, session) {
                                             spring = phenocam$spring,
                                             fall   = phenocam$fall)
           
+          incProgress(amount = .1)
           write.csv(phenocam$gcc,    file = gcc_filepath)
           write.csv(phenocam$spring, file = spring_filepath)
           write.csv(phenocam$fall,   file = fall_filepath)
         }
       }
-
-      shinyjs::show(id = 'plotRemoteData')
       }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
-
-
-    data$imported_types = selected_data
-    start_site = as.character(site_data$date_first)
-    end_site   = as.character(site_data$date_last)
-
-    updateSliderInput(session, 'dataDateRange',
-                      min = as.Date(start_site),
-                      max = as.Date(end_site),
-                      value = c(as.Date(start_site), as.Date(end_site)))
-    shinyjs::hide(id = 'dataDateRange')
     
     # Update plot data input to only include data that has been imported for this site
     updateSelectInput(session, 'dataTypes_plot', choices = selected_data, selected = selected_data)
-
-    print (data$layers_df)
+    # Toggle get data popup off
+    shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
+    # Show plot data button if NDVI, EVI, or GCC are imported
+    if ('GCC' %in% selected_data | 'NDVI' %in% selected_data | 'EVI' %in% selected_data){
+      shinyjs::show(id = 'plotRemoteData')
+    }
+    print (selected_data)
+    
+    }) #END BUSY INDICATOR
   }) #END GET DATA OBSERVER
+  
   
   # Observer for the popup
   observeEvent(input$plotRemoteData, {
@@ -1821,7 +1657,7 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'doneBuildingPlot')
     shinyjs::show(id = 'pixelTypes')
     sm_pixels = data$pixel_sps_250m
-    types = data$imported_types
+    types = input$dataTypes_get
 
     if (is.null(sm_pixels@polygons[1][[1]])){
       print ('no pixels selected')
@@ -1839,9 +1675,15 @@ server = function(input, output, session) {
   observeEvent(input$dataTypes_plot, {
     types = input$dataTypes_plot
     print (types)
-    if ('NDVI' %in% types | 'EVI' %in% types |'Transition Dates' %in% types |'GCC' %in% types){
+    if ('NDVI' %in% types | 'EVI' %in% types |'Transition Dates' %in% types |'GCC' %in% types |'NPN' %in% types){
       shinyjs::show(id = 'plotDataButton')
       if (length(types)==1 & types[1]=='Transition Dates'){
+        shinyjs::hide(id = 'plotDataButton')
+      }
+      if (length(types)==1 & types[1]=='NPN'){
+        shinyjs::hide(id = 'plotDataButton')
+      }
+      if (length(types)==2 & 'NPN' %in% types &'Transition Dates' %in% types){
         shinyjs::hide(id = 'plotDataButton')
       }
     } else {

@@ -16,34 +16,32 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
                          selectInput('shapefiles2', "Select Shapefile", c('None')),
-                         textInput('paoiUser', 'Name'), # Make this required
+                         textInput('paoiUser', 'Name'),
                          textInput('paoiEmail', 'Email'),
                          textInput('paoiNotes', 'Notes or Comments'),
                          actionButton('emailShpButton', 'Email shapefile')
                  ),
                  bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
-                         tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "medium",
-                         # checkboxInput("localDownload", "Download Data Locally", value = TRUE),
                          selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
                          selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '3 day', c('1 day', '3 day')),
-                         actionButton('getDataButton', 'Get Data'),
-                         tags$head(tags$style("#getDataPopup .modal-footer{ display:none}"))
+                         withBusyIndicatorUI(actionButton('getDataButton', 'Get Data', class='btn-primary')),
+                         tags$head(tags$style("#getDataPopup .modal-footer{ display:none } 
+                                               #getDataPopup .modal-header button{ display:none } 
+                                               #getDataPopup {keyboard:false; backdrop: 'static';}"))
                  ),
                  bsModal("plotDataPopup",
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
-                         actionButton('plotDataButton', 'Plot Data'),
+                         withBusyIndicatorUI(actionButton('plotDataButton', 'Plot Data', class='btn-primary')),
+                         br(),
                          selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
-                         # selectInput('pixelTypes', 'Pixel Resolution', c('250m', '500m')),
-                         sliderInput('dataDateRange', 'Date start to end',
-                                     min = as.Date('2000-01-01'),
-                                     max = Sys.Date(),
-                                     value = c(as.Date('2000-01-01'), Sys.Date())),
-                         helpText(id = 'noPixelWarning', 'No Pixels selected')
-                         # actionButton('genDF', 'Download Data')
+                         h4('Requires atleast GCC, EVI, or NDVI'),
+                         tags$head(tags$style("#plotDataPopup .modal-footer{ display:none } 
+                                               #plotDataPopup .modal-header button{ display:none } 
+                                               #plotDataPopup {keyboard:false; backdrop: 'static';}"))
                  ),
                  
                  bsModal("downloadDataPopup",
@@ -58,7 +56,6 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                  navbarPage("PhenoSynth-development phase", id="navbar",
                           tabPanel("Site explorer",
                                    div(class="outer",
-                                       # Include custom CSS
                                        tags$head(
                                                  includeCSS("./Aesthetics/styles.css"),
                                                  includeScript("./Aesthetics/gomap.js")),
@@ -67,7 +64,6 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                         leafletOutput("map", width="100%", height="100%"),
                         textOutput("See Field of View (FOV)"),
 
-                        # Shiny versions prior to 0.11 should use class = "modal" instead.
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                       draggable = FALSE, top = 70, left = "auto", right = 20, bottom = "auto",
                                       width = 320, height = "auto", style="z-index:600;",
@@ -89,9 +85,9 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                       actionButton('getData', 'Import Data'),
                                       actionButton('plotRemoteData', 'Plot Data'),
                                       actionButton('clearPixels', 'Clear Pixels')
-                                                                            ),
+                        ),
                                      
-                        absolutePanel(id = 'currentImage', class = 'panel panel-default', #fixed = TRUE,
+                        absolutePanel(id = 'currentImage', class = 'panel panel-default', 
                                       draggable = TRUE,  top = 'auto', left = 250, right = 'auto' , bottom = 10,
                                       width = 375, height = 225, style="z-index:500;",
                                       actionButton('showImage', '-', value=FALSE),
@@ -99,8 +95,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                       tags$div(id = 'image')
                         ),
                                      
-                        # rename this id, should be imgroipanel or something(add in server too)
-                        absolutePanel(id = 'plotpanel', class = 'panel panel-default', #fixed = TRUE,
+                        absolutePanel(id = 'plotpanel', class = 'panel panel-default', 
                                       draggable = TRUE,  top = 'auto', left = 400, right = 'auto' , bottom = 20,
                                       width = 375, height = 225, style="z-index:500;",
                                       actionButton('hidePlot', '-', value=FALSE),
@@ -116,13 +111,9 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                         absolutePanel(id = 'siteTitle', class = 'panel panel-default', fixed = FALSE, style="z-index:500;",
                                       draggable = FALSE,  top = 25, left = 'auto', right = 320 , bottom = 'auto',
                                       div(id = 'analyzerHeader', uiOutput("analyzerTitle"))
-                        ),
-
-                        tags$div(id="cite",
-                                 ' ', tags$em(''), ' '#eventually we can put some APIS text here so I'm saving it for now
-                                )
-                            ) # close div outer
-                        ), # close tab panel
+                        )
+                      ) # close div outer
+                    ), # close tab panel
                             
 
            tabPanel('pAOI Management', value='paoiTab',
@@ -132,18 +123,14 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                     actionButton('emailShp', 'Email Shapefile'),
                     br(),
                     br(), br(),
-                    # Attempting to build a chart here for the shapefiles, might move it to a new tab at
-                    #   some point......
                     DTOutput("pAOIchart"))
            ),
 
            tabPanel('phenoSynth User Guide',
-                    # tableOutput("phenoTable")
                     includeMarkdown('../phenoSynth/Images_for_UserGuide/UserGuide.Rmd')
            ),
                    
            tabPanel('PhenoCam Metadata',
-                    # tableOutput("phenoTable")
                     dataTableOutput('phenoTable')
            ),
                    
