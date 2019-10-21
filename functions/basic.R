@@ -33,6 +33,7 @@ switch_to_explorer_panel = function(map_ = 'map'){
   shinyjs::hide(id = 'getData')
   shinyjs::hide(id = 'getDataPopup')
   shinyjs::hide(id = 'clearPixels')
+  # Create leaflet map for explorer mode
   leafletProxy(map_) %>%
     clearControls() %>%
     clearShapes() %>%
@@ -78,8 +79,8 @@ switch_to_analyzer_panel = function(){
 is_not_null = function(x) ! is.null(x)
 
 
-# not in
-'%!in%'     = function(x, y) {
+# not in function
+'%!in%' = function(x, y) {
   ! ('%in%'(x, y))
 }
 
@@ -101,7 +102,7 @@ get_download_folder = function(){
 #' delete_file
 #'
 #' @param filepath_ 
-#' Deletes the netcdf from input filepath
+#' Deletes any file at filepath_ (does not delete directories)
 #' 
 delete_file = function(filepath_){
   if (file.exists(filepath_)) file.remove(filepath_)

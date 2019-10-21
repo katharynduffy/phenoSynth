@@ -4,6 +4,7 @@ get_phenocam_camera_df = function(pc_roi_df){
   cams = phenocamapi::get_phenos()
   # Changing blank values in the camera orientation field to 'N' as a default
   cams$camera_orientation[cams$camera_orientation == ''] = 'N'
+  cams$camera_orientation[is.na(cams$camera_orientation)] = 'N'
   
   roi_sites = unique(pc_roi_df$site)
   num_roi_sites = length(roi_sites)
@@ -15,8 +16,8 @@ get_phenocam_camera_df = function(pc_roi_df){
   return (cams_with_rois)
 }
 
-get_phenocam_roi_df = function(limit = 2000){
+get_phenocam_roi_df = function(){
   print ('Grabbing phenocam rois-api')
-  roi_files=phenocamapi::get_rois()
+  roi_files = phenocamapi::get_rois()
   return(roi_files)
 }

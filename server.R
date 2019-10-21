@@ -1260,7 +1260,8 @@ server = function(input, output, session) {
                 pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lon_, lat_ = lat_, from_crs = wgs_crs, to_crs = merc_crs)
                 lat_merc = pt_merc@coords[2]
                 lng_merc = pt_merc@coords[1]
-                showpos(x = lng_merc , y = lat_merc, site, data$r_ndvi_cropped, '250m')
+                # showpos(x = lng_merc , y = lat_merc, site, data$r_ndvi_cropped, '250m')
+                showpos(x = lng_merc , y = lat_merc, site, data$r_landcover)
               }}}
           if (dim(data$pixel_df)[1] == 0){
             shinyjs::hide(id = 'clearPixels')
@@ -1710,8 +1711,8 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #--------------------------------------------------------------------------------------------------------------------------------------
 
-  # Creates a polyline surrounding any MODIS 2016 500m or 250m pixel from cropped raster
-  showpos = function(x=NULL, y=NULL, name, raster_, type_, map_ = NULL) { # type = '500m' or '250m'
+  # Creates a polyline surrounding any MODIS 2016 or 250m pixel from cropped raster
+  showpos = function(x=NULL, y=NULL, name, raster_, type_= '250m', map_ = NULL) {
     # If clicked within the Raster on the leaflet map
     r_ = raster_
     cell = cellFromXY(r_, c(x, y))
