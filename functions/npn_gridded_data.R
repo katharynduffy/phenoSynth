@@ -40,21 +40,21 @@ npn_download_geospatial_ = function (coverage_id, date, format = "geotiff", outp
 {
   z = NULL
   if (is.null(output_path)) {
-    z <- tempfile()
+    z = tempfile()
   }
-  s <- "&SUBSET="
-  param <- tryCatch({
+  s = "&SUBSET="
+  param = tryCatch({
     as.Date(date)
     paste0(s, "time(\"", date, "T00:00:00.000Z\")")
   }, error = function(msg) {
     paste0(s, "elevation(", date, ")")
   })
-  url <- paste0(base_geoserver_(), "format=geotiff&coverageId=", 
+  url = paste0(base_geoserver_(), "format=geotiff&coverageId=", 
                 coverage_id, param)
   print(url)
   if (is.null(output_path)) {
     download.file(url, z, method = "libcurl", mode = "wb")
-    ras <- raster::raster(z)
+    ras = raster::raster(z)
   }
   else {
     download.file(url, destfile = output_path, method = "libcurl", 
