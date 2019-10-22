@@ -298,8 +298,8 @@ rad_to_deg = function(rad) {
 #'
 run_add_polyline = function(site_data_, azm_){
   los = .01
-  lat =  site_data_$Lat
-  lon =  site_data_$Lon
+  lat =  site_data_$lat
+  lon =  site_data_$lon
   dst = sqrt(los**2 + los**2)
   c   = rotate_pt(lon, lat, (azm_-25), dst)
   b   = rotate_pt(lon, lat, (azm_+25), dst)
@@ -310,7 +310,7 @@ run_add_polyline = function(site_data_, azm_){
   
   datalon = c(lon,cx,bx,lon)
   datalat = c(lat,cy,by,lat)
-  camera  = site_data_$Sitename
+  camera  = site_data_$site
   id_     = paste('fov',camera, sep='')
   add_polyline(datalon, datalat, id_ = 'azm_', .45, 'red', group = 'azm_')
 }
