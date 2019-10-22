@@ -913,8 +913,7 @@ server = function(input, output, session) {
           }else {
             ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
           }}
-          
-        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 2114, 
+        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211, 
                                                   ndvi_pixel_data_df$ndvi_raw, NA)
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
@@ -972,7 +971,7 @@ server = function(input, output, session) {
             evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
           }
             } #END 250M LOOP
-          evi_pixel_data_df$evi_filtered = ifelse(evi_pixel_data_df$evi_qc == 2112 | evi_pixel_data_df$evi_qc == 2114, 
+          evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
                                                   evi_pixel_data_df$evi_raw, NA)
           data$evi_pixels = evi_pixel_data_df
           print (as_tibble(data$evi_pixels))
