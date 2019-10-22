@@ -11,8 +11,17 @@ gcc_plot = function(gcc, spring, fall){
   unix = "1970-01-01"
   spring[, 2:9] = apply(spring[, 2:9], 2, function(x)
     as.character(as.Date(x, origin = unix)))
-  fall[, 2:9] = apply(fall[, 2:9], 2, function(x)
-    as.character(as.Date(x, origin = unix)))
+  
+  fall_data = TRUE
+  
+  # If there is no Fall data, don't add it to plot
+  if(is.na(fall$transition_10)){
+    print ('No fall transition dates available')
+    fall_data = FALSE
+  } else{
+    fall[, 2:9] = apply(fall[, 2:9], 2, function(x)
+      as.character(as.Date(x, origin = unix)))
+  }
   
   print ('adding GCC')
   p = plot_ly(
@@ -84,11 +93,14 @@ gcc_plot = function(gcc, spring, fall){
                  yend = ~ threshold_50,
                  line = list(color = "#458B00"),
                  name = "SOS (50%) - CI"
-    ) %>%
+    )
+    
     
     # EOS fall
     # 50%
-    add_trace(
+    if (fall_data){
+  
+    p = p %>% add_trace(
       data = fall,
       x = ~ as.Date(transition_50),
       y = ~ threshold_50,
@@ -138,5 +150,7 @@ gcc_plot = function(gcc, spring, fall){
                  line = list(color = "#8B6508"),
                  name = "EOS (10%) - CI"
     )
+    }
+  
   return (p)
 }
