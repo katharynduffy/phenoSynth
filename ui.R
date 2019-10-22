@@ -38,7 +38,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                          withBusyIndicatorUI(actionButton('plotDataButton', 'Plot Data', class='btn-primary')),
                          br(),
                          selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
-                         h4('Requires atleast GCC, EVI, or NDVI'),
+                         h4('Requires at least GCC, EVI, or NDVI'),
                          tags$head(tags$style("#plotDataPopup .modal-footer{ display:none } 
                                                #plotDataPopup .modal-header button{ display:none } 
                                                #plotDataPopup {keyboard:false; backdrop: 'static';}"))
