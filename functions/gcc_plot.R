@@ -9,11 +9,17 @@
 #' 
 gcc_plot = function(gcc, spring, fall){
   unix = "1970-01-01"
+  
+  spring_data = TRUE
+  if(is.na(spring$transition_10)){
+    print ('No fall transition dates available')
+    spring_data = FALSE
+  } else{
   spring[, 2:9] = apply(spring[, 2:9], 2, function(x)
     as.character(as.Date(x, origin = unix)))
+  }
   
   fall_data = TRUE
-  
   # If there is no Fall data, don't add it to plot
   if(is.na(fall$transition_10)){
     print ('No fall transition dates available')
@@ -38,10 +44,12 @@ gcc_plot = function(gcc, spring, fall){
       line = list(width = 2, color = "rgb(120,120,120)"),
       name = "Gcc loess fit",
       showlegend = TRUE
-    ) %>%
+    ) 
+  
     # SOS spring
     # 10%
-    add_trace(
+    if (spring_data){
+    p = p %>% add_trace(
       data = spring,
       x = ~ as.Date(transition_10),
       y = ~ threshold_10,
@@ -94,12 +102,12 @@ gcc_plot = function(gcc, spring, fall){
                  line = list(color = "#458B00"),
                  name = "SOS (50%) - CI"
     )
+    }
     
     
     # EOS fall
     # 50%
     if (fall_data){
-  
     p = p %>% add_trace(
       data = fall,
       x = ~ as.Date(transition_50),
