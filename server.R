@@ -609,26 +609,31 @@ server = function(input, output, session) {
     appeears$landcover = get_appeears_task(site, type = 'landcover')
     if (length(list.files(lc_filepath))==0){
       lc_bundle_df = download_bundle_file(appeears$landcover$task_id, lc_filepath)
+      lc_name  = subset(lc_bundle_df, file_type == 'nc')$file_name
     }else {
-      lc_bundle_df = get_appeears_bundle_df(appeears$landcover$task_id)
+      # lc_bundle_df = get_appeears_bundle_df(appeears$landcover$task_id)
+      lc_files = list.files(lc_filepath)
+      lc_name  = lc_files[grepl('.nc', lc_files)]
     }
     # NDVI layer
     # Download or Import NDVI for this site to use to resample landcover
     appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
     if (length(list.files(ndvi_tera_filepath))==0){
       ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
+      ndvi_tera_name   = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
     }else {
-      ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
+      # ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
+      ndvi_files = list.files(ndvi_tera_filepath)
+      ndvi_tera_name  = ndvi_files[grepl('.nc', ndvi_files)]
     }
     
     # Bringing in 250m sinu and re-projecting to merc
-    ndvi_tera_name   = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
+    # ndvi_tera_name   = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
     ndvi_tera_path   = paste0(ndvi_tera_filepath, ndvi_tera_name)
     ndvi_tera_brick  = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI', crs=sinu_crs)
     ndvi_raster_t    = raster::subset(ndvi_tera_brick, 1)
     ndvi_raster_merc = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
     # Bringing in 500m sinu, resampling to 250m, and then re-projecting back to 500m to merc
-    lc_name  = subset(lc_bundle_df, file_type == 'nc')$file_name
     lc_path  = paste0(lc_filepath, lc_name)
     lc_brick  = raster::brick(lc_path, crs=sinu_crs)
     lc_raster = raster::subset(lc_brick, 1)
@@ -1387,11 +1392,14 @@ server = function(input, output, session) {
         
         if (length(list.files(tds_filepath))==0){
           tds_bundle_df = download_bundle_file(appeears$tds$task_id, tds_filepath)
+          tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name
         }else {
-          tds_bundle_df = get_appeears_bundle_df(appeears$tds$task_id)
+          # tds_bundle_df = get_appeears_bundle_df(appeears$tds$task_id)
+          tds_files = list.files(tds_filepath)
+          tds_name  = tds_files[grepl('.nc', tds_files)]
         }
         incProgress(amount = .1)
-        tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name
+        # tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name
         data$tds_path = paste0(tds_filepath, tds_name)
         data$tds_nc    = nc_open(data$tds_path)
         incProgress(amount = .1)
@@ -1442,27 +1450,37 @@ server = function(input, output, session) {
       if (length(list.files(ndvi_tera_filepath))==0){
         incProgress(amount = .1, detail = 'Downloading NDVI TERA')
         ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
+        ndvi_tera_name     = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
+        ndvi_qc_tera_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
       }else {
         incProgress(amount = .1, detail = 'Importing NDVI TERA')
-        ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
+        # ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
+        ndvi_files_t = list.files(ndvi_tera_filepath)
+        ndvi_tera_name  = ndvi_files_t[grepl('.nc', ndvi_files_t)]
+        ndvi_qc_tera_name = ndvi_files_t[grepl('Quality-lookup.csv', ndvi_files_t)]
       }
       
       if (length(list.files(ndvi_aqua_filepath))==0){
         incProgress(amount = .1, detail = 'Downloading NDVI AQUA')
         ndvi_bundle_df_aqua = download_bundle_file(appeears$ndvi_aqua$task_id, ndvi_aqua_filepath)
+        ndvi_aqua_name     = subset(ndvi_bundle_df_aqua, file_type == 'nc')$file_name
+        ndvi_qc_aqua_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
       }else {
         incProgress(amount = .1, detail = 'Importing NDVI AQUA')
-        ndvi_bundle_df_aqua = get_appeears_bundle_df(appeears$ndvi_aqua$task_id)
+        # ndvi_bundle_df_aqua = get_appeears_bundle_df(appeears$ndvi_aqua$task_id)
+        ndvi_files_a = list.files(ndvi_aqua_filepath)
+        ndvi_aqua_name  = ndvi_files_a[grepl('.nc', ndvi_files_a)]
+        ndvi_qc_aqua_name = ndvi_files_a[grepl('Quality-lookup.csv', ndvi_files_a)]
       }
       
-      print (as_tibble(ndvi_bundle_df_tera))
-      print (as_tibble(ndvi_bundle_df_aqua))
+      # print (as_tibble(ndvi_bundle_df_tera))
+      # print (as_tibble(ndvi_bundle_df_aqua))
       
       incProgress(amount = .1, detail = 'Processing NDVI')
       # TERA data (ndvi)
-      ndvi_tera_name     = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
+      # ndvi_tera_name     = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
       ndvi_tera_path     = paste0(ndvi_tera_filepath, ndvi_tera_name)
-      ndvi_qc_tera_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
+      # ndvi_qc_tera_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
       ndvi_qc_tera_path  = paste0(ndvi_tera_filepath, ndvi_qc_tera_name)
       # bricks
       data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
@@ -1471,9 +1489,9 @@ server = function(input, output, session) {
       
       incProgress(amount = .1)
       # AQUA data (ndvi)
-      ndvi_aqua_name     = subset(ndvi_bundle_df_aqua, file_type == 'nc')$file_name
+      # ndvi_aqua_name     = subset(ndvi_bundle_df_aqua, file_type == 'nc')$file_name
       ndvi_aqua_path     = paste0(ndvi_aqua_filepath, ndvi_aqua_name)
-      ndvi_qc_aqua_name  = ndvi_bundle_df_aqua[grep('Quality-lookup', ndvi_bundle_df_aqua$file_name),]$file_name
+      # ndvi_qc_aqua_name  = ndvi_bundle_df_aqua[grep('Quality-lookup', ndvi_bundle_df_aqua$file_name),]$file_name
       ndvi_qc_aqua_path  = paste0(ndvi_aqua_filepath, ndvi_qc_aqua_name)
       # bricks
       data$ndvi_aqua_brick    = raster::brick(ndvi_aqua_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
@@ -1513,27 +1531,37 @@ server = function(input, output, session) {
       if (length(list.files(evi_tera_filepath))==0){
         incProgress(amount = .2, detail = 'Downloading EVI TERA')
         evi_bundle_df_tera = download_bundle_file(appeears$evi_tera$task_id, evi_tera_filepath)
+        evi_tera_name     = subset(evi_bundle_df_tera, file_type == 'nc')$file_name
+        evi_qc_tera_name  = evi_bundle_df_tera[grep('Quality-lookup', evi_bundle_df_tera$file_name),]$file_name
       }else {
         incProgress(amount = .2, detail = 'Importing EVI TERA')
-        evi_bundle_df_tera = get_appeears_bundle_df(appeears$evi_tera$task_id)
+        # evi_bundle_df_tera = get_appeears_bundle_df(appeears$evi_tera$task_id)
+        evi_files_t = list.files(evi_tera_filepath)
+        evi_tera_name  = evi_files_t[grepl('.nc', evi_files_t)]
+        evi_qc_tera_name = evi_files_t[grepl('Quality-lookup.csv', evi_files_t)]
       }
       
       if (length(list.files(evi_aqua_filepath))==0){
         incProgress(amount = .2, detail = 'Downloading EVI AQUA')
         evi_bundle_df_aqua = download_bundle_file(appeears$evi_aqua$task_id, evi_aqua_filepath)
+        evi_aqua_name     = subset(evi_bundle_df_aqua, file_type == 'nc')$file_name
+        evi_qc_aqua_name  = evi_bundle_df_aqua[grep('Quality-lookup', evi_bundle_df_aqua$file_name),]$file_name
       }else {
         incProgress(amount = .2, detail = 'Importing EVI AQUA')
-        evi_bundle_df_aqua = get_appeears_bundle_df(appeears$evi_aqua$task_id)
+        # evi_bundle_df_aqua = get_appeears_bundle_df(appeears$evi_aqua$task_id)
+        evi_files_a = list.files(evi_aqua_filepath)
+        evi_aqua_name  = evi_files_a[grepl('.nc', evi_files_a)]
+        evi_qc_aqua_name = evi_files_a[grepl('Quality-lookup.csv', evi_files_a)]
       }
    
-      print (as_tibble(evi_bundle_df_tera))
-      print (as_tibble(evi_bundle_df_aqua))
+      # print (as_tibble(evi_bundle_df_tera))
+      # print (as_tibble(evi_bundle_df_aqua))
       
       incProgress(amount = .1, detail = 'Processing EVI')
       # TERA data (evi)
-      evi_tera_name     = subset(evi_bundle_df_tera, file_type == 'nc')$file_name
+      # evi_tera_name     = subset(evi_bundle_df_tera, file_type == 'nc')$file_name
       evi_tera_path     = paste0(evi_tera_filepath, evi_tera_name)
-      evi_qc_tera_name  = evi_bundle_df_tera[grep('Quality-lookup', evi_bundle_df_tera$file_name),]$file_name
+      # evi_qc_tera_name  = evi_bundle_df_tera[grep('Quality-lookup', evi_bundle_df_tera$file_name),]$file_name
       evi_qc_tera_path  = paste0(evi_tera_filepath, evi_qc_tera_name)
       # bricks
       data$evi_tera_brick    = raster::brick(evi_tera_path, varname='_250m_16_days_EVI', crs = sinu_crs)
@@ -1542,9 +1570,9 @@ server = function(input, output, session) {
       
       incProgress(amount = .1)
       # AQUA data (evi)
-      evi_aqua_name     = subset(evi_bundle_df_aqua, file_type == 'nc')$file_name
+      # evi_aqua_name     = subset(evi_bundle_df_aqua, file_type == 'nc')$file_name
       evi_aqua_path     = paste0(evi_aqua_filepath, evi_aqua_name)
-      evi_qc_aqua_name  = evi_bundle_df_aqua[grep('Quality-lookup', evi_bundle_df_aqua$file_name),]$file_name
+      # evi_qc_aqua_name  = evi_bundle_df_aqua[grep('Quality-lookup', evi_bundle_df_aqua$file_name),]$file_name
       evi_qc_aqua_path  = paste0(evi_aqua_filepath, evi_qc_aqua_name)
       # bricks
       data$evi_aqua_brick    = raster::brick(evi_aqua_path, varname='_250m_16_days_EVI', crs = sinu_crs)
