@@ -1464,7 +1464,7 @@ server = function(input, output, session) {
         incProgress(amount = .1, detail = 'Downloading NDVI AQUA')
         ndvi_bundle_df_aqua = download_bundle_file(appeears$ndvi_aqua$task_id, ndvi_aqua_filepath)
         ndvi_aqua_name     = subset(ndvi_bundle_df_aqua, file_type == 'nc')$file_name
-        ndvi_qc_aqua_name  = ndvi_bundle_df_tera[grep('Quality-lookup', ndvi_bundle_df_tera$file_name),]$file_name
+        ndvi_qc_aqua_name  = ndvi_bundle_df_aqua[grep('Quality-lookup', ndvi_bundle_df_aqua$file_name),]$file_name
       }else {
         incProgress(amount = .1, detail = 'Importing NDVI AQUA')
         # ndvi_bundle_df_aqua = get_appeears_bundle_df(appeears$ndvi_aqua$task_id)
