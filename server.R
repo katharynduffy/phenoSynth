@@ -613,8 +613,10 @@ server = function(input, output, session) {
     }else {
       # lc_bundle_df = get_appeears_bundle_df(appeears$landcover$task_id)
       lc_files = list.files(lc_filepath)
-      lc_name  = lc_files[grepl('.nc', lc_files)]
+      lc_name  = lc_files[grepl('MCD12Q1.006_500m_aid0001.nc', lc_files)]
     }
+    print (lc_filepath)
+    print (lc_name)
     # NDVI layer
     # Download or Import NDVI for this site to use to resample landcover
     appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
@@ -624,7 +626,7 @@ server = function(input, output, session) {
     }else {
       # ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
       ndvi_files = list.files(ndvi_tera_filepath)
-      ndvi_tera_name  = ndvi_files[grepl('.nc', ndvi_files)]
+      ndvi_tera_name  = ndvi_files[grepl('MOD13Q1.006_250m_aid0001.nc', ndvi_files)]
     }
     
     # Bringing in 250m sinu and re-projecting to merc
@@ -1442,10 +1444,10 @@ server = function(input, output, session) {
       # Bring in tera and aqua data
       appeears$ndvi_aqua = get_appeears_task(site, type = 'ndvi_aqua')
       appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
-      appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
+      # appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
       
-      print (as_tibble(appeears$ndvi_aqua))
-      print (as_tibble(appeears$ndvi_tera))
+      print (appeears$ndvi_aqua)
+      print (appeears$ndvi_tera)
       
       if (length(list.files(ndvi_tera_filepath))==0){
         incProgress(amount = .1, detail = 'Downloading NDVI TERA')
@@ -1456,7 +1458,7 @@ server = function(input, output, session) {
         incProgress(amount = .1, detail = 'Importing NDVI TERA')
         # ndvi_bundle_df_tera = get_appeears_bundle_df(appeears$ndvi_tera$task_id)
         ndvi_files_t = list.files(ndvi_tera_filepath)
-        ndvi_tera_name  = ndvi_files_t[grepl('.nc', ndvi_files_t)]
+        ndvi_tera_name  = ndvi_files_t[grepl('MOD13Q1.006_250m_aid0001.nc', ndvi_files_t)]
         ndvi_qc_tera_name = ndvi_files_t[grepl('Quality-lookup.csv', ndvi_files_t)]
       }
       
@@ -1469,12 +1471,9 @@ server = function(input, output, session) {
         incProgress(amount = .1, detail = 'Importing NDVI AQUA')
         # ndvi_bundle_df_aqua = get_appeears_bundle_df(appeears$ndvi_aqua$task_id)
         ndvi_files_a = list.files(ndvi_aqua_filepath)
-        ndvi_aqua_name  = ndvi_files_a[grepl('.nc', ndvi_files_a)]
+        ndvi_aqua_name  = ndvi_files_a[grepl('MYD13Q1.006_250m_aid0001.nc', ndvi_files_a)]
         ndvi_qc_aqua_name = ndvi_files_a[grepl('Quality-lookup.csv', ndvi_files_a)]
       }
-      
-      # print (as_tibble(ndvi_bundle_df_tera))
-      # print (as_tibble(ndvi_bundle_df_aqua))
       
       incProgress(amount = .1, detail = 'Processing NDVI')
       # TERA data (ndvi)
@@ -1523,7 +1522,7 @@ server = function(input, output, session) {
         
       appeears$evi_aqua = get_appeears_task(site, type = 'evi_aqua')
       appeears$evi_tera = get_appeears_task(site, type = 'evi_tera')
-      appeears$evi  = get_appeears_task(site, type = 'evi')
+      # appeears$evi  = get_appeears_task(site, type = 'evi')
       
       print (as_tibble(appeears$evi_aqua))
       print (as_tibble(appeears$evi_tera))
@@ -1537,7 +1536,7 @@ server = function(input, output, session) {
         incProgress(amount = .2, detail = 'Importing EVI TERA')
         # evi_bundle_df_tera = get_appeears_bundle_df(appeears$evi_tera$task_id)
         evi_files_t = list.files(evi_tera_filepath)
-        evi_tera_name  = evi_files_t[grepl('.nc', evi_files_t)]
+        evi_tera_name  = evi_files_t[grepl('MOD13Q1.006_250m_aid0001.nc', evi_files_t)]
         evi_qc_tera_name = evi_files_t[grepl('Quality-lookup.csv', evi_files_t)]
       }
       
@@ -1550,7 +1549,7 @@ server = function(input, output, session) {
         incProgress(amount = .2, detail = 'Importing EVI AQUA')
         # evi_bundle_df_aqua = get_appeears_bundle_df(appeears$evi_aqua$task_id)
         evi_files_a = list.files(evi_aqua_filepath)
-        evi_aqua_name  = evi_files_a[grepl('.nc', evi_files_a)]
+        evi_aqua_name  = evi_files_a[grepl('MYD13Q1.006_250m_aid0001.nc', evi_files_a)]
         evi_qc_aqua_name = evi_files_a[grepl('Quality-lookup.csv', evi_files_a)]
       }
    
