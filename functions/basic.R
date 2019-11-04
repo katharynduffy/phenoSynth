@@ -33,6 +33,7 @@ switch_to_explorer_panel = function(map_ = 'map'){
   shinyjs::hide(id = 'getData')
   shinyjs::hide(id = 'getDataPopup')
   shinyjs::hide(id = 'clearPixels')
+  shinyjs::hide(id = 'uploadShp')
   # Create leaflet map for explorer mode
   leafletProxy(map_) %>%
     clearControls() %>%
@@ -60,6 +61,7 @@ switch_to_analyzer_panel = function(){
   shinyjs::show(id = 'siteTitle')
   shinyjs::show(id = 'pftSelection')
   shinyjs::show(id = 'getData')
+  shinyjs::show(id = 'uploadShp')
   # Ids to hide:
   shinyjs::hide(id = 'explorerTitle')
   shinyjs::hide(id = 'usZoom')

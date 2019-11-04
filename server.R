@@ -133,6 +133,7 @@ server = function(input, output, session) {
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
+  
   # Turns ROI off if drawImage is off
   observe({
     checked = input$drawImage
@@ -141,7 +142,7 @@ server = function(input, output, session) {
     }
   })
   
-  # hides frequency UI element if GCC isn't selected for data to download/get
+  # Hides frequency UI element if GCC isn't selected for data to download/get
   observe({
     data = input$dataTypes_get
     if ('GCC' %in% data){
@@ -149,7 +150,6 @@ server = function(input, output, session) {
     } else{
       shinyjs::hide(id = 'phenocamFrequency')}
   })
-
 
   # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
@@ -176,7 +176,6 @@ server = function(input, output, session) {
   observeEvent(input$map_draw_new_feature, {
       # Leaflet ID to add to the shapefile dataframe
       id = input$map_draw_new_feature$properties$`_leaflet_id`
-      
 
       # Site name combined with run # for new polygon feature
       data$run   = data$run + 1
@@ -291,10 +290,26 @@ server = function(input, output, session) {
     filename = paste(folder, file, sep='')
     dir.create(folder)
     
-    
     print (filename)
     shapefile(sps, filename, overwrite=TRUE)
     shinyBS::toggleModal(session, 'saveShpPopup', toggle = 'close')
+  })
+  
+  # Upload shapefile or KML?
+  observeEvent(input$shpFileName, {
+    imported_shpfile = input$shpFileName
+    print (imported_shpfile)
+    
+    temp_dir_name = dirname(imported_shpfile$datapath[1])
+    # Rename files
+    for (i in 1:nrow(imported_shpfile)) {
+      file.rename(imported_shpfile$datapath[i],
+        paste0(temp_dir_name, "/", imported_shpfile$name[i]))
+    }
+    print (imported_shpfile)
+    uploaded_shp = readOGR(paste(temp_dir_name,
+      imported_shpfile$name[grep(pattern = "*.shp$", imported_shpfile$name)], sep = "/"))
+    leafletProxy("map") %>% addPolygons(data = uploaded_shp)
   })
   
   # Email shapefile button

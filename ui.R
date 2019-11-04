@@ -21,6 +21,12 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                          textInput('paoiNotes', 'Notes or Comments'),
                          actionButton('emailShpButton', 'Email shapefile')
                  ),
+                 bsModal("uploadShpPopup",
+                   "Upload shapefile", "uploadShp",
+                   tags$head(tags$style("#window .modal{backdrop: 'static'}")),
+                   size = "medium",
+                   fileInput('shpFileName', 'Select shapefile', multiple = TRUE, accept = c('.shp','.dbf','.sbn','.sbx','.shx','.prj'))
+                 ),
                  bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
                          size = "medium",
@@ -86,6 +92,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS Pixels (250m resolution)", value = FALSE),
                                       actionButton('getData', 'Import Data'),
                                       actionButton('plotRemoteData', 'Plot Data'),
+                                      actionButton('uploadShp', 'Upload Shapefile'),
                                       actionButton('clearPixels', 'Clear Pixels')
                         ),
                                      
