@@ -55,6 +55,7 @@ library(knitr)
 library(kableExtra)
 library(shinyalert)
 library(phenocamapi)
+library(changepoint)
 
 # Set knitr table format
 options(knitr.table.format = "html")
