@@ -1,0 +1,50 @@
+---
+title: "bestPixelPaper"
+author: "K Duffy"
+date: "11/5/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Sites
+
+Sites from (Andrew's Scientific Reports paper)[https://www.nature.com/articles/s41598-018-23804-6.pdf]
+
+-kellogcorn
+-armoklahoma
+-mamothcave
+-bostoncommon
+-turkeypointenf39
+-howland1
+-kamuela
+-teddy
+-butte
+-uiefprairie
+
+
+## Pull metadata for those sites
+
+```{r}
+library(phenocamapi)
+df=get_phenos()
+sitelist=c('kellogcorn', 'armoklahoma','mamothcave', 'bostoncommon', 'turkeypointenf39', 'howland1', 'kamuela', 'teddy' , 'butte', 'uiefprairie')
+```
+
+```{r}
+best_pixel_sites=df[is.element(df$site, sitelist)]
+best_pixel_sites
+```
+
+## Methodology:
+
+Choose 3 'sets' of pixels to compare:
+*lat/lon of PhenoCam
+*5?10? 'best' pixels based on veg cover, heterogeniety, proximity
+*Same quantity of 'random' pixels
+
+# Pull in data:
+
+

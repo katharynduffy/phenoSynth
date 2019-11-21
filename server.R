@@ -652,7 +652,7 @@ server = function(input, output, session) {
     ndvi_raster_merc = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
     # Bringing in 500m sinu, resampling to 250m, and then re-projecting back to 500m to merc
     lc_path  = paste0(lc_filepath, lc_name)
-    lc_brick  = raster::brick(lc_path, crs=sinu_crs)
+    lc_brick  = raster::brick(lc_path, crs=sinu_crs) #ONAQ breaks here
     lc_raster = raster::subset(lc_brick, 1)
     lc_raster_ = raster::resample(x = lc_raster, y = ndvi_raster_t, crs = sinu_crs, method='ngb')
     lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t))
