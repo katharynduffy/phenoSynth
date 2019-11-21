@@ -351,16 +351,12 @@ get_x_y_albers_from_wgs84 = function(lon_,lat_){
 #' build_landsat_lc_pallet
 #'
 #' @param raster_ 
-#' @param us_landsat_lc 
 #' @param landsat_key 
 #'
 #' @return - list of colors
 #' 
-build_landsat_lc_pallet = function(raster_, us_landsat_lc, landsat_key){
+build_landsat_lc_pallet = function(raster_, landsat_key){
   print ('building landsat landcover palette')
-  landsat_atts_ = us_landsat_lc@data@attributes
-  key_df = subset(landsat_atts_[[1]], landsat_atts_[[1]]$COUNT != 0)
-  print (key_df)
   colors = c()
   names  = c()
   color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
