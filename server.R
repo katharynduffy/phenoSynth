@@ -695,6 +695,20 @@ server = function(input, output, session) {
       data$lng_merc = pt_merc@coords[1]
       
       data$r_landcover = crop_raster(data$lat_merc, data$lng_merc, lc_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
+      
+      # Read in NLCD if site is within NLCD extent (in Mercator)
+      data$NLCD = FALSE
+      site_nlcd_file = paste0('./www/landsat_lc/', site, '_landsat_lc.tif')
+      
+      # If NLCD layer exists for site, add it to map
+      if (file.exists(site_nlcd_file)){
+        site_nlcd_raster = raster::raster(site_nlcd_file) 
+        data$r_nlcd = site_nlcd_raster
+        key_df = read.csv('./www/landsat_lc/nlcd_key.csv')
+        data$nlcd_c = build_landsat_lc_pallet(data$r_nlcd, key_df)
+        data$NLCD = TRUE
+      }
+      
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       data$veg_types = veg_types
@@ -719,6 +733,17 @@ server = function(input, output, session) {
                          overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                          position = c("topleft"), 
                          options = layersControlOptions(collapsed = FALSE))
+      
+      # If NLCD layer exists for site, add it to map
+      if (data$NLCD){
+        leafletProxy('map') %>% addRasterImage(data$r_nlcd, colors = data$nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+          addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
+            position = c("topleft"), 
+            options = layersControlOptions(collapsed = FALSE)) %>% 
+          hideGroup("2016 NLCD")
+      }
+      
     }
     }) # End busy indicator
   }) # End analyzerMode Observer
@@ -749,6 +774,16 @@ server = function(input, output, session) {
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE))
+        
+        # If NLCD layer exists for site, add it to map
+        if (data$NLCD){
+          leafletProxy('map') %>% addRasterImage(data$r_nlcd, colors = data$nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+            addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+              overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
+              position = c("topleft"), 
+              options = layersControlOptions(collapsed = FALSE)) %>% 
+            hideGroup("2016 NLCD")
+        }
         
         # Grab correct ROI mask from phenocamAPI 
         data$roi_url = get_roi_url(name = site, pft_abr = pft_abbr)
