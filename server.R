@@ -299,6 +299,8 @@ server = function(input, output, session) {
   observeEvent(input$shpFileName, {
     imported_shpfile = input$shpFileName
     
+    # Add filter and make sure the user selected atleast the .dbf, .prj, .shp, and .shx!
+    
     temp_dir_name = dirname(imported_shpfile$datapath[1])
     # Rename files
     for (i in 1:nrow(imported_shpfile)) {
@@ -981,8 +983,13 @@ server = function(input, output, session) {
           }else {
             ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
           }}
-        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211, 
-                                                  ndvi_pixel_data_df$ndvi_raw, NA)
+        
+        qa_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
+        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc %in% qa_values ,ndvi_pixel_data_df$ndvi_raw, NA)
+        
+        # ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
+        #                                           ndvi_pixel_data_df$ndvi_raw, NA)
+        
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
       }
@@ -1039,8 +1046,12 @@ server = function(input, output, session) {
             evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
           }
             } #END 250M LOOP
-          evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
-                                                  evi_pixel_data_df$evi_raw, NA)
+        
+          qa_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
+          evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc %in% qa_values ,evi_pixel_data_df$evi_raw, NA)
+          
+          # evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
+          #                                         evi_pixel_data_df$evi_raw, NA)
           data$evi_pixels = evi_pixel_data_df
           print (as_tibble(data$evi_pixels))
 
