@@ -298,7 +298,6 @@ server = function(input, output, session) {
   # Upload shapefile or KML?
   observeEvent(input$shpFileName, {
     imported_shpfile = input$shpFileName
-    print (imported_shpfile)
     
     temp_dir_name = dirname(imported_shpfile$datapath[1])
     # Rename files
@@ -307,9 +306,21 @@ server = function(input, output, session) {
         paste0(temp_dir_name, "/", imported_shpfile$name[i]))
     }
     print (imported_shpfile)
-    uploaded_shp = readOGR(paste(temp_dir_name,
-      imported_shpfile$name[grep(pattern = "*.shp$", imported_shpfile$name)], sep = "/"))
-    leafletProxy("map") %>% addPolygons(data = uploaded_shp)
+    shp_file_name = paste(temp_dir_name,
+      imported_shpfile$name[grep(pattern = "*.shp$", imported_shpfile$name)], sep = "/")
+    print (shp_file_name)
+    uploaded_shp = readOGR(shp_file_name)
+    
+    if (as.character(crs(uploaded_shp)) != wgs_crs){
+      print ('Wrong crs:')
+      print (crs(uploaded_shp))
+      print ('spTransforming it to WGS84')
+      
+      new_test_shape = spTransform(uploaded_shp, wgs_crs)
+      leafletProxy("map") %>% addPolygons(data = new_test_shape)
+    } else{
+      leafletProxy("map") %>% addPolygons(data = uploaded_shp)
+    }
   })
   
   # Email shapefile button
