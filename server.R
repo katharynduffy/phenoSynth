@@ -1068,6 +1068,23 @@ server = function(input, output, session) {
                             '<br>Pixel: ', pixel,
                             '<br>Data: NDVI')) %>%
             layout(xaxis = list(title = "Date"))
+##new spline edits here
+          if (length(unique(ndvi_pixel_data_df$ndvi_filtered)) >= 5){
+            mNDVIhq=ndvi_pixel_data_df %>%
+              filter(!is.na(ndvi_pixel_data_df$ndvi_filtered)) %>%
+              group_by(date) %>%
+              summarise(meanNDVI = mean(ndvi_filtered))
+            
+          p_ndvi= p_ndvi%>%
+            add_trace(
+              x=mNDVIhq$date, 
+              y=~fitted(smooth.spline(mNDVIhq$meanNDVIhq~as.numeric(mNDVIhq$date)), data=mNDVIhq),
+              mode = "lines",
+              line = list(width = 2, color = "rgb(120,120,120)"),
+              name = "NDVI loess fit",
+              showlegend = TRUE
+            )%>%layout(xaxis = list(title = "Date"))}
+##
           p_ndvi = add_title_to_plot(df = p_ndvi,
                                      x_title_ = 'NDVI (High Quality data)',
                                      y_title_ = 'NDVI value')
