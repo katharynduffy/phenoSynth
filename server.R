@@ -298,7 +298,8 @@ server = function(input, output, session) {
   # Upload shapefile or KML?
   observeEvent(input$shpFileName, {
     imported_shpfile = input$shpFileName
-    print (imported_shpfile)
+    
+    # Add filter and make sure the user selected atleast the .dbf, .prj, .shp, and .shx!
     
     temp_dir_name = dirname(imported_shpfile$datapath[1])
     # Rename files
@@ -307,9 +308,21 @@ server = function(input, output, session) {
         paste0(temp_dir_name, "/", imported_shpfile$name[i]))
     }
     print (imported_shpfile)
-    uploaded_shp = readOGR(paste(temp_dir_name,
-      imported_shpfile$name[grep(pattern = "*.shp$", imported_shpfile$name)], sep = "/"))
-    leafletProxy("map") %>% addPolygons(data = uploaded_shp)
+    shp_file_name = paste(temp_dir_name,
+      imported_shpfile$name[grep(pattern = "*.shp$", imported_shpfile$name)], sep = "/")
+    print (shp_file_name)
+    uploaded_shp = readOGR(shp_file_name)
+    
+    if (as.character(crs(uploaded_shp)) != wgs_crs){
+      print ('Wrong crs:')
+      print (crs(uploaded_shp))
+      print ('spTransforming it to WGS84')
+      
+      new_test_shape = spTransform(uploaded_shp, wgs_crs)
+      leafletProxy("map") %>% addPolygons(data = new_test_shape)
+    } else{
+      leafletProxy("map") %>% addPolygons(data = uploaded_shp)
+    }
   })
   
   # Email shapefile button
@@ -695,6 +708,20 @@ server = function(input, output, session) {
       data$lng_merc = pt_merc@coords[1]
       
       data$r_landcover = crop_raster(data$lat_merc, data$lng_merc, lc_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
+      
+      # Read in NLCD if site is within NLCD extent (in Mercator)
+      data$NLCD = FALSE
+      site_nlcd_file = paste0('./www/landsat_lc/', site, '_landsat_lc.tif')
+      
+      # If NLCD layer exists for site, add it to map
+      if (file.exists(site_nlcd_file)){
+        site_nlcd_raster = raster::raster(site_nlcd_file) 
+        data$r_nlcd = site_nlcd_raster
+        key_df = read.csv('./www/landsat_lc/nlcd_key.csv')
+        data$nlcd_c = build_landsat_lc_pallet(data$r_nlcd, key_df)
+        data$NLCD = TRUE
+      }
+      
 
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       data$veg_types = veg_types
@@ -719,6 +746,17 @@ server = function(input, output, session) {
                          overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                          position = c("topleft"), 
                          options = layersControlOptions(collapsed = FALSE))
+      
+      # If NLCD layer exists for site, add it to map
+      if (data$NLCD){
+        leafletProxy('map') %>% addRasterImage(data$r_nlcd, colors = data$nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+          addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
+            position = c("topleft"), 
+            options = layersControlOptions(collapsed = FALSE)) %>% 
+          hideGroup("2016 NLCD")
+      }
+      
     }
     }) # End busy indicator
   }) # End analyzerMode Observer
@@ -749,6 +787,16 @@ server = function(input, output, session) {
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
                            position = c("topleft"),
                            options = layersControlOptions(collapsed = FALSE))
+        
+        # If NLCD layer exists for site, add it to map
+        if (data$NLCD){
+          leafletProxy('map') %>% addRasterImage(data$r_nlcd, colors = data$nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+            addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+              overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
+              position = c("topleft"), 
+              options = layersControlOptions(collapsed = FALSE)) %>% 
+            hideGroup("2016 NLCD")
+        }
         
         # Grab correct ROI mask from phenocamAPI 
         data$roi_url = get_roi_url(name = site, pft_abr = pft_abbr)
@@ -935,8 +983,13 @@ server = function(input, output, session) {
           }else {
             ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
           }}
-        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211, 
-                                                  ndvi_pixel_data_df$ndvi_raw, NA)
+        
+        qa_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
+        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc %in% qa_values ,ndvi_pixel_data_df$ndvi_raw, NA)
+        
+        # ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
+        #                                           ndvi_pixel_data_df$ndvi_raw, NA)
+        
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
       }
@@ -993,8 +1046,12 @@ server = function(input, output, session) {
             evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
           }
             } #END 250M LOOP
-          evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
-                                                  evi_pixel_data_df$evi_raw, NA)
+        
+          qa_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
+          evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc %in% qa_values ,evi_pixel_data_df$evi_raw, NA)
+          
+          # evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
+          #                                         evi_pixel_data_df$evi_raw, NA)
           data$evi_pixels = evi_pixel_data_df
           print (as_tibble(data$evi_pixels))
 

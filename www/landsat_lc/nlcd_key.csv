@@ -1,0 +1,18 @@
+"","ID","COUNT","Red","Green","Blue","NLCD.Land.Cover.Class","Opacity"
+"1",0,7854240512,0,0,0,"Unclassified",0
+"12",11,470743994,70,107,159,"Open Water",255
+"13",12,571568,209,222,248,"Perennial Snow/Ice",255
+"22",21,258084082,222,197,197,"Developed, Open Space",255
+"23",22,133062048,217,146,130,"Developed, Low Intensity",255
+"24",23,62536718,235,0,0,"Developed, Medium Intensity",255
+"25",24,22510859,171,0,0,"Developed, High Intensity",255
+"32",31,92107968,179,172,159,"Barren Land",255
+"42",41,840903850,104,171,95,"Deciduous Forest",255
+"43",42,1026422406,28,95,44,"Evergreen Forest",255
+"44",43,325741623,181,197,143,"Mixed Forest",255
+"53",52,1955705216,204,184,121,"Shrub/Scrub",255
+"72",71,1242679969,223,223,194,"Herbaceuous",255
+"82",81,563964334,220,217,57,"Hay/Pasture",255
+"83",82,1459015111,171,108,40,"Cultivated Crops",255
+"91",90,391909523,184,217,235,"Woody Wetlands",255
+"96",95,131904779,108,159,184,"Emergent Herbaceuous Wetlands",255
