@@ -1125,23 +1125,24 @@ server = function(input, output, session) {
                             '<br>Pixel: ', pixel,
                             '<br>Data: NDVI')) %>%
             layout(xaxis = list(title = "Date"))
-##new spline edits here
+          ## New spline edits here
           if (length(unique(ndvi_pixel_data_df$ndvi_filtered)) >= 5){
-            mNDVIhq=ndvi_pixel_data_df %>%
+            mNDVIhq = ndvi_pixel_data_df %>%
               filter(!is.na(ndvi_pixel_data_df$ndvi_filtered)) %>%
               group_by(date) %>%
               summarise(meanNDVI = mean(ndvi_filtered))
             
-          p_ndvi= p_ndvi%>%
-            add_trace(
-              x=mNDVIhq$date, 
-              y=~fitted(smooth.spline(mNDVIhq$meanNDVIhq~as.numeric(mNDVIhq$date)), data=mNDVIhq),
-              mode = "lines",
-              line = list(width = 2, color = "rgb(120,120,120)"),
-              name = "NDVI loess fit",
-              showlegend = TRUE
-            )%>%layout(xaxis = list(title = "Date"))}
-##
+            p_ndvi= p_ndvi %>%
+              add_trace(
+                x = mNDVIhq$date, 
+                y =~ fitted(smooth.spline(mNDVIhq$meanNDVI~as.Date(mNDVIhq$date)), data=mNDVIhq),
+                # y=~fitted(smooth.spline(mNDVIhq$meanNDVIhq~as.numeric(mNDVIhq$date)), data=mNDVIhq),
+                mode = "lines",
+                line = list(width = 2, color = "rgb(120,120,120)"),
+                name = "NDVI loess fit",
+                showlegend = TRUE) %>% layout(xaxis = list(title = "Date"))
+            }
+          
           p_ndvi = add_title_to_plot(df = p_ndvi,
                                      x_title_ = 'NDVI (High Quality data)',
                                      y_title_ = 'NDVI value')
@@ -1173,8 +1174,8 @@ server = function(input, output, session) {
         
         p_ndvi_raw = p_ndvi_raw %>%
           add_trace(
-            x=mNDVI$date, 
-            y=~fitted(smooth.spline(mNDVI$meanNDVI~as.numeric(mNDVI$date)), data=mNDVI),
+            x = mNDVI$date, 
+            y = ~fitted(smooth.spline(mNDVI$meanNDVI~as.numeric(mNDVI$date)), data=mNDVI),
             mode = "lines",
             line = list(width = 2, color = "rgb(120,120,120)"),
             name = "NDVI loess fit",
@@ -1192,7 +1193,7 @@ server = function(input, output, session) {
       # EVI HIGH QUALITY
       evi_pixel_data_df = data$evi_pixels
       print (as_tibble(evi_pixel_data_df))
-      mEVI=evi_pixel_data_df %>%
+      mEVI = evi_pixel_data_df %>%
         filter(!is.na(evi_pixel_data_df$evi_raw)) %>%
         group_by(date) %>%
         summarise(meanEVI = mean(evi_raw))
@@ -1219,6 +1220,25 @@ server = function(input, output, session) {
                             '<br>Pixel: ', pixel,
                             '<br>Data: EVI')) %>%
             layout(xaxis = list(title = "Date"))
+          
+          ## New spline edits here
+          if (length(unique(evi_pixel_data_df$evi_filtered)) >= 5){
+            mEVIhq = evi_pixel_data_df %>%
+              filter(!is.na(evi_pixel_data_df$evi_filtered)) %>%
+              group_by(date) %>%
+              summarise(meanEVI = mean(evi_filtered))
+            
+            p_evi= p_evi %>%
+              add_trace(
+                x = mEVIhq$date, 
+                y = ~fitted(smooth.spline(mEVIhq$meanEVI~as.Date(mEVIhq$date)), data=mEVIhq),
+                # y=~fitted(smooth.spline(mEVIhq$meanEVIhq~as.numeric(mEVIhq$date)), data=mEVIhq),
+                mode = "lines",
+                line = list(width = 2, color = "rgb(120,120,120)"),
+                name = "EVI loess fit",
+                showlegend = TRUE) %>% layout(xaxis = list(title = "Date"))
+          }
+          
           p_evi = add_title_to_plot(df = p_evi,
                                     x_title_ = 'EVI (High Quality data)',
                                     y_title_ = 'EVI value')
