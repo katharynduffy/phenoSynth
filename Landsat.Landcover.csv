@@ -1,25 +1,27 @@
 MODIS.Class,Landsat.Class,Desc.
 0,11,Open Water
-254,12,Perennial Ice/Snow
-13,21,Low Intensity Residential
-13,22,High Intensity Residential
-13,23,Commercial/Industrial/Transportation
-16,31,Bare Rock/Sand/Clay
-13,32,Quarries/Strip Mines/Gravel Pits
-254,33,Transitional
-3,41,Deciduous Forest
-4,41,Deciduous Forest
 1,42,Evergreen Forest
 2,42,Evergreen Forest
+3,41,Deciduous Forest
+4,41,Deciduous Forest
 5,43,Mixed Forest
 6,51,Shrubland
-12,61,Orchards/Vineyards/Other
 7,51,Shrubland
+8,NA,No mathcing vegetation class
+9,NA,No mathcing vegetation class
 10,71,Grasslands/Herbaceous
+11,91,Woody Wetlands
+11,92,Emergent Herbaceous Wetlands
+12,61,Orchards/Vineyards/Other
 12,81,Pasture/Hay
 12,82,Row Crops
 12,83,Small Grains
 12,84,Fallow
+13,21,Low Intensity Residential
+13,22,High Intensity Residential
+13,23,Commercial/Industrial/Transportation
+13,32,Quarries/Strip Mines/Gravel Pits
 13,85,Urban/Recreational Grasses
-11,91,Woody Wetlands
-11,92,Emergent Herbaceous Wetlands
+16,31,Bare Rock/Sand/Clay
+254,12,Perennial Ice/Snow
+254,33,Transitional
