@@ -76,7 +76,7 @@ pft_expanded = c('Water', 'Evergreen Needleleaf Forest', 'Evergreen Broadleaf Fo
                  'Shrubland', 'Shrubland', 'Woody Savanna', 'Savanna','Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'No Vegetation', 'Unclassified', 'Unclassified' )
 pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded)
 # Insert LandSat classes here
-Landsat_Landcover = read_csv("Landsat.Landcover.csv")
+Landsat_Landcover = read_csv("Landsat.Landcover.csv") #updated landsat landclass so that we just reference this table
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 
