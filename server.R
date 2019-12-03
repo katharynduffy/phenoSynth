@@ -71,7 +71,7 @@ server = function(input, output, session) {
         polylineOptions     = FALSE,
         rectangleOptions    = FALSE,
         markerOptions       = FALSE,
-        # circleMarkerOptions = FALSE,
+        circleMarkerOptions = FALSE,
         circleOptions       = FALSE,
         editOptions         = editToolbarOptions(selectedPathOptions = selectedPathOptions()),
         polygonOptions      = drawPolygonOptions(
@@ -92,7 +92,7 @@ server = function(input, output, session) {
                Shiny.onInputChange('hover_coordinates', null)})
                }")  %>%
       setView(lng = -93.85, lat = 37.45, zoom = 4) %>%
-      addStyleEditor(openOnLeafletDraw = TRUE) %>%
+      # addStyleEditor(openOnLeafletDraw = TRUE) %>%
       addMeasure(position          = "topleft",
                  primaryLengthUnit = "meters",
                  primaryAreaUnit   = "sqmeters",
@@ -102,7 +102,7 @@ server = function(input, output, session) {
       addLayersControl(
         baseGroups    = c("World Imagery", "Open Topo Map"),
         position      = c("topleft"),
-        options       = layersControlOptions(collapsed = TRUE))
+        options       = layersControlOptions(collapsed = FALSE))
     })
 
   # Adds the mouse lat / lon to an output (we can change this to anything)
@@ -732,14 +732,14 @@ server = function(input, output, session) {
       pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
       print (as.numeric(pft_key))
 
-      c3 = build_pft_palette(data$r_landcover)
+      data$c3 = build_pft_palette(data$r_landcover)
       rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
-        addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
+        addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c3$colors) %>%
         addRasterImage(rc, opacity = .2, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
-        addLegend(labels = c3$names, colors = c3$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover') %>%
+        addLegend(labels = data$c3$names, colors = data$c3$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover', group = 'MODIS Landcover') %>%
         addLegend(values = c(1,2), position = 'bottomright', title = 'Vegetation Cover Agreement',
                   colors = c('green', 'grey'), labels = c('ROI-Match', 'No-Match')) %>%
         addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
@@ -749,7 +749,33 @@ server = function(input, output, session) {
       
       # If NLCD layer exists for site, add it to map
       if (data$NLCD){
-        leafletProxy('map') %>% addRasterImage(data$r_nlcd, colors = data$nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+        # modis to landsat lookup
+        landsat_lc = Landsat_Landcover
+        # create a landsat to modis lookup (so that no landsat values are left out)
+        landsat_lc_lookup = read.csv('./www/landsat_lc/nlcd_key.csv') %>% 
+          dplyr::select(ID,NLCD.Land.Cover.Class) %>% left_join(landsat_lc, by = c('ID' = 'Landsat.Class')) %>%
+          mutate(MODIS.Class = replace(MODIS.Class, ID == 24, 13)) %>%
+          mutate(MODIS.Class = replace(MODIS.Class, Desc. == 'Open Water', 17)) %>%
+          left_join(pft_df, by = c('MODIS.Class' = 'pft_key'))
+        
+        # Build crosswalk matrix for reclassify function (rcl)
+        from_values = landsat_lc_lookup$ID
+        becomes_values   = landsat_lc_lookup$MODIS.Class
+        
+        # Build matrix to use in reclassify function
+        m = matrix(ncol = 2, nrow = length(from_values))
+        m[,1] = from_values
+        m[,2] = becomes_values
+        
+        # reclassified nlcd layer to match modis values
+        data$rc_nlcd = reclassify(data$r_nlcd, m)
+        # Color palette for both nlcd and modis landcover
+        data$rc_nlcd_c = build_pft_palette(data$rc_nlcd)
+        data$nlcd_modis_c = build_pft_palette(data$r_landcover, data$rc_nlcd)
+        
+        leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+          clearControls() %>% 
+          addLegend(labels = data$nlcd_modis_c$names, colors = data$nlcd_modis_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover')  %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
             overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
             position = c("topleft"), 
@@ -776,12 +802,13 @@ server = function(input, output, session) {
         pft_abbr = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
         data$pft_abbr = pft_abbr
         print (as.numeric(pft_key))
-        c3 = build_pft_palette(data$r_landcover)
-        rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , r_ = data$r_landcover, crs_str = merc_crs, reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
+        rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , 
+                           r_ = data$r_landcover, crs_str = merc_crs, 
+                           reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
 
         leafletProxy('map') %>%
           clearImages() %>%
-          addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = c3$colors) %>%
+          addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c3$colors) %>%
           addRasterImage(rc, opacity = .35, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
@@ -790,7 +817,7 @@ server = function(input, output, session) {
         
         # If NLCD layer exists for site, add it to map
         if (data$NLCD){
-          leafletProxy('map') %>% addRasterImage(data$r_nlcd, colors = data$nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
             addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
               overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
               position = c("topleft"), 
@@ -1616,6 +1643,15 @@ server = function(input, output, session) {
       incProgress(amount = .1)
       grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
       
+      # ADD NLCD back in after building grid
+      if (data$NLCD){
+        leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+          addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD', '250m MODIS Grid'),
+            position = c("topleft"), 
+            options = layersControlOptions(collapsed = FALSE))
+      }
+      
       shinyjs::show(id = 'highlightPixelModeNDVI')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       
@@ -1699,6 +1735,16 @@ server = function(input, output, session) {
         
         incProgress(amount = .1)
         grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
+        
+        # ADD NLCD back in after building grid
+        if (data$NLCD){
+          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+            addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+              overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD', '250m MODIS Grid'),
+              position = c("topleft"), 
+              options = layersControlOptions(collapsed = FALSE))
+        }
+        
         shinyjs::show(id = 'highlightPixelModeNDVI')
         updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       }

@@ -60,10 +60,36 @@ library(changepoint)
 # Set knitr table format
 options(knitr.table.format = "html")
 
+
+# Add catch here to ping phenocam surver and make sure it is up and running.
+#  if not, bring in most up to date version of cams and rois cached (if available)
+
+# Phenocam site data, that will be cached daily 
 print ('Importing Modules and Phenocam site data')
-# Variables
-roi_files = get_phenocam_roi_df()
-cams_     = get_phenocam_camera_df(pc_roi_df = roi_files)
+todays_date = Sys.Date()
+todays_cams_name = paste0('./www/phenocam_data/cams_', todays_date)
+todays_rois_name = paste0('./www/phenocam_data/rois_', todays_date)
+
+# Create directory to store phenocam data if it doesn't exist
+if(dir.exists('./www/phenocam_data')==FALSE){
+  dir.create('./www/phenocam_data')
+  roi_files = get_phenocam_roi_df()
+  cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
+  write.csv(roi_files, paste0('./www/phenocam_data/rois_', todays_date))
+  write.csv(cams_, paste0('./www/phenocam_data/cams_', todays_date))
+} else{
+  # If directory exists check to see if todays cams and rois exist
+  if (file.exists(todays_cams_name) & file.exists(todays_rois_name)){
+    cams_ = read.csv(todays_cams_name)
+    roi_files = read.csv(todays_rois_name)
+  }else {
+    roi_files = get_phenocam_roi_df()
+    cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
+    write.csv(roi_files, paste0('./www/phenocam_data/rois_', todays_date))
+    write.csv(cams_, paste0('./www/phenocam_data/cams_', todays_date))
+  }
+}
+
 # All site names from table
 site_names = cams_$site
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
@@ -76,7 +102,7 @@ pft_expanded = c('Water', 'Evergreen Needleleaf Forest', 'Evergreen Broadleaf Fo
                  'Shrubland', 'Shrubland', 'Woody Savanna', 'Savanna','Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'No Vegetation', 'Unclassified', 'Unclassified' )
 pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded)
 # Insert LandSat classes here
-Landsat_Landcover = read_csv("./www/Landsat.Landcover.csv") #updated landsat landclass so that we just reference this table
+Landsat_Landcover = read_csv("./www/Landsat.Landcover.csv") # updated landsat landclass so that we just reference this table
 
 site_filters = c('All', 'Type1', 'Type2', 'Type3', 'NEON', 'Active', 'Inactive')
 

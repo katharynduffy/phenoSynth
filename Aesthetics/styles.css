@@ -265,3 +265,23 @@ h4 {
   font-size: 14px;
   font-weight: 200;
 }
+
+
+/*measuring tool*/
+.leaflet-touch .leaflet-control-measure .leaflet-control-measure-toggle, .leaflet-touch .leaflet-control-measure .leaflet-control-measure-toggle:hover {
+    width: 30px;
+    height: 30px;
+}
+
+/*layers tool*/
+.leaflet-touch .leaflet-control-layers-toggle {
+    width: 30px;
+    height: 30px;
+}
+
+div.leaflet-control-measure.leaflet-control {
+  border:5px;
+  margin-left: 12px;
+}
+
+

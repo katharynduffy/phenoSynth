@@ -23,19 +23,24 @@ matrix_to_polygon = function(matrix, id, type_, crs = '+proj=longlat +datum=WGS8
 #' Builds a color palet for the modis landcover raster layer
 #' @return - list of colors
 #' 
-build_pft_palette = function(raster_){
+build_pft_palette = function(raster_, raster2_=NULL){
   print ('building palet')
   colors = c()
   names  = c()
   color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
                     '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
-  v = unique(values(raster_))
+  
+  if (is.null(raster2_)){
+    v = unique(values(raster_))
+  }else{
+    v = unique(c(unique(values(raster_)), unique(values(raster2_))))
+  }
   remove = c(NA)
   v = v [! v %in% remove]
   v = sort(v, decreasing = FALSE)
   
   for (x in v){
-    if (x == 17){
+    if (x == 17 | x == 0){
       colors = c(colors,color_list[17])
       name   = as.character(subset(pft_df, pft_df$pft_key == 0)$pft_expanded)
       names  = c(names, name)
@@ -45,7 +50,7 @@ build_pft_palette = function(raster_){
       names  = c(names, name)
     }
   }
-  colors_ = list('colors' = colors, 'names' = names)
+  colors_ = list('colors' = colors, 'names' = names, 'pft_key' = v)
   return (colors_)
 }
 
