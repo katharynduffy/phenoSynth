@@ -75,8 +75,8 @@ if(dir.exists('./www/phenocam_data')==FALSE){
   dir.create('./www/phenocam_data')
   roi_files = get_phenocam_roi_df()
   cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
-  write.csv(roi_files, paste0('./www/phenocam_data/rois_', todays_date))
-  write.csv(cams_, paste0('./www/phenocam_data/cams_', todays_date))
+  write.csv(roi_files, todays_rois_name)
+  write.csv(cams_, todays_cams_name)
 } else{
   # If directory exists check to see if todays cams and rois exist
   if (file.exists(todays_cams_name) & file.exists(todays_rois_name)){
@@ -85,8 +85,8 @@ if(dir.exists('./www/phenocam_data')==FALSE){
   }else {
     roi_files = get_phenocam_roi_df()
     cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
-    write.csv(roi_files, paste0('./www/phenocam_data/rois_', todays_date))
-    write.csv(cams_, paste0('./www/phenocam_data/cams_', todays_date))
+    write.csv(roi_files, todays_rois_name)
+    write.csv(cams_, todays_cams_name)
   }
 }
 
