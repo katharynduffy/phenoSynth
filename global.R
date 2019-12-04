@@ -64,7 +64,7 @@ options(knitr.table.format = "html")
 # Add catch here to ping phenocam surver and make sure it is up and running.
 #  if not, bring in most up to date version of cams and rois cached (if available)
 
-# Phenocam site data, that will be cached daily 
+# Phenocam site data, that will be cached daily
 print ('Importing Modules and Phenocam site data')
 todays_date = Sys.Date()
 todays_cams_name = paste0('./www/phenocam_data/cams_', todays_date)
@@ -89,6 +89,8 @@ if(dir.exists('./www/phenocam_data')==FALSE){
     write.csv(cams_, todays_cams_name)
   }
 }
+
+
 
 # All site names from table
 site_names = cams_$site
