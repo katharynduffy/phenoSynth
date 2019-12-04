@@ -1,17 +1,17 @@
 MODIS.Class,Landsat.Class,Desc.
-0,11,Open Water
+17,11,Open Water
 1,42,Evergreen Forest
 2,42,Evergreen Forest
 3,41,Deciduous Forest
 4,41,Deciduous Forest
 5,43,Mixed Forest
-6,51,Shrubland
-7,51,Shrubland
+6,52,Shrubland
+7,52,Shrubland
 8,NA,No mathcing vegetation class
 9,NA,No mathcing vegetation class
 10,71,Grasslands/Herbaceous
-11,91,Woody Wetlands
-11,92,Emergent Herbaceous Wetlands
+11,90,Woody Wetlands
+11,95,Emergent Herbaceous Wetlands
 12,61,Orchards/Vineyards/Other
 12,81,Pasture/Hay
 12,82,Row Crops
@@ -25,3 +25,4 @@ MODIS.Class,Landsat.Class,Desc.
 16,31,Bare Rock/Sand/Clay
 254,12,Perennial Ice/Snow
 254,33,Transitional
+13,24,Developed High Intensity

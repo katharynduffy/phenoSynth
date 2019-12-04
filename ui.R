@@ -61,7 +61,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}"))
                  ),
                  
-                 navbarPage("PhenoSynth-development phase", id="navbar",
+                 navbarPage("PhenoSynth-v1 Release", id="navbar",
                           tabPanel("Site explorer",
                                    div(class="outer",
                                        tags$head(
