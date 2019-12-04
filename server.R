@@ -754,8 +754,7 @@ server = function(input, output, session) {
         # create a landsat to modis lookup (so that no landsat values are left out)
         landsat_lc_lookup = read.csv('./www/landsat_lc/nlcd_key.csv') %>% 
           dplyr::select(ID,NLCD.Land.Cover.Class) %>% left_join(landsat_lc, by = c('ID' = 'Landsat.Class')) %>%
-          mutate(MODIS.Class = replace(MODIS.Class, ID == 24, 13)) %>%
-          mutate(MODIS.Class = replace(MODIS.Class, Desc. == 'Open Water', 17)) %>%
+          mutate(MODIS.Class = replace(MODIS.Class, ID == 12, NA)) %>%
           left_join(pft_df, by = c('MODIS.Class' = 'pft_key'))
         
         # Build crosswalk matrix for reclassify function (rcl)
