@@ -1,0 +1,550 @@
+---
+title: "landsat_landcover.Rmd"
+author: "K. Enns"
+date: "12/05/2019"
+output: html_document
+---
+
+### This notebook will be used to build out a structure for storing as well as storing cropped landcover landsat data to all phenocam sites
+
+
+Converting Landcover Landsat layer from albers to wgs84
+```{r}
+# # Download the NLCD 2016 CON"US landcover layers from online"
+# library(raster)
+# NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+# landsat_atts = NLCD_lc@data@attributes
+```
+
+CRS values
+```{r}
+merc_crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
+wgs_crs  = "+proj=longlat +datum=WGS84"
+alb_crs  = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+```
+
+Get site information for phenocam locations
+```{r}
+# Run the global file
+setwd('/path/to/phenosynth') # set this to your project directory (setwd('/path/to/phenosynth'))
+source('/path/to/phenosynth/global.R')
+```
+
+Get lat/lon for phenocam sites, reproject to merc, crop, and save out raster
+```{r}
+# sites = cams_$site
+# output_dir = '../www/landsat_lc'
+# 
+# for (cam_site in sites[1]){
+#   print (cam_site)
+#   site_row = subset(cams_, cams_$site == cam_site)
+#   site_lat_wgs = site_row$lat
+#   site_lon_wgs = site_row$lon
+#   
+#   site_albs_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = alb_crs)
+#   site_lon_alb = site_albs_point@coords[[1]]
+#   site_lat_alb = site_albs_point@coords[[2]]
+#   
+#   if (is.na(extract(NLCD_lc, site_albs_point)[1])){
+#     print (paste0(cam_site, ' does not have NLCD data because it is outside of the NLCD extent'))
+#   } else{
+#     site_merc_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+#     site_lon_merc = site_merc_point@coords[[1]]
+#     site_lat_merc = site_merc_point@coords[[2]]
+#     
+#     width  = 15000
+#     height = 15000
+#     
+#     e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons')
+#     
+#     crs(e) = alb_crs
+#     
+#     site_NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
+#     site_NLCD_lc_cropped_merc = projectRaster(site_NLCD_lc_cropped, crs=merc_crs, method='ngb')
+#     
+#     # Crop again in Merc
+#     width  = 10000
+#     height = 10000
+#     
+#     e2 = as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons')
+#     crs(e2) = merc_crs
+#     site_NLCD_lc_final_merc = raster::crop(site_NLCD_lc_cropped_merc, e2, snap='near')
+#     
+#     dir.create(output_dir)
+#     file_name  = paste0(cam_site, '_landsat_lc')
+#     output_file = paste0(output_dir, '/',file_name,'.tif')
+#     raster::writeRaster(site_NLCD_lc_final_merc, output_file, format='GTiff', overwrite=TRUE)
+#   }
+# }
+```
+
+grab 1 raster from cached data
+```{r}
+cam_site   = 'acadia'
+output_dir = '../www/landsat_lc'
+test_raster_file = paste0(output_dir, '/', cam_site, '_landsat_lc.tif')
+test_raster = raster::raster(test_raster_file)
+test_raster
+```
+
+create the landsat cross walk dataframe
+```{r}
+pft_df
+landsat_lc = read_csv("../www/Landsat.Landcover.csv")
+# Read in csv for landsat landcover - modis landcover cross walk and remove NA values for Landsat
+landsat_lc_lookup = read.csv('../www/landsat_lc/nlcd_key.csv') %>% 
+  dplyr::select(ID,NLCD.Land.Cover.Class) %>% left_join(landsat_lc, by = c('ID' = 'Landsat.Class')) %>%
+  mutate(MODIS.Class = replace(MODIS.Class, ID == 12, NA)) %>%
+  left_join(pft_df, by = c('MODIS.Class' = 'pft_key')) %>% dplyr::select(-Desc.)
+landsat_lc_lookup
+
+landsat_lc_r = test_raster
+unique_landsat_lc_values = unique(values(landsat_lc_r))
+unique_landsat_lc_values
+```
+
+
+Reclassify the landsat landcover raster into MODIS values (0-17)
+```{r}
+# Build crosswalk matrix for reclassify function (rcl)
+from_values    = landsat_lc_lookup$ID
+becomes_values = landsat_lc_lookup$MODIS.Class
+
+m = matrix(ncol = 2, nrow = length(from_values))
+m[,1] = from_values
+m[,2] = becomes_values
+
+# Reclassify the Landsat landcover to match the crosswalk csv
+landsat_reclass_lc_r = reclassify(landsat_lc_r, m)
+
+pft_df
+
+unique(read.csv('../www/landsat_lc/nlcd_key.csv')$ID)
+data.frame(landsat_id = unique(read.csv('../www/landsat_lc/nlcd_key.csv')$ID)) 
+
+```
+
+Use build_pft_palette on landsat reclassified to match modis classification system
+```{r}
+source('../functions/geospatial.R')
+colors_landsat_reclass = build_pft_palette(landsat_reclass_lc_r)
+colors_landsat_reclass
+
+print ('building palet')
+colors = c()
+names  = c()
+# color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
+#                   '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
+color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
+                  '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', 'red', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
+
+v = unique(values(landsat_reclass_lc_r))
+remove = c(NA)
+v = v [! v %in% remove]
+v = sort(v, decreasing = FALSE)
+v
+
+for (x in v){
+  if (x == 17 | x == 0){
+    colors = c(colors,color_list[17])
+    name   = as.character(subset(pft_df, pft_df$pft_key == 0)$pft_expanded)
+    names  = c(names, name)
+  }else{
+    colors = c(colors, color_list[x])
+    name   = as.character(subset(pft_df, pft_df$pft_key == x)$pft_expanded)
+    names  = c(names, name)
+  }
+}
+v
+colors_ = list('colors' = colors, 'names' = names, 'pft_key' = v)
+colors_
+
+all_names  = c(pft_df[2:17,]$pft_expanded, 'Water')
+all_colors = color_list
+  
+leaflet() %>% addTiles() %>% addRasterImage(landsat_reclass_lc_r, colors = colors_$colors, opacity = 1) %>%
+  addLegend(labels = colors_$names, colors = colors_$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover') %>%
+  addLegend(labels = all_names, colors = all_colors, position = "topright", opacity = .95, title = 'MODIS Landcover')
+  
+
+# leaflet() %>% addTiles() %>% addRasterImage(landsat_reclass_lc_r, colors = colors_landsat_reclass$colors, opacity = .7) %>%
+#   addLegend(labels = colors_landsat_reclass$names, colors = colors_landsat_reclass$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover')
+```
+ 
+ 
+    
+## How to build a heat map with MODIS 250m Pixels (see NDVI or EVI layers) and Landsat Landcover 
+
+Coordinates for center of ACADIA phenocam site
+```{r}
+# coordinates for acadia center point phenocam
+lat_merc = 5523962
+lng_merc = -7598761
+lat_sin = 4934497
+lng_sin = -5425175
+lng_wgs = -68.26083
+lat_wgs = 44.37694
+```
+
+Extract values under a polygon or MODIS 250m pixel
+```{r}
+# Make sure you enter analyzer mode at site 'Acadia' in the application
+ndvi_path   = '../www/site_data/acadia/data_layers/ndvi/tera/MOD13Q1.006_250m_aid0001.nc'
+ndvi_brick  = raster::brick(ndvi_path, varname='_250m_16_days_NDVI', crs = sinu_crs)
+ndvi_raster = raster::subset(ndvi_brick, 1)
+ndvi_raster_merc  = projectRaster(from = ndvi_raster, crs = merc_crs, res = res(ndvi_raster))
+
+ndvi_raster_merc
+```
+
+Build a pixels df for all MODIS 250 pixels in raster
+```{r}
+source('../functions/geospatial.R')
+# Values needed to calculate center pixels to use on analysis of netcdf data
+r_         = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 5000, width = 5000, crs_str = merc_crs)
+ndvi_grid  = build_raster_grid(r_, crs='merc')
+xmin       = xmin(extent(r_))
+xmax       = xmax(extent(r_))
+ymin       = ymin(extent(r_))
+ymax       = ymax(extent(r_))
+nrows      = nrow(r_)
+ncols      = ncol(r_)
+resolution = res(r_)[1]
+
+lats_merc = c()
+lngs_merc = c()
+ids = c()
+modis_merc_polys = list()
+lng_start = xmin + .5*(resolution)
+lat_start = ymax + .5*(resolution)
+for (row in c(1:nrows)){
+  for (col in c(1:ncols)){
+    # Get IDS
+    id = paste0(row, '_',col)
+    ids = c(ids, id)
+    # Calculate Center Points
+    lng = lng_start + (resolution)*(col-1)
+    lat = lat_start - (resolution)*(row)
+    lngs_merc = c(lngs_merc,lng)
+    lats_merc = c(lats_merc,lat)
+    # Calculate tl,tr,br,bl,tl coordinates (t = top, b = bottom, l = left, r = right)
+    t_lat = lat + .5*(resolution)
+    b_lat = lat - .5*(resolution)
+    l_lng = lng - .5*(resolution)
+    r_lng = lng + .5*(resolution)
+    
+    poly_lats = c(t_lat,t_lat,b_lat,b_lat,t_lat)
+    poly_lngs = c(l_lng,r_lng,r_lng,l_lng,l_lng)
+    
+    modis_merc_polys[id] = list(list('lats' = poly_lats, 'lngs' = poly_lngs))
+  }
+}
+```
+
+Building out the Dataframe with center points and four corners for Building a polygon at each pixel
+```{r}
+coords_wgs = from_crs1_to_crs2_lon_lat(lngs_merc, lats_merc, from_crs = merc_crs, to_crs = wgs_crs)
+lngs_wgs = coordinates(coords_wgs)[,1]
+lats_wgs = coordinates(coords_wgs)[,2]
+
+coords_sin = from_crs1_to_crs2_lon_lat(lngs_merc, lats_merc, from_crs = merc_crs, to_crs = sinu_crs)
+lngs_sin = coordinates(coords_sin)[,1]
+lats_sin = coordinates(coords_sin)[,2]
+
+pixel_ids = c(1:(ncols*nrows))
+all_site_pixels_df = data.frame(pixel_id=pixel_ids, row_col = ids,
+                                lat_merc_ = lats_merc, lng_merc_ = lngs_merc , 
+                                lat_wgs_  = lats_wgs,  lng_wgs_  = lngs_wgs, 
+                                lat_sin_  = lats_sin,  lng_sin_  = lngs_sin, 
+                                site='acadia')
+all_site_pixels_df
+```
+
+loop through all_site_pixels_df and build a polygon of each pixel using the modis_merc_polys
+```{r}
+start_ = Sys.time()
+# Grab all pixels from dataframe
+pixels = all_site_pixels_df$row_col
+
+# Set the pft MODIS variables for Evergreen Forest
+selected_roi_pft = 1# works for acadia: 3
+selected_roi_pft_name =  subset(pft_df, pft_df$pft_key == selected_roi_pft)$pft_expanded
+
+pixel_percentages = c()
+pixel_heterogens = c()
+modis_wgs_polys = NULL
+# Build the polygon
+for (pixel in pixels){
+  lats_merc = modis_merc_polys[pixel][[1]]$lats
+  lngs_merc = modis_merc_polys[pixel][[1]]$lngs
+  
+  # in Merc for extraction across Landsat Landcover Layer
+  p_merc = Polygon(matrix(ncol= 2, c(lngs_merc, lats_merc)))
+  ps_merc = Polygons(list(p_merc), ID = pixel)
+  sps_merc = SpatialPolygons(list(ps_merc))
+  proj4string(sps_merc) = crs(landsat_reclass_lc_r)
+  
+  # Grab all pixels in modis 250 pixel 
+  selected_pixel = raster::crop(landsat_reclass_lc_r, sps_merc, snap = 'out' )
+  # reproject with higher resolution (Might be time consuming? but works)
+  # selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/40.2)
+  selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/5)
+  selected_pixel_high_res_c = raster::crop(selected_pixel_high_res, sps_merc, snap = 'in' )
+  
+  # Build dataframe with frequency of landcover PFT values at this pixel
+  data_df_at_pixel = as.data.frame(table(selected_pixel_high_res_c@data@values), stringsAsFactors=FALSE) %>% 
+    mutate(Var1 = as.double(Var1)) %>%
+    left_join(pft_df, by = c('Var1' = 'pft_key'))
+  
+  # Calculate percentage of selected values from total values
+  total_pixels = sum(data_df_at_pixel$Freq)
+  selected_values = subset(data_df_at_pixel, data_df_at_pixel$Var1 == selected_roi_pft)$Freq
+  selected_percentage = selected_values/total_pixels 
+  heterogeneity_at_pixel = length(data_df_at_pixel$Var1)
+  
+  if (length(selected_percentage) ==0){
+    selected_percentage = 0
+  }
+  
+    if (length(heterogeneity_at_pixel) ==0){
+    heterogeneity_at_pixel = 0
+  }
+  # Print out a summary of the % found
+  # print (paste0(selected_percentage * 100, ' % of this pixel is ', selected_roi_pft_name))
+  
+  pixel_heterogens  = c(pixel_heterogens, heterogeneity_at_pixel)
+  pixel_percentages = c(pixel_percentages, selected_percentage)
+  
+  # in WGS for visualization in leaflet
+  modis_wgs_pts = from_crs1_to_crs2_lon_lat(lon_ = lngs_merc, lat_ = lats_merc, from_crs = merc_crs, to_crs = wgs_crs)
+  p_wgs = Polygon(matrix(ncol= 2,modis_wgs_pts@coords))
+  ps_wgs = Polygons(list(p_wgs), ID = pixel)
+  sps_wgs = SpatialPolygons(list(ps_wgs))
+  proj4string(sps_wgs) = CRS(wgs_crs)
+  # Bind the polygons together into a spatial polygon
+  if (is.null(modis_wgs_polys)){
+    modis_wgs_polys = sps_wgs
+  } else{
+    modis_wgs_polys = rbind(modis_wgs_polys, sps_wgs)
+  }
+}
+end_   = Sys.time()
+
+print (paste0('Total Time:  ', end_ - start_))
+```
+
+
+Use pixel percentages from above to build into a df that will be used to builda new Raster heatmap for PFT %s
+```{r}
+perc_data_df = data.frame(ID = pixels, pixel_percentages = pixel_percentages, pixel_heterogens = pixel_heterogens)
+perc_data_df
+
+test_r = r_
+values(test_r) = perc_data_df$pixel_percentages
+pal = colorNumeric(c("#FFFFCC", "Red"), values(test_r),
+  na.color = "transparent")
+leaflet() %>% addTiles() %>% addRasterImage(test_r, colors = pal, opacity = 0.8)
+```
+
+
+extracting values under one polygon for landsat
+```{r}
+# Keep height and width 1000 2 cells above for this to work appropriately
+lats_merc = modis_merc_polys['9_9'][[1]]$lats
+lngs_merc = modis_merc_polys['9_9'][[1]]$lngs
+
+# in Merc for extraction across Landsat Landcover Layer
+p_merc = Polygon(matrix(ncol= 2, c(lngs_merc, lats_merc)))
+ps_merc = Polygons(list(p_merc), ID = pixel)
+sps_merc = SpatialPolygons(list(ps_merc))
+proj4string(sps_merc) = crs(landsat_reclass_lc_r)
+
+# Grab all pixels in modis 250 pixel 
+selected_pixel = raster::crop(landsat_reclass_lc_r, sps_merc, snap = 'in' )
+leaflet() %>% addTiles() %>% addPolygons(data = modis_wgs_polys) %>% addRasterImage(selected_pixel) %>%
+  setView(lng = subset(all_site_pixels_df, row_col == '9_9')$lng_wgs_, lat = subset(all_site_pixels_df, row_col == '9_9')$lat_wgs_, zoom = 17)
+
+# Grab all pixels in modis 250 pixel 
+selected_pixel = raster::crop(landsat_reclass_lc_r, sps_merc, snap = 'out' )
+leaflet() %>% addTiles() %>% addPolygons(data = modis_wgs_polys) %>% addRasterImage(selected_pixel) %>%
+  setView(lng = subset(all_site_pixels_df, row_col == '9_9')$lng_wgs_, lat = subset(all_site_pixels_df, row_col == '9_9')$lat_wgs_, zoom = 17)
+
+# reproject with higher resolution (Might be time consuming? but works)
+selected_pixel_high_res   = projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/40.2)
+selected_pixel_high_res_c = raster::crop(selected_pixel_high_res, sps_merc, snap = 'in' )
+leaflet() %>% addTiles() %>% addPolygons(data = modis_wgs_polys) %>% addRasterImage(selected_pixel_high_res_c) %>% 
+  setView(lng = subset(all_site_pixels_df, row_col == '9_9')$lng_wgs_, lat = subset(all_site_pixels_df, row_col == '9_9')$lat_wgs_, zoom = 17)
+
+```
+
+Get percentages under this 9_9 pixel from above
+```{r}
+# Set the pft MODIS variables for Evergreen Forest
+selected_roi_pft = 1
+selected_roi_pft_name =  subset(pft_df, pft_df$pft_key == selected_roi_pft)$pft_expanded
+
+# Build dataframe with frequency of landcover PFT values at this pixel
+data_df_at_pixel = as.data.frame(table(selected_pixel_high_res_c@data@values), stringsAsFactors=FALSE) %>% 
+  mutate(Var1 = as.double(Var1)) %>%
+  left_join(pft_df, by = c('Var1' = 'pft_key'))
+
+# Calculate percentage of selected values from total values
+total_pixels = sum(data_df_at_pixel$Freq)
+selected_values = subset(data_df_at_pixel, data_df_at_pixel$Var1 == selected_roi_pft)$Freq
+selected_percentage = selected_values/total_pixels * 100
+
+# Print out a summary of the % found
+print (paste0(selected_percentage, '% of this pixel is ', selected_roi_pft_name))
+```
+
+
+
+
+
+
+------------------------------------------------------
+EXTRA STUFF
+------------------------------------------------------
+
+Visualization of points in center of pixels
+```{r}
+leaflet() %>% addTiles() %>% addRasterImage(r_) %>%
+  addCircleMarkers(lat = all_site_pixels_df$lat_wgs_, lng = all_site_pixels_df$lng_wgs_, radius = 1, weight=3, opacity = 1, color='black') %>%
+  addPolylines(data = ndvi_grid, weight = 1.8, opacity = 1, group = '250m MODIS Grid', color = 'darkgrey') %>%
+  setView(lng = lng_wgs, lat = lat_wgs, zoom = 14)
+```
+
+```{r}
+source('../functions/geospatial.R')
+
+lat_wgs = 39.0824
+lng_wgs = -96.5603
+albs_point = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = alb_crs)
+lng_alb = albs_point@coords[[1]]
+lat_alb = albs_point@coords[[2]]
+
+pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+lng_merc = pt_merc@coords[[1]]
+lat_merc = pt_merc@coords[[2]]
+
+```
+
+```{r}
+
+# Crop in Albers
+width  = 15000
+height = 15000
+e      = as(extent(lng_alb - width, lng_alb + width, lat_alb - height, lat_alb + height), 'SpatialPolygons')
+crs(e) <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
+NLCD_lc_cropped_wgs  = projectRaster(NLCD_lc_cropped, crs=wgs_crs, method='ngb')
+NLCD_lc_cropped_merc = projectRaster(NLCD_lc_cropped, crs=merc_crs, method='ngb')
+```
+
+### Zoom into the next three leaflet maps to show differences between the wgs cropped layer and the other two.
+ - Essentially when we crop the landcover into WGS, leaflet reprojects it into Mercator.  
+ - NLCD_lc_cropped goes from albers equal -> Mercator (SAME)
+ - NLCD_lc_cropped_wgs goes from albers equal -> WGS -> Mercator (DIFFERENT)
+ - NLCD_lc_cropped_merc goes from albers equal -> Mercator (SAME)
+```{r}
+# leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_cropped)
+```
+```{r}
+# leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_cropped_wgs)
+```
+```{r}
+leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_cropped_merc)
+```
+
+
+
+```{r}
+# Crop again in Merc
+width  = 10000
+height = 10000
+
+e2 =as(extent(lng_merc - width, lng_merc + width, lat_merc - height, lat_merc + height), 'SpatialPolygons')
+crs(e2) <- merc_crs
+NLCD_lc_final_merc = raster::crop(NLCD_lc_cropped_merc, e2, snap='near')
+
+# Display using leaflet
+leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_cropped_merc)
+leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_final_merc)
+            
+# remove large raster layer out of memory so .rmd doesn't freeze
+```
+
+Add regular colors for landsat nlcd layer
+```{r}
+build_landsat_lc_pallet = function(raster_, landsat_key){
+  print ('building landsat landcover palette')
+  colors = c()
+  names  = c()
+  color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
+                    '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
+  
+  v = unique(values(raster_))
+  remove = c(NA)
+  v = v [! v %in% remove]
+  v = sort(v, decreasing = FALSE)
+  
+  print (v)
+  
+  count = 0
+  for (x in v){
+    count = count + 1
+      
+    red = subset(landsat_key, landsat_key$ID == x)$Red/255
+    green = subset(landsat_key, landsat_key$ID == x)$Green/255
+    blue = subset(landsat_key, landsat_key$ID == x)$Blue/255
+    color = rgb(red,green,blue)
+    colors = c(colors, color)
+    # colors = c(colors, color_list[count])
+    name   = as.character(subset(landsat_key, landsat_key$ID == x)$NLCD.Land.Cover.Class)
+    names  = c(names, name)
+  }
+  colors_ = list('colors' = colors, 'names' = names)
+  return (colors_)
+}
+
+landsat_atts = NLCD_lc@data@attributes
+key_df = subset(landsat_atts[[1]], landsat_atts[[1]]$COUNT != 0)
+write.csv(key_df, '../www/landsat_lc/nlcd_key.csv')
+c = build_landsat_lc_pallet(test_raster, key_df)
+
+read.csv('../www/landsat_lc/nlcd_key.csv')
+
+leaflet() %>% addTiles() %>% addRasterImage(test_raster, colors = c$colors, opacity = .7) %>%
+  addLegend(labels = c$names, colors = c$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover')
+```
+
+
+
+save out raster to .tiff files to check size
+```{r}
+output_dir = '../www/site_data/landsat_lc'
+site       = 'acadia'
+file_name  = paste0(site, '_landsat_lc')
+dir.create(output_dir)
+output_file = paste0(output_dir, '/',file_name,'.tif')
+raster::writeRaster(NLCD_lc_final_merc, output_dir, format='GTiff', overwrite=TRUE)
+```
+
+Read raster back in
+```{r}
+test_raster_file = paste0(output_dir, '/', 'acadia', '_landsat_lc.tif')
+test_raster = raster::raster(test_raster_file)
+test_raster
+leaflet() %>% addTiles() %>% addRasterImage(test_raster)
+
+```
+
+
+
+
+
+
+
+
+
+
