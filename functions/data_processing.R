@@ -362,8 +362,9 @@ get_site_roi_csvs = function(name, roi_files_, frequency_,
                              percentile_, roi_type_){
   idx      = is.element(roi_files_$site, name)
   idx2     = is.element(roi_files_$roitype, roi_type_)
+  idx3    =is.element(roi_files$sequence_number, 1000)
   num_rois = length(idx[idx == TRUE])
-  loc_rois = which(idx == TRUE & idx2 ==TRUE)
+  loc_rois = which(idx == TRUE & idx2 ==TRUE & idx3==TRUE)
   plot_data      = data.frame()
   unix = "1970-01-01"
   roi  = 1000
@@ -372,6 +373,7 @@ get_site_roi_csvs = function(name, roi_files_, frequency_,
     for (i in loc_rois){
       downloadable_file = roi_files_$one_day_summary[i]
       df  = data.table::fread(downloadable_file)
+      #df=phenocamapi::get_pheno_ts(name, roi_type_, 1000, '1day')
       print (roi_files$roitype[i])
       print (downloadable_file)
       c   = smooth_ts(df, metrics = metrics_, force = TRUE, frequency_)
