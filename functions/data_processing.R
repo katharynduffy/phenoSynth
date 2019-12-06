@@ -380,8 +380,8 @@ get_site_roi_csvs = function(name, roi_files_, frequency_,
   }
   if (frequency_ == 3){
     for (i in loc_rois){
-      downloadable_file = roi_files_$three_day_summary[i]
-      df  = data.table::fread(downloadable_file)
+      downloadable_file = roi_files_$three_day_summary[i] #this is where it is breaking
+      df  = data.table::fread(downloadable_file) #and thus here
       print (roi_files$roitype[i])
       print (downloadable_file)
       c   = smooth_ts(df, metrics = metrics_, force = TRUE, frequency_)
