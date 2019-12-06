@@ -370,25 +370,21 @@ get_site_roi_csvs = function(name, roi_files_, frequency_,
   roi  = 1000
 
   if (frequency_ == 1){
-    for (i in loc_rois){
-      downloadable_file = roi_files_$one_day_summary[i]
+      downloadable_file = roi_files_$one_day_summary[loc_rois]
       df  = data.table::fread(downloadable_file)
       #df=phenocamapi::get_pheno_ts(name, roi_type_, 1000, '1day')
-      print (roi_files$roitype[i])
+      print (roi_files$roitype[loc_rois])
       print (downloadable_file)
       c   = smooth_ts(df, metrics = metrics_, force = TRUE, frequency_)
       plot_data = rbind(plot_data, c)
-    }
   }
   if (frequency_ == 3){
-    for (i in loc_rois){
-      downloadable_file = roi_files_$three_day_summary[i] #this is where it is breaking
+      downloadable_file = roi_files_$three_day_summary[loc_rois] #this is where it is breaking
       df  = data.table::fread(downloadable_file) #and thus here
-      print (roi_files$roitype[i])
+      print (roi_files$roitype[loc_rois])
       print (downloadable_file)
       c   = smooth_ts(df, metrics = metrics_, force = TRUE, frequency_)
       plot_data = rbind(plot_data, c)
-    }
   }
   
   spring = transition_dates(plot_data,
