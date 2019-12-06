@@ -10,10 +10,10 @@ output: html_document
 
 Converting Landcover Landsat layer from albers to wgs84
 ```{r}
-# # Download the NLCD 2016 CON"US landcover layers from online"
-# library(raster)
-# NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
-# landsat_atts = NLCD_lc@data@attributes
+# Download the NLCD 2016 CON"US landcover layers from online"
+library(raster)
+NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+landsat_atts = NLCD_lc@data@attributes
 ```
 
 CRS values
@@ -32,64 +32,68 @@ source('/path/to/phenosynth/global.R')
 
 Get lat/lon for phenocam sites, reproject to merc, crop, and save out raster
 ```{r}
-# sites = cams_$site
-# output_dir = '../www/landsat_lc'
-# 
-# for (cam_site in sites[1]){
-#   print (cam_site)
-#   site_row = subset(cams_, cams_$site == cam_site)
-#   site_lat_wgs = site_row$lat
-#   site_lon_wgs = site_row$lon
-#   
-#   site_albs_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = alb_crs)
-#   site_lon_alb = site_albs_point@coords[[1]]
-#   site_lat_alb = site_albs_point@coords[[2]]
-#   
-#   if (is.na(extract(NLCD_lc, site_albs_point)[1])){
-#     print (paste0(cam_site, ' does not have NLCD data because it is outside of the NLCD extent'))
-#   } else{
-#     site_merc_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
-#     site_lon_merc = site_merc_point@coords[[1]]
-#     site_lat_merc = site_merc_point@coords[[2]]
-#     
-#     width  = 15000
-#     height = 15000
-#     
-#     e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons')
-#     
-#     crs(e) = alb_crs
-#     
-#     site_NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
-#     site_NLCD_lc_cropped_merc = projectRaster(site_NLCD_lc_cropped, crs=merc_crs, method='ngb')
-#     
-#     # Crop again in Merc
-#     width  = 10000
-#     height = 10000
-#     
-#     e2 = as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons')
-#     crs(e2) = merc_crs
-#     site_NLCD_lc_final_merc = raster::crop(site_NLCD_lc_cropped_merc, e2, snap='near')
-#     
-#     dir.create(output_dir)
-#     file_name  = paste0(cam_site, '_landsat_lc')
-#     output_file = paste0(output_dir, '/',file_name,'.tif')
-#     raster::writeRaster(site_NLCD_lc_final_merc, output_file, format='GTiff', overwrite=TRUE)
-#   }
-# }
+sites = cams_$site
+output_dir = '../www/landsat_lc'
+
+for (cam_site in sites[1]){
+  print (cam_site)
+  cam_site = 'NEON.D15.ONAQ.DP1.00033'
+  site_row = subset(cams_, cams_$site == cam_site)
+  site_lat_wgs = site_row$lat
+  site_lon_wgs = site_row$lon
+
+  site_albs_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = alb_crs)
+  site_lon_alb = site_albs_point@coords[[1]]
+  site_lat_alb = site_albs_point@coords[[2]]
+  
+  site_sinu_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
+  site_lon_sinu = site_sinu_point@coords[[1]]
+  site_lat_sinu = site_sinu_point@coords[[2]]
+
+  if (is.na(extract(NLCD_lc, site_albs_point)[1])){
+    print (paste0(cam_site, ' does not have NLCD data because it is outside of the NLCD extent'))
+  } else{
+    site_merc_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+    site_lon_merc = site_merc_point@coords[[1]]
+    site_lat_merc = site_merc_point@coords[[2]]
+
+    width  = 15000
+    height = 15000
+
+    e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons')
+
+    crs(e) = alb_crs
+
+    site_NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
+    site_NLCD_lc_cropped_merc = projectRaster(site_NLCD_lc_cropped, crs=merc_crs, method='ngb')
+
+    # Crop again in Merc
+    width  = 10000
+    height = 10000
+
+    e2 = as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons')
+    crs(e2) = merc_crs
+    site_NLCD_lc_final_merc = raster::crop(site_NLCD_lc_cropped_merc, e2, snap='near')
+
+    dir.create(output_dir)
+    file_name  = paste0(cam_site, '_landsat_lc')
+    output_file = paste0(output_dir, '/',file_name,'.tif')
+    raster::writeRaster(site_NLCD_lc_final_merc, output_file, format='GTiff', overwrite=TRUE)
+  }
+}
 ```
 
 grab 1 raster from cached data
 ```{r}
-cam_site   = 'acadia'
+# cam_site   = 'NEON.D15.ONAQ.DP1.00033'
 output_dir = '../www/landsat_lc'
 test_raster_file = paste0(output_dir, '/', cam_site, '_landsat_lc.tif')
 test_raster = raster::raster(test_raster_file)
 test_raster
 ```
 
-create the landsat cross walk dataframe
+Create the NLCD cross walk dataframe to MODIS classifications
 ```{r}
-pft_df
 landsat_lc = read_csv("../www/Landsat.Landcover.csv")
 # Read in csv for landsat landcover - modis landcover cross walk and remove NA values for Landsat
 landsat_lc_lookup = read.csv('../www/landsat_lc/nlcd_key.csv') %>% 
@@ -100,7 +104,6 @@ landsat_lc_lookup
 
 landsat_lc_r = test_raster
 unique_landsat_lc_values = unique(values(landsat_lc_r))
-unique_landsat_lc_values
 ```
 
 
@@ -117,10 +120,8 @@ m[,2] = becomes_values
 # Reclassify the Landsat landcover to match the crosswalk csv
 landsat_reclass_lc_r = reclassify(landsat_lc_r, m)
 
-pft_df
-
-unique(read.csv('../www/landsat_lc/nlcd_key.csv')$ID)
-data.frame(landsat_id = unique(read.csv('../www/landsat_lc/nlcd_key.csv')$ID)) 
+# unique(read.csv('../www/landsat_lc/nlcd_key.csv')$ID)
+# data.frame(landsat_id = unique(read.csv('../www/landsat_lc/nlcd_key.csv')$ID)) 
 
 ```
 
@@ -133,10 +134,20 @@ colors_landsat_reclass
 print ('building palet')
 colors = c()
 names  = c()
-# color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
-#                   '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', '#fd0608', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
-color_list    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
+
+hash_colors    = c('#1b8a28', '#36d03e', '#9ecb30', '#a0f79f', '#91bb88', '#b99091', '#f0dfb8', '#d6ed9a',
                   '#f1dc07', '#ecbb5b', '#4981b1', '#fcee72', 'red', '#9b9353', '#bdbec0', '#bdbec0', '#89cae3')
+id = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17)
+common_name = c('dark green', 'green', 'swamp green', 'light green', 'grey green', 'purple brown',
+                'beige', 'green beige', 'orange yellow', 'orange', 'dark blue', 'light yellow', 
+                'red', 'brown', 'grey', 'grey', 'light blue')
+all_names   = c(pft_df[2:17,]$pft_expanded, 'Water')
+lc_colors_df  = data.frame(id = id, hash_colors = hash_colors, pft =  all_names,common_name = common_name, stringsAsFactors = FALSE)
+lc_colors_df
+leaflet() %>% addTiles() %>% addRasterImage(landsat_reclass_lc_r, colors = colors_$colors, opacity = 1) %>%
+  addLegend(labels = all_names, colors = all_colors, position = "topright", opacity = .95, title = 'MODIS Landcover')
+
+
 
 v = unique(values(landsat_reclass_lc_r))
 remove = c(NA)
@@ -146,11 +157,11 @@ v
 
 for (x in v){
   if (x == 17 | x == 0){
-    colors = c(colors,color_list[17])
+    colors = c(colors,hash_colors[17])
     name   = as.character(subset(pft_df, pft_df$pft_key == 0)$pft_expanded)
     names  = c(names, name)
   }else{
-    colors = c(colors, color_list[x])
+    colors = c(colors, hash_colors[x])
     name   = as.character(subset(pft_df, pft_df$pft_key == x)$pft_expanded)
     names  = c(names, name)
   }
@@ -159,12 +170,10 @@ v
 colors_ = list('colors' = colors, 'names' = names, 'pft_key' = v)
 colors_
 
-all_names  = c(pft_df[2:17,]$pft_expanded, 'Water')
-all_colors = color_list
+all_colors = hash_colors
   
 leaflet() %>% addTiles() %>% addRasterImage(landsat_reclass_lc_r, colors = colors_$colors, opacity = 1) %>%
-  addLegend(labels = colors_$names, colors = colors_$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover') %>%
-  addLegend(labels = all_names, colors = all_colors, position = "topright", opacity = .95, title = 'MODIS Landcover')
+  addLegend(labels = colors_$names, colors = colors_$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover')
   
 
 # leaflet() %>% addTiles() %>% addRasterImage(landsat_reclass_lc_r, colors = colors_landsat_reclass$colors, opacity = .7) %>%
@@ -178,18 +187,19 @@ leaflet() %>% addTiles() %>% addRasterImage(landsat_reclass_lc_r, colors = color
 Coordinates for center of ACADIA phenocam site
 ```{r}
 # coordinates for acadia center point phenocam
-lat_merc = 5523962
-lng_merc = -7598761
-lat_sin = 4934497
-lng_sin = -5425175
-lng_wgs = -68.26083
-lat_wgs = 44.37694
+lat_merc = site_lat_merc
+lng_merc = site_lon_merc
+lat_sin = site_lat_sinu
+lng_sin = site_lon_sinu
+lat_wgs = site_lat_wgs
+lng_wgs = site_lon_wgs
+
 ```
 
 Extract values under a polygon or MODIS 250m pixel
 ```{r}
 # Make sure you enter analyzer mode at site 'Acadia' in the application
-ndvi_path   = '../www/site_data/acadia/data_layers/ndvi/tera/MOD13Q1.006_250m_aid0001.nc'
+ndvi_path   = paste0('../www/site_data/',cam_site,'/data_layers/ndvi/tera/MOD13Q1.006_250m_aid0001.nc')
 ndvi_brick  = raster::brick(ndvi_path, varname='_250m_16_days_NDVI', crs = sinu_crs)
 ndvi_raster = raster::subset(ndvi_brick, 1)
 ndvi_raster_merc  = projectRaster(from = ndvi_raster, crs = merc_crs, res = res(ndvi_raster))
@@ -201,7 +211,7 @@ Build a pixels df for all MODIS 250 pixels in raster
 ```{r}
 source('../functions/geospatial.R')
 # Values needed to calculate center pixels to use on analysis of netcdf data
-r_         = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 5000, width = 5000, crs_str = merc_crs)
+r_         = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
 ndvi_grid  = build_raster_grid(r_, crs='merc')
 xmin       = xmin(extent(r_))
 xmax       = xmax(extent(r_))
@@ -286,9 +296,9 @@ for (pixel in pixels){
   
   # Grab all pixels in modis 250 pixel 
   selected_pixel = raster::crop(landsat_reclass_lc_r, sps_merc, snap = 'out' )
-  # reproject with higher resolution (Might be time consuming? but works)
-  # selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/40.2)
-  selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/5)
+  # reproject with higher resolution by setting the resolution equal to 1
+  selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/40.2)
+  # selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/5)
   selected_pixel_high_res_c = raster::crop(selected_pixel_high_res, sps_merc, snap = 'in' )
   
   # Build dataframe with frequency of landcover PFT values at this pixel
@@ -339,19 +349,30 @@ Use pixel percentages from above to build into a df that will be used to builda 
 perc_data_df = data.frame(ID = pixels, pixel_percentages = pixel_percentages, pixel_heterogens = pixel_heterogens)
 perc_data_df
 
+leaflet() %>% addTiles() %>% addRasterImage(landsat_reclass_lc_r, colors = colors_$colors, opacity = 1) %>%
+  addLegend(labels = colors_$names, colors = colors_$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover') %>%
+  setView(lat = site_lat_wgs,lng = site_lon_wgs,zoom = 12)
+
 test_r = r_
 values(test_r) = perc_data_df$pixel_percentages
 pal = colorNumeric(c("#FFFFCC", "Red"), values(test_r),
   na.color = "transparent")
-leaflet() %>% addTiles() %>% addRasterImage(test_r, colors = pal, opacity = 0.8)
+leaflet() %>% addTiles() %>% addRasterImage(test_r, colors = pal, opacity = 0.8) %>% setView(lat = site_lat_wgs,lng = site_lon_wgs,zoom = 12)
+
+test_r_hetero = r_
+values(test_r_hetero) = perc_data_df$pixel_heterogens
+pal = colorNumeric(c("#FFFFCC", "Red"), values(test_r_hetero),
+  na.color = "transparent")
+leaflet() %>% addTiles() %>% addRasterImage(test_r_hetero, colors = pal, opacity = 0.8) %>% setView(lat = site_lat_wgs,lng = site_lon_wgs,zoom = 12)
 ```
 
 
 extracting values under one polygon for landsat
 ```{r}
+test_pixel = '2_2'
 # Keep height and width 1000 2 cells above for this to work appropriately
-lats_merc = modis_merc_polys['9_9'][[1]]$lats
-lngs_merc = modis_merc_polys['9_9'][[1]]$lngs
+lats_merc = modis_merc_polys[test_pixel][[1]]$lats
+lngs_merc = modis_merc_polys[test_pixel][[1]]$lngs
 
 # in Merc for extraction across Landsat Landcover Layer
 p_merc = Polygon(matrix(ncol= 2, c(lngs_merc, lats_merc)))
@@ -362,18 +383,18 @@ proj4string(sps_merc) = crs(landsat_reclass_lc_r)
 # Grab all pixels in modis 250 pixel 
 selected_pixel = raster::crop(landsat_reclass_lc_r, sps_merc, snap = 'in' )
 leaflet() %>% addTiles() %>% addPolygons(data = modis_wgs_polys) %>% addRasterImage(selected_pixel) %>%
-  setView(lng = subset(all_site_pixels_df, row_col == '9_9')$lng_wgs_, lat = subset(all_site_pixels_df, row_col == '9_9')$lat_wgs_, zoom = 17)
+  setView(lng = subset(all_site_pixels_df, row_col == test_pixel)$lng_wgs_, lat = subset(all_site_pixels_df, row_col == test_pixel)$lat_wgs_, zoom = 17)
 
 # Grab all pixels in modis 250 pixel 
 selected_pixel = raster::crop(landsat_reclass_lc_r, sps_merc, snap = 'out' )
 leaflet() %>% addTiles() %>% addPolygons(data = modis_wgs_polys) %>% addRasterImage(selected_pixel) %>%
-  setView(lng = subset(all_site_pixels_df, row_col == '9_9')$lng_wgs_, lat = subset(all_site_pixels_df, row_col == '9_9')$lat_wgs_, zoom = 17)
+  setView(lng = subset(all_site_pixels_df, row_col == test_pixel)$lng_wgs_, lat = subset(all_site_pixels_df, row_col == test_pixel)$lat_wgs_, zoom = 17)
 
 # reproject with higher resolution (Might be time consuming? but works)
 selected_pixel_high_res   = projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/40.2)
 selected_pixel_high_res_c = raster::crop(selected_pixel_high_res, sps_merc, snap = 'in' )
 leaflet() %>% addTiles() %>% addPolygons(data = modis_wgs_polys) %>% addRasterImage(selected_pixel_high_res_c) %>% 
-  setView(lng = subset(all_site_pixels_df, row_col == '9_9')$lng_wgs_, lat = subset(all_site_pixels_df, row_col == '9_9')$lat_wgs_, zoom = 17)
+  setView(lng = subset(all_site_pixels_df, row_col == test_pixel)$lng_wgs_, lat = subset(all_site_pixels_df, row_col == test_pixel)$lat_wgs_, zoom = 17)
 
 ```
 
@@ -415,17 +436,15 @@ leaflet() %>% addTiles() %>% addRasterImage(r_) %>%
 ```
 
 ```{r}
-source('../functions/geospatial.R')
-
-lat_wgs = 39.0824
-lng_wgs = -96.5603
-albs_point = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = alb_crs)
-lng_alb = albs_point@coords[[1]]
-lat_alb = albs_point@coords[[2]]
-
-pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
-lng_merc = pt_merc@coords[[1]]
-lat_merc = pt_merc@coords[[2]]
+# source('../functions/geospatial.R')
+# 
+# albs_point = from_crs1_to_crs2_lon_lat(lon_ = site_lng_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = alb_crs)
+# lng_alb = albs_point@coords[[1]]
+# lat_alb = albs_point@coords[[2]]
+# 
+# pt_merc = from_crs1_to_crs2_lon_lat(lon_ = site_lng_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+# lng_merc = pt_merc@coords[[1]]
+# lat_merc = pt_merc@coords[[2]]
 
 ```
 
@@ -434,7 +453,7 @@ lat_merc = pt_merc@coords[[2]]
 # Crop in Albers
 width  = 15000
 height = 15000
-e      = as(extent(lng_alb - width, lng_alb + width, lat_alb - height, lat_alb + height), 'SpatialPolygons')
+e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons')
 crs(e) <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
 NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
 NLCD_lc_cropped_wgs  = projectRaster(NLCD_lc_cropped, crs=wgs_crs, method='ngb')
@@ -463,7 +482,7 @@ leaflet() %>% addTiles() %>% addRasterImage(NLCD_lc_cropped_merc)
 width  = 10000
 height = 10000
 
-e2 =as(extent(lng_merc - width, lng_merc + width, lat_merc - height, lat_merc + height), 'SpatialPolygons')
+e2 =as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons')
 crs(e2) <- merc_crs
 NLCD_lc_final_merc = raster::crop(NLCD_lc_cropped_merc, e2, snap='near')
 
