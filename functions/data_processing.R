@@ -365,24 +365,30 @@ get_site_roi_csvs = function(name, roi_files_, frequency_,
   idx3    =is.element(roi_files$sequence_number, 1000)
   num_rois = length(idx[idx == TRUE])
   loc_rois = which(idx == TRUE & idx2 ==TRUE & idx3==TRUE)
+  this_roi_df_row = roi_files_[loc_rois,]
   plot_data      = data.frame()
   unix = "1970-01-01"
   roi  = 1000
 
   if (frequency_ == 1){
-      downloadable_file = roi_files_$one_day_summary[loc_rois]
-      df  = data.table::fread(downloadable_file)
-      #df=phenocamapi::get_pheno_ts(name, roi_type_, 1000, '1day')
+      downloadable_file = this_roi_df_row$one_day_summary
+      # Check file names
       print (roi_files$roitype[loc_rois])
       print (downloadable_file)
+      print (name)
+      print (roi_type_)
+      df = phenocamapi::get_pheno_ts(name, roi_type_, 1000, '1day')
       c   = smooth_ts(df, metrics = metrics_, force = TRUE, frequency_)
       plot_data = rbind(plot_data, c)
   }
   if (frequency_ == 3){
-      downloadable_file = roi_files_$three_day_summary[loc_rois] #this is where it is breaking
-      df  = data.table::fread(downloadable_file) #and thus here
+      downloadable_file = this_roi_df_row$three_day_summary
+      # Check file names
       print (roi_files$roitype[loc_rois])
       print (downloadable_file)
+      print (name)
+      print (roi_type_)
+      df = phenocamapi::get_pheno_ts(name, roi_type_, 1000, '3day')
       c   = smooth_ts(df, metrics = metrics_, force = TRUE, frequency_)
       plot_data = rbind(plot_data, c)
   }

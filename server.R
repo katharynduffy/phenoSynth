@@ -796,9 +796,13 @@ server = function(input, output, session) {
         site_data  = get_site_info(site)
         pft        = input$pftSelection
 
-        pft = strsplit(pft, '_')[[1]][1]
+        # pft = strsplit(pft, '_')[[1]][1]
         pft_key = (subset(pft_df, pft_df$pft_expanded == pft)$pft_key)
         pft_abbr = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+        
+        if (pft == 'Shrubland'){pft_abbr = 'SH'}
+        if (pft == 'Mixed Forest'){pft_abbr = 'MF'}
+        
         data$pft_abbr = pft_abbr
         print (as.numeric(pft_key))
         rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , 
@@ -1755,51 +1759,55 @@ server = function(input, output, session) {
     #------------------------------------------------------------------------
     if ('GCC' %in% selected_data){
       withProgress(message = 'Importing GCC', value = .1, {
-      file_path = gcc_filepath
-      veg_types = data$veg_types
       phenocam$gcc_all = list()
+      file_path = gcc_filepath
       
-      for (veg in veg_types){
-        print (veg)
-        pft       = strsplit(veg, '_')[[1]][1]
-        pft_abbr  = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
-        print (paste0('Importing Phenocam GCC: ', pft_abbr))
+      # veg_types = data$veg_types
+      
+      # for (veg in veg_types){
+      #   print (veg)
+      #   pft       = strsplit(veg, '_')[[1]][1]
+      #   pft_abbr  = as.character(subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+      #   print (paste0('Importing Phenocam GCC: ', pft_abbr))
+      
+      pft_abbr = data$pft_abbr
         
-        gcc_filepath    = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day'), '.csv')
-        spring_filepath = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_spring_tds'), '.csv')
-        fall_filepath   = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_fall_tds'), '.csv')
-        
-        if (file.exists(gcc_filepath)){
-          print ('Will import GCC on fly when plotting')
-          incProgress(amount = .2, detail = 'Importing GCC CSV')
-          phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
-          phenocam$spring = read.csv(spring_filepath, header = TRUE)
-          phenocam$fall   = read.csv(fall_filepath, header = TRUE)
-          phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
-                                              spring = phenocam$spring,
-                                              fall   = phenocam$fall)
-        }else{
-          incProgress(amount = .2, detail = 'Downloading GCC data')
-          phenocam$data = get_site_roi_csvs(name        = site,
-                                            roi_files_  = roi_files,
-                                            frequency_  = freq,
-                                            percentile_ = percentile_gcc,
-                                            roi_type_   = pft_abbr)
-          incProgress(amount = .2, detail = 'GCC data Downloaded')
-          
-          phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring = phenocam$data[[2]]
-          phenocam$fall   = phenocam$data[[3]]
-          phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
+      gcc_filepath    = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day'), '.csv')
+      spring_filepath = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_spring_tds'), '.csv')
+      fall_filepath   = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_fall_tds'), '.csv')
+      
+      if (file.exists(gcc_filepath)){
+        print ('Will import GCC on fly when plotting')
+        incProgress(amount = .2, detail = 'Importing GCC CSV')
+        phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
+        phenocam$spring = read.csv(spring_filepath, header = TRUE)
+        phenocam$fall   = read.csv(fall_filepath, header = TRUE)
+        phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
                                             spring = phenocam$spring,
                                             fall   = phenocam$fall)
-          
-          incProgress(amount = .1)
-          write.csv(phenocam$gcc,    file = gcc_filepath)
-          write.csv(phenocam$spring, file = spring_filepath)
-          write.csv(phenocam$fall,   file = fall_filepath)
-        }
+      }else{
+        incProgress(amount = .2, detail = 'Downloading GCC data')
+        phenocam$data = get_site_roi_csvs(name        = site,
+                                          roi_files_  = roi_files,
+                                          frequency_  = freq,
+                                          percentile_ = percentile_gcc,
+                                          roi_type_   = pft_abbr)
+        incProgress(amount = .2, detail = 'GCC data Downloaded')
+        
+        phenocam$gcc    = phenocam$data[[1]]
+        phenocam$spring = phenocam$data[[2]]
+        phenocam$fall   = phenocam$data[[3]]
+        phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
+                                            spring = phenocam$spring,
+                                            fall   = phenocam$fall)
+        
+        incProgress(amount = .1)
+        write.csv(phenocam$gcc,    file = gcc_filepath)
+        write.csv(phenocam$spring, file = spring_filepath)
+        write.csv(phenocam$fall,   file = fall_filepath)
       }
+        
+      # }
       }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
     
