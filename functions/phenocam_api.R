@@ -16,8 +16,58 @@ get_phenocam_camera_df = function(pc_roi_df){
   return (cams_with_rois)
 }
 
+
 get_phenocam_roi_df = function(){
   print ('Grabbing phenocam rois-api')
   roi_files = phenocamapi::get_rois()
   return(roi_files)
+}
+
+
+# Cache out the cams_ and rois_ dataframes from phenocam api
+cache_phenocam_data = function(){
+  todays_date = Sys.Date()
+  todays_cams_name = paste0('./www/phenocam_data/cams_', todays_date)
+  todays_rois_name = paste0('./www/phenocam_data/rois_', todays_date)
+  if(dir.exists('./www/phenocam_data')==FALSE){
+    dir.create('./www/phenocam_data')
+    roi_files = get_phenocam_roi_df()
+    cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
+    write.csv(roi_files, todays_rois_name)
+    write.csv(cams_, todays_cams_name)
+  } else{
+    # If directory exists check to see if todays cams and rois exist
+    if (file.exists(todays_cams_name) & file.exists(todays_rois_name)){
+      cams_ = read.csv(todays_cams_name)
+      roi_files = read.csv(todays_rois_name)
+    }else {
+      roi_files = get_phenocam_roi_df()
+      cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
+      write.csv(roi_files, todays_rois_name)
+      write.csv(cams_, todays_cams_name)
+    }
+  }
+  return(list('cams'=cams_, 'rois'=roi_files))
+}
+
+
+# Remove any phenocam data that is older than 30 days
+remove_old_cached_phenocam_data = function(days_back = 30){
+  todays_date = Sys.Date()
+  if(dir.exists('./www/phenocam_data')){
+    phenocam_cached_files = list.files('./www/phenocam_data')
+    if(phenocam_cached_files > 0){
+      # Extract the dates from the files
+      cams_cached = phenocam_cached_files[grepl('cams_',phenocam_cached_files )]
+      rois_cached = phenocam_cached_files[grepl('rois_',phenocam_cached_files )]
+      cams_dates = as.Date(unlist(strsplit(cams_cached, 'cams_'))[unlist(strsplit(cams_cached, 'cams_')) != ''])
+      rois_dates = as.Date(unlist(strsplit(rois_cached, 'rois_'))[unlist(strsplit(rois_cached, 'rois_')) != ''])
+      remove_cams_dates = paste0('cams_',cams_dates[cams_dates < (todays_date -days_back)])
+      remove_rois_dates = paste0('rois_',rois_dates[cams_dates < (todays_date -days_back)])
+      remove_cams_dates = remove_cams_dates[file.exists(paste0('./www/phenocam_data/',remove_cams_dates))]
+      remove_rois_dates = remove_rois_dates[file.exists(paste0('./www/phenocam_data/',remove_rois_dates))]
+      file.remove(paste0('./www/phenocam_data/',remove_cams_dates))
+      file.remove(paste0('./www/phenocam_data/',remove_rois_dates))
+    }
+  }
 }
