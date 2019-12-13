@@ -1124,7 +1124,7 @@ server = function(input, output, session) {
     
     if ('NDVI' %in% selected_data){
       # NDVI HIGH QUALITY
-      ndvi_pixel_data_df = data$ndvi_pixels
+      ndvi_pixel_data_df = subset(data$ndvi_pixels, data$ndvi_pixels$pixel %in% sd$Pixel)
       print (as_tibble(ndvi_pixel_data_df))
       rownames(ndvi_pixel_data_df) = NULL
       mNDVI=ndvi_pixel_data_df %>%
@@ -1221,7 +1221,7 @@ server = function(input, output, session) {
     
     if ('EVI' %in% selected_data){
       # EVI HIGH QUALITY
-      evi_pixel_data_df = data$evi_pixels
+      evi_pixel_data_df = subset(data$evi_pixels, data$evi_pixels$pixel %in% sd$Pixel)
       print (as_tibble(evi_pixel_data_df))
       mEVI = evi_pixel_data_df %>%
         filter(!is.na(evi_pixel_data_df$evi_raw)) %>%
