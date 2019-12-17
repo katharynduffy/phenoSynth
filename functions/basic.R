@@ -5,17 +5,6 @@
 switch_to_explorer_panel = function(map_ = 'map'){
   shiny::hideTab('navbar', 'PlotPanel')
   shiny::hideTab('navbar', 'paoiTab')
-  # Ids to show:
-  shinyjs::show(id = 'explorerTitle')
-  shinyjs::show(id = 'usZoom')
-  shinyjs::show(id = 'showSites')
-  shinyjs::show(id = 'filterSites')
-  shinyjs::show(id = 'site')
-  shinyjs::show(id = 'siteZoom')
-  shinyjs::show(id = 'drawImage')
-  shinyjs::show(id = 'drawImageROI')
-  shinyjs::show(id = 'analyzerMode')
-  shinyjs::show(id = 'mouse')
   # Ids to hide:
   shinyjs::hide(id = 'analyzerTitle')
   shinyjs::hide(id = 'siteExplorerMode')
@@ -34,6 +23,19 @@ switch_to_explorer_panel = function(map_ = 'map'){
   shinyjs::hide(id = 'getDataPopup')
   shinyjs::hide(id = 'clearPixels')
   shinyjs::hide(id = 'uploadShp')
+  shinyjs::hide(id = 'nlcdOpacity')
+  # Ids to show:
+  shinyjs::show(id = 'controls')
+  shinyjs::show(id = 'explorerTitle')
+  shinyjs::show(id = 'usZoom')
+  shinyjs::show(id = 'showSites')
+  shinyjs::show(id = 'filterSites')
+  shinyjs::show(id = 'site')
+  shinyjs::show(id = 'siteZoom')
+  shinyjs::show(id = 'drawImage')
+  shinyjs::show(id = 'drawImageROI')
+  shinyjs::show(id = 'analyzerMode')
+  shinyjs::show(id = 'mouse')
   # Create leaflet map for explorer mode
   leafletProxy(map_) %>%
     clearControls() %>%

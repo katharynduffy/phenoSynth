@@ -27,6 +27,7 @@ server = function(input, output, session) {
                            cached_ndvi = list())
 
   data    = reactiveValues(
+                      NLCD = FALSE,
                       draw_mode = FALSE,
                       run   = 0,
                       names = c(),
@@ -120,7 +121,6 @@ server = function(input, output, session) {
     if (EMAIL_MODE == FALSE){
       shinyjs::hide(id = 'emailShp')
     }
-    
     switch_to_explorer_panel()
     data$pixel_df    = setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("Pixel", "Site", "lat", 'lon', 'pft'))
     data$pixel_sps_250m = SpatialPolygons(list())
@@ -150,6 +150,14 @@ server = function(input, output, session) {
     } else{
       shinyjs::hide(id = 'phenocamFrequency')}
   })
+  
+  # # Opacity slider for NLCD
+  # observeEvent(input$nlcdOpacity, {
+  #   if (data$NLCD){
+  #     opa = input$nlcdOpacity
+  #     print (opa)
+  #   }
+  # })
 
   # Start of Drawing - set highlight pixel to off
   observeEvent(input$map_draw_start, {
@@ -593,12 +601,14 @@ server = function(input, output, session) {
     withBusyIndicatorServer("analyzerMode", {
     panel$mode = 'analyzer'
     site       = input$site
+    data$site  = site
     site_data  = get_site_info(site)
     data$all_data = data.frame()
     # Reactive variables for changing and tracking color of highlighted pixel
     variables$color_count = 1
     variables$color_list = c()
     variables$color_list_reserve = rainbow(20)
+    data$nlcd_breakdown_df = data.frame()
 
     # Set up directories to store data
     file_path     = paste0('./www/site_data/', site, '/data_layers/')
@@ -720,9 +730,9 @@ server = function(input, output, session) {
         key_df = read.csv('./www/landsat_lc/nlcd_key.csv')
         data$nlcd_c = build_landsat_lc_pallet(data$r_nlcd, key_df)
         data$NLCD = TRUE
+        shinyjs::show(id = 'nlcdOpacity')
       }
       
-
       updateSelectInput(session, 'pftSelection', choices = veg_types)
       data$veg_types = veg_types
       print (veg_types)
@@ -749,8 +759,11 @@ server = function(input, output, session) {
       
       # If NLCD layer exists for site, add it to map
       if (data$NLCD){
-        # modis to landsat lookup
-        landsat_lc = Landsat_Landcover
+        # modis to landsat lookup - Removing Evergreen broadleaf forest and Deciduous needleaf forest and the 2nd Shrubland
+        landsat_lc = Landsat_Landcover %>% 
+          mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 3, NA)) %>%
+          mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 2, NA)) %>% 
+          mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 7, NA))
         # create a landsat to modis lookup (so that no landsat values are left out)
         landsat_lc_lookup = read.csv('./www/landsat_lc/nlcd_key.csv') %>% 
           dplyr::select(ID,NLCD.Land.Cover.Class) %>% left_join(landsat_lc, by = c('ID' = 'Landsat.Class')) %>%
@@ -854,10 +867,49 @@ server = function(input, output, session) {
     
     # Selected pixels
     sm_pixels = data$midcell_pixel_sin
+    merc_pixels = data$pixel_sps_250m
+    # Loop through the merc_pixels and calculate their percentage cover of NLCD? do here, or do when selecting? Might take too long..
     
-    # Empty dataframes to use for plotting
-    pixel_data_df = data
-
+    
+    # This code is a duplicate of code in showpos function 
+    # if (data$NLCD == TRUE){
+    #   pixel_percentages = c()
+    #   pixel_heterogens = c()
+    #   data_df_at_pixel_final = data.frame()
+    #   num_pixels = length(merc_pixels)
+    #   for (p in 1:num_pixels){
+    #     this_pixel = merc_pixels[p]
+    #     id_ = sp::getSpPPolygonsIDSlots(this_pixel)
+    #     selected_pixel = raster::crop(data$rc_nlcd, this_pixel, snap = 'out' )
+    #     # reproject with higher resolution by setting the resolution equal to 1
+    #     selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/40.5)
+    #     # selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/5)
+    #     selected_pixel_high_res_c = raster::crop(selected_pixel_high_res, this_pixel, snap = 'in' )
+    #     
+    #     # Build dataframe with frequency of landcover PFT values at this pixel
+    #     data_df_at_pixel = as.data.frame(table(selected_pixel_high_res_c@data@values), stringsAsFactors=FALSE) %>% 
+    #       mutate(Var1 = as.double(Var1)) %>%
+    #       left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
+    #       mutate(id = id_)
+    #     
+    #     # Calculate percentage of selected values from total values
+    #     total_pixels = sum(data_df_at_pixel$Freq)
+    #     selected_values = subset(data_df_at_pixel, data_df_at_pixel$Var1 == data$pft)$Freq
+    #     selected_percentage = selected_values/total_pixels 
+    #     heterogeneity_at_pixel = length(data_df_at_pixel$Var1)
+    #     
+    #     if (length(selected_percentage) ==0){
+    #       selected_percentage = 0}
+    #     if (length(heterogeneity_at_pixel) ==0){
+    #       heterogeneity_at_pixel = 0}
+    #     
+    #     pixel_heterogens  = c(pixel_heterogens, heterogeneity_at_pixel)
+    #     pixel_percentages = c(pixel_percentages, selected_percentage)
+    #     data_df_at_pixel_final = rbind(data_df_at_pixel_final, data_df_at_pixel)
+    #   }
+    #   data$nlcd_breakdown_df = data_df_at_pixel_final
+    # }
+    
     # Inputs from popup
     selected_data = input$dataTypes_plot
     selected_pixel_type = input$pixelTypes
@@ -1111,6 +1163,7 @@ server = function(input, output, session) {
     selected_data = input$dataTypes_plot
     selected_plots = input$plotTheseBoxes
     data$plotTable = subset(data$pixel_df, data$pixel_df$Type == '250m')
+    # data$plotTable = subset(data$pixel_df, data$pixel_df$Site == data$site)
     print (selected_plots)
 
     # Catches empty dataframe so that GCC can still plot
@@ -1937,6 +1990,9 @@ server = function(input, output, session) {
        midcelly_merc = yclose_merc - (resolution * .5)
        midcell_merc  = c(midcellx_merc, midcelly_merc)
        
+       datalon_merc = c(xclose_merc, xfar_merc, xfar_merc, xclose_merc ,xclose_merc)
+       datalat_merc = c(yclose_merc, yclose_merc, yfar_merc, yfar_merc, yclose_merc)
+       
        # Sinusoidal coordinates
        midcell_pt_sin  = from_crs1_to_crs2_lon_lat(lon_ = midcellx_merc, lat_ = midcelly_merc, from_crs = merc_crs, to_crs = sinu_crs)
        midcellx_sin = midcell_pt_sin@coords[1]
@@ -2012,29 +2068,91 @@ server = function(input, output, session) {
                      ' --Row: ', row, ' --Column: ', col, ' --Pft Number: ', vegindex,
                      ' --Middle of Cell lon: ', midcell_wgs[1], ' lat: ', midcell_wgs[2])
          print (ps)
+    
 
-         # Build Dataframe   reactive value = data$pixel_df
-         data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, 
-                                                         Type = type_, Lat_wgs = midcelly_wgs, Lon_wgs = midcellx_wgs, 
-                                                         pft = vegindex, Lat_sin = midcelly_sin, Lon_sin = midcellx_sin,
-                                                         pt1_lat = datalat_wgs[1], pt1_lon = datalon_wgs[1],
-                                                         pt2_lat = datalat_wgs[2], pt2_lon = datalon_wgs[2],
-                                                         pt3_lat = datalat_wgs[3], pt3_lon = datalon_wgs[3],
-                                                         pt4_lat = datalat_wgs[4], pt4_lon = datalon_wgs[4],
-                                                         pt5_lat = datalat_wgs[5], pt5_lon = datalon_wgs[5]))
+         pixel  = matrix_to_polygon(rbind(c(datalon_merc[1], datalat_merc[1]),
+                                          c(datalon_merc[2], datalat_merc[2]),
+                                          c(datalon_merc[3], datalat_merc[3]),
+                                          c(datalon_merc[4], datalat_merc[4]),
+                                          c(datalon_merc[5], datalat_merc[5])), id_, as.character(type_), crs = merc_crs)
          
-         data$pixel_df_table = data$pixel_df %>%  subset(Type == '250m') %>%
-           select(Site, Pixel, Type, Lat_wgs, Lon_wgs) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10),
-                                                             filter = 'top') %>%
-               formatStyle('Pixel', fontWeight = 'bold', 
-                           backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
+         
+         
+         # If NLCD layer is at this site, calculate heterogeneity and pft % coverages under pixel
+         if (data$NLCD == TRUE){
+           selected_pixel = raster::crop(data$rc_nlcd, pixel, snap = 'out' )
+           # reproject with higher resolution by setting the resolution equal to 1
+           selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/40.5)
+           # selected_pixel_high_res   = raster::projectRaster(from = selected_pixel, crs = merc_crs, method='ngb', res = res(selected_pixel)/5)
+           selected_pixel_high_res_c = raster::crop(selected_pixel_high_res, pixel, snap = 'in' )
+           
+           # Build dataframe with frequency of landcover PFT values at this pixel
+           data_df_at_pixel = as.data.frame(table(selected_pixel_high_res_c@data@values), stringsAsFactors=FALSE) %>% 
+             mutate(Var1 = as.double(Var1)) %>%
+             left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
+             mutate(id = id_)
+           
+           # Calculate percentage of selected values from total values
+           total_pixels = sum(data_df_at_pixel$Freq)
+           selected_values = subset(data_df_at_pixel, data_df_at_pixel$Var1 == data$pft)$Freq
+           selected_percentage = selected_values/total_pixels 
+           heterogeneity_at_pixel = length(data_df_at_pixel$Var1)
+           
+           if (length(selected_percentage) ==0){
+             selected_percentage = 0}
+           if (length(heterogeneity_at_pixel) ==0){
+             heterogeneity_at_pixel = 0}
+           
+           if (length(data$nlcd_breakdown_df)==0){
+             data$nlcd_breakdown_df = data_df_at_pixel
+           }else {
+             data$nlcd_breakdown_df = rbind(data$nlcd_breakdown_df, data_df_at_pixel)
+           }
+           
+           # Calculate majority pft, majority pft % cover, and unique hterogeneity pfts
+           data_df_at_pixel
+           
+           pft_majority = subset(data_df_at_pixel, data_df_at_pixel$Freq == max(data_df_at_pixel$Freq))$pft_expanded
+           majority_percentage = max(data_df_at_pixel$Freq) / sum(data_df_at_pixel$Freq)
+           heterogeneity_pft = dim(data_df_at_pixel)[1]
+         }
+         
+         
 
-         pixel  = matrix_to_polygon(rbind(c(datalon_wgs[1], datalat_wgs[1]),
-                                          c(datalon_wgs[2], datalat_wgs[2]),
-                                          c(datalon_wgs[3], datalat_wgs[3]),
-                                          c(datalon_wgs[4], datalat_wgs[4]),
-                                          c(datalon_wgs[5], datalat_wgs[5])), id_, as.character(type_))
+         # Subset the pixel dataframe for plotting tab
+         if (data$NLCD == FALSE){
+           # Build Dataframe   reactive value = data$pixel_df
+           data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, 
+             Lat_wgs = midcelly_wgs, Lon_wgs = midcellx_wgs, Type = '250m',
+             pft = vegindex, Lat_sin = midcelly_sin, Lon_sin = midcellx_sin,
+             pt1_lat = datalat_wgs[1], pt1_lon = datalon_wgs[1],
+             pt2_lat = datalat_wgs[2], pt2_lon = datalon_wgs[2],
+             pt3_lat = datalat_wgs[3], pt3_lon = datalon_wgs[3],
+             pt4_lat = datalat_wgs[4], pt4_lon = datalon_wgs[4],
+             pt5_lat = datalat_wgs[5], pt5_lon = datalon_wgs[5]))
+           
+           data$pixel_df_table = data$pixel_df %>%
+             select(Site, Pixel, Lat_wgs, Lon_wgs) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10), filter = 'top') %>%
+             formatStyle('Pixel', fontWeight = 'bold', backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
+         }else {
+           # Build Dataframe   reactive value = data$pixel_df
+           data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, 
+             Lat_wgs = midcelly_wgs, Lon_wgs = midcellx_wgs, PFT_Majority = pft_majority, Type = '250m',
+             Majority_Percentage = majority_percentage, Heterogeneity_PFT = heterogeneity_pft,
+             pft = vegindex, Lat_sin = midcelly_sin, Lon_sin = midcellx_sin,
+             pt1_lat = datalat_wgs[1], pt1_lon = datalon_wgs[1],
+             pt2_lat = datalat_wgs[2], pt2_lon = datalon_wgs[2],
+             pt3_lat = datalat_wgs[3], pt3_lon = datalon_wgs[3],
+             pt4_lat = datalat_wgs[4], pt4_lon = datalon_wgs[4],
+             pt5_lat = datalat_wgs[5], pt5_lon = datalon_wgs[5]))
+           
+           data$pixel_df_table = data$pixel_df %>%
+             select(Site, Pixel, PFT_Majority, Majority_Percentage, Heterogeneity_PFT) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10), filter = 'top') %>%
+             formatStyle('Pixel', fontWeight = 'bold', backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
+         }
          
+      
+
          coords_ = data.frame(x = midcellx_sin, y = midcelly_sin)
          row.names(coords_) = id_ 
          center_point = SpatialPointsDataFrame(coords_, data=data.frame(ID=id_), proj4string=CRS(sinu_crs))

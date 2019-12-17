@@ -72,6 +72,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                         leafletOutput("map", width="100%", height="100%"),
                         textOutput("See Field of View (FOV)"),
 
+                        hidden(
                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                       draggable = FALSE, top = 70, left = "auto", right = 20, bottom = "auto",
                                       width = 320, height = "auto", style="z-index:600;",
@@ -94,7 +95,8 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                       actionButton('plotRemoteData', 'Plot Data'),
                                       actionButton('uploadShp', 'Upload Shapefile'),
                                       actionButton('clearPixels', 'Clear Pixels')
-                        ),
+                                      # sliderInput('nlcdOpacity', 'NLCD Opacity', min = .1, max = 1, value =.7, step = .1)
+                        )),
                                      
                         absolutePanel(id = 'currentImage', class = 'panel panel-default', 
                                       draggable = TRUE,  top = 'auto', left = 250, right = 'auto' , bottom = 10,
