@@ -2130,7 +2130,7 @@ server = function(input, output, session) {
              pt3_lat = datalat_wgs[3], pt3_lon = datalon_wgs[3],
              pt4_lat = datalat_wgs[4], pt4_lon = datalon_wgs[4],
              pt5_lat = datalat_wgs[5], pt5_lon = datalon_wgs[5]))
-           
+           row.names(data$pixel_df) = c()
            data$pixel_df_table = data$pixel_df %>%
              select(Site, Pixel, Lat_wgs, Lon_wgs) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10), filter = 'top') %>%
              formatStyle('Pixel', fontWeight = 'bold', backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
@@ -2145,13 +2145,11 @@ server = function(input, output, session) {
              pt3_lat = datalat_wgs[3], pt3_lon = datalon_wgs[3],
              pt4_lat = datalat_wgs[4], pt4_lon = datalon_wgs[4],
              pt5_lat = datalat_wgs[5], pt5_lon = datalon_wgs[5]))
-           
+           row.names(data$pixel_df) = c()
            data$pixel_df_table = data$pixel_df %>%
              select(Site, Pixel, PFT_Majority, Majority_Percentage, Heterogeneity_PFT) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10), filter = 'top') %>%
              formatStyle('Pixel', fontWeight = 'bold', backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
          }
-         
-      
 
          coords_ = data.frame(x = midcellx_sin, y = midcelly_sin)
          row.names(coords_) = id_ 
