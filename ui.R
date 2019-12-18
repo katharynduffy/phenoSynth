@@ -151,11 +151,12 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                                       'All EVI' = 'all_evi', 'High Quality EVI' = 'hiq_evi',
                                                       'Transition Dates (EVI/NDVI)' = 'tds_sat'), inline=TRUE,
                                        selected=c('GCC','all_ndvi','hiq_ndvi','all_evi','hiq_evi','tds_sat')),
+                    h3(id = 'plotTitle',''),
                     plotlyOutput("data_plot", width='100%', height = 'auto'),
                     hr(),
                     actionButton('downloadData', 'Download Dataframe'),
                     hr(),
-                    h2('Selected Pixel Data'),
+                    h3('Selected Pixel Data'),
                     br(),
                     dataTableOutput('plotTable')
            ),

@@ -868,9 +868,11 @@ server = function(input, output, session) {
     # Selected pixels
     sm_pixels = data$midcell_pixel_sin
     merc_pixels = data$pixel_sps_250m
+    
+    shinyjs::html('plotTitle', paste0('Phenocam Site: ', data$site))
+    
+    
     # Loop through the merc_pixels and calculate their percentage cover of NLCD? do here, or do when selecting? Might take too long..
-    
-    
     # This code is a duplicate of code in showpos function 
     # if (data$NLCD == TRUE){
     #   pixel_percentages = c()
