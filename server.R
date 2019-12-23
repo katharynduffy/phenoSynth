@@ -566,27 +566,36 @@ server = function(input, output, session) {
   observe({
     print ('Doing something to Image')
     draw_bool = input$drawImage
-    site      = input$site
+    this_site = input$site
     roi_bool  = input$drawImageROI
-    pft       = input$pftSelection
-    pft       = strsplit(pft, '_')[[1]][1]
-    if (is.na(pft)){
-      pft_abbr = subset(roi_files, roi_files$site == site_)[1,]$roitype
-    }else{
-      pft_abbr  = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
-    }
     
     removeUI(selector = '#phenocamSiteImage')
-    img_url = get_img_url(site)
+    img_url = get_img_url(this_site)
 
     if (draw_bool == TRUE){
+      pft_      = input$pftSelection
+      pft       = strsplit(pft_, '_')[[1]][1]
+      if (is.na(pft)){
+        pft_abbr = subset(roi_files, roi_files$site == this_site)[1,]$roitype
+      }else{
+        pft_abbr  = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+      }
+      
       shinyjs::show(id = 'currentImage')
       insertUI(selector = '#image',
         ui = tags$div(id='phenocamSiteImage',
                       tags$img(src=img_url, class= 'img',
                                style="position: absolute; z-index: 1; top:0px; left:0px;")))}
       if (roi_bool == TRUE){
-          roi_url = get_roi_url(name = site, pft_abr = pft_abbr)
+        pft_      = input$pftSelection
+        pft       = strsplit(pft_, '_')[[1]][1]
+        if (is.na(pft)){
+          pft_abbr = subset(roi_files, roi_files$site == this_site)[1,]$roitype
+        }else{
+          pft_abbr  = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+        }
+        
+          roi_url = get_roi_url(name = this_site, pft_abr = pft_abbr)
           print (roi_url)
           if (roi_url != 'Not Found'){
           insertUI(selector = '#phenocamSiteImage',
