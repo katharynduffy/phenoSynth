@@ -19,7 +19,6 @@ get_img_url = function(name){
 get_roi_url = function(name, pft_abr){
   
   roi_url = tryCatch({
-  
     grep_roi = paste0(pft_abr, '_1000_01')
     url = paste0('https://phenocam.sr.unh.edu/data/archive/', name, '/ROI/')
     page = read_html(url)

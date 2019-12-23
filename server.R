@@ -570,8 +570,12 @@ server = function(input, output, session) {
     roi_bool  = input$drawImageROI
     pft       = input$pftSelection
     pft       = strsplit(pft, '_')[[1]][1]
-    pft_abbr  = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
-
+    if (is.na(pft)){
+      pft_abbr = subset(roi_files, roi_files$site == site_)[1,]$roitype
+    }else{
+      pft_abbr  = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+    }
+    
     removeUI(selector = '#phenocamSiteImage')
     img_url = get_img_url(site)
 
