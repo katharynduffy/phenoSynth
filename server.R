@@ -831,6 +831,7 @@ server = function(input, output, session) {
         
         data$pft_abbr = pft_abbr
         print (as.numeric(pft_key))
+        
         rc   = crop_raster(lat_ = data$lat_merc, lon_ = data$lng_merc , 
                            r_ = data$r_landcover, crs_str = merc_crs, 
                            reclassify=TRUE, primary = as.numeric(pft_key), crop=FALSE)
@@ -853,12 +854,6 @@ server = function(input, output, session) {
               options = layersControlOptions(collapsed = FALSE)) %>% 
             hideGroup("2016 NLCD")
         }
-        
-        # Grab correct ROI mask from phenocamAPI 
-        data$roi_url = get_roi_url(name = site, pft_abr = pft_abbr)
-        print (data$roi_url)
-        
-        # Grab correct CSV from phenocamAPI
     }
   })
 

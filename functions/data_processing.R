@@ -365,8 +365,9 @@ get_site_roi_csvs = function(name, roi_files_, frequency_,
   # Get rows that = Site and = roi_type
   idx      = is.element(roi_files_$site, name)
   idx2     = is.element(roi_files_$roitype, roi_type_)
+  idx3     = is.element(roi_files_$show_data_link, TRUE)
   num_rois = length(idx[idx == TRUE])
-  loc_rois = which(idx == TRUE & idx2 ==TRUE)
+  loc_rois = which(idx == TRUE & idx2 ==TRUE & idx3 ==TRUE)
   site_roi_rows = roi_files_[loc_rois,]
   roi_seq_num = site_roi_rows$sequence_number
   pheno_ts_df = data.frame()
