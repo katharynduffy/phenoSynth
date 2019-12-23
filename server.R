@@ -992,11 +992,11 @@ server = function(input, output, session) {
     # --------------- TRANSITION DATE EXTRACTION FOR PIXELS ------------
     if ('Transition Dates' %in% selected_data){
       withProgress(message = 'Compiling Transition Dates', value = .1, {
-      # Extracting lat/lng values for selected 250m or 500m pixels
+      # Extracting lat/lng values for selected 250m pixels
       data$tds_path
       data$tds_nc
       
-      # all raster bricks for transition date data
+      # all raster bricks for transition dates data
       td_v6_names = c('Dormancy', 'Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'Senescence','QA_Overall', 'QA_Detailed')
       # Get start date to add values from transition date data to
       dunits = ncatt_get(data$tds_nc,'Greenup', "units")$value
@@ -1832,11 +1832,9 @@ server = function(input, output, session) {
         print ('enter 1')
         these_gccs = c(gcc_filepath, spring_filepath, fall_filepath)
         dates_modified = as.Date(file.info(these_gccs)$mtime)
-        
-        
+        # If one of the dates is out of sink, rm all 3 and redownload      
         if (length(unique(dates_modified)) > 1){
           print ('Will Download GCC from Phenocam API.')
-          # If one of the dates is out of sink, rm all 3 and redownload
           file.remove(these_gccs)
           # Download gcc back
           incProgress(amount = .2, detail = 'Downloading GCC data')
@@ -1845,19 +1843,19 @@ server = function(input, output, session) {
                                             frequency_  = freq,
                                             percentile_ = percentile_gcc,
                                             roi_type_   = pft_abbr)
-          phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring = phenocam$data[[2]]
-          phenocam$fall   = phenocam$data[[3]]
-          phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
-                                              spring = phenocam$spring,
-                                              fall   = phenocam$fall)
+          gcc    = phenocam$data[[1]]
+          spring = phenocam$data[[2]]
+          fall   = phenocam$data[[3]]
+          phenocam$gcc_all[[pft_abbr]] = list(gcc    = gcc,
+                                              spring = spring,
+                                              fall   = fall)
           incProgress(amount = .1)
-          write.csv(phenocam$gcc,    file = gcc_filepath)
-          write.csv(phenocam$spring, file = spring_filepath)
-          write.csv(phenocam$fall,   file = fall_filepath)
+          write.csv(gcc,    file = gcc_filepath)
+          write.csv(spring, file = spring_filepath)
+          write.csv(fall,   file = fall_filepath)
+        # Remove files if they are older than the refresh_at value (7 days) and redownload
         }else if(length(these_gccs[dates_modified < (todays_date - refresh_at)]) > 0){
           print ('Will Download GCC from Phenocam API.')
-          # Remove files if they are older than the refresh_at value (7 days) and redownload
           file.remove(these_gccs[dates_modified < (todays_date - refresh_at)])
           # Download gcc back
           incProgress(amount = .2, detail = 'Downloading GCC data')
@@ -1866,30 +1864,29 @@ server = function(input, output, session) {
                                             frequency_  = freq,
                                             percentile_ = percentile_gcc,
                                             roi_type_   = pft_abbr)
-          phenocam$gcc    = phenocam$data[[1]]
-          phenocam$spring = phenocam$data[[2]]
-          phenocam$fall   = phenocam$data[[3]]
-          phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
-                                              spring = phenocam$spring,
-                                              fall   = phenocam$fall)
+          gcc    = phenocam$data[[1]]
+          spring = phenocam$data[[2]]
+          fall   = phenocam$data[[3]]
+          phenocam$gcc_all[[pft_abbr]] = list(gcc    = gcc,
+                                              spring = spring,
+                                              fall   = fall)
           incProgress(amount = .1)
-          write.csv(phenocam$gcc,    file = gcc_filepath)
-          write.csv(phenocam$spring, file = spring_filepath)
-          write.csv(phenocam$fall,   file = fall_filepath)
+          write.csv(gcc,    file = gcc_filepath)
+          write.csv(spring, file = spring_filepath)
+          write.csv(fall,   file = fall_filepath)
+        # If dates are current, just use local gcc files
         }else {
-          # If dates are current, just use local gcc files
           print (paste0('Will import GCC from local file. Current within ', refresh_at, ' days.'))
           incProgress(amount = .2, detail = 'Importing GCC CSV')
-          phenocam$gcc    = read.csv(gcc_filepath, header = TRUE)
-          phenocam$spring = read.csv(spring_filepath, header = TRUE)
-          phenocam$fall   = read.csv(fall_filepath, header = TRUE)
-          phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
-            spring = phenocam$spring,
-            fall   = phenocam$fall)
+          gcc    = read.csv(gcc_filepath, header = TRUE)
+          spring = read.csv(spring_filepath, header = TRUE)
+          fall   = read.csv(fall_filepath, header = TRUE)
+          phenocam$gcc_all[[pft_abbr]] = list(gcc    = gcc,
+                                              spring = spring,
+                                              fall   = fall)
         }
-        
+      # Download gcc data if it doesn't exist at all     
       }else{
-        # Download gcc data if it doesn't exist at all
         incProgress(amount = .2, detail = 'Downloading GCC data')
         print ('Will Download GCC from Phenocam API.')
         phenocam$data = get_site_roi_csvs(name        = site,
@@ -1898,18 +1895,16 @@ server = function(input, output, session) {
                                           percentile_ = percentile_gcc,
                                           roi_type_   = pft_abbr)
         incProgress(amount = .2, detail = 'GCC data Downloaded')
-        
-        phenocam$gcc    = phenocam$data[[1]]
-        phenocam$spring = phenocam$data[[2]]
-        phenocam$fall   = phenocam$data[[3]]
-        phenocam$gcc_all[[pft_abbr]] = list(gcc    = phenocam$gcc,
-                                            spring = phenocam$spring,
-                                            fall   = phenocam$fall)
-        
+        gcc    = phenocam$data[[1]]
+        spring = phenocam$data[[2]]
+        fall   = phenocam$data[[3]]
+        phenocam$gcc_all[[pft_abbr]] = list(gcc    = gcc,
+                                            spring = spring,
+                                            fall   = fall)
         incProgress(amount = .1)
-        write.csv(phenocam$gcc,    file = gcc_filepath)
-        write.csv(phenocam$spring, file = spring_filepath)
-        write.csv(phenocam$fall,   file = fall_filepath)
+        write.csv(gcc,    file = gcc_filepath)
+        write.csv(spring, file = spring_filepath)
+        write.csv(fall,   file = fall_filepath)
       }
       
       }) #END WITH PROGRESS BAR
