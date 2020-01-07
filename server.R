@@ -928,22 +928,31 @@ server = function(input, output, session) {
     # - Allows for renaming of checkboxes dynamically based on selected plotting data
     plot_selected = c()
     plot_choices = list()
+    download_choices = c()
     if ('GCC' %in% selected_data){
       plot_choices[['GCC']] = 'GCC'
-      plot_selected = c(plot_selected, 'GCC')}
+      plot_selected = c(plot_selected, 'GCC')
+      download_choices = c(download_choices, 'GCC Data', 'GCC Spring Transition Dates', 'GCC Fall Transition Dates')}
     if ('NDVI' %in% selected_data){
       plot_choices[['High Quality NDVI']] = 'hiq_ndvi'
       plot_choices[['All NDVI']] = 'all_ndvi'
-      plot_selected = c(plot_selected, 'hiq_ndvi', 'all_ndvi')}
+      plot_selected = c(plot_selected, 'hiq_ndvi', 'all_ndvi')
+      download_choices = c(download_choices, 'NDVI')
+      download_choices = c(download_choices, 'Selected Pixel CSV')}
     if ('EVI' %in% selected_data){
       plot_choices[['High Quality EVI']] = 'hiq_evi'
       plot_choices[['All EVI']] = 'all_evi'
-      plot_selected = c(plot_selected, 'hiq_evi', 'all_evi')}
+      plot_selected = c(plot_selected, 'hiq_evi', 'all_evi')
+      if ('Selected Pixel CSV' %!in% download_choices){
+        download_choices = c(download_choices, 'Selected Pixel CSV')
+      }
+      download_choices = c(download_choices, 'EVI')}
     if ('Transition Dates' %in% selected_data){
       plot_choices[['Transition Dates (EVI/NDVI)']] = 'tds_sat'
-      plot_selected = c(plot_selected, 'tds_sat')}
+      plot_selected = c(plot_selected, 'tds_sat')
+      download_choices = c(download_choices, 'MODIS Transition Dates')}
     
-  
+    updateSelectInput(session, 'dataTypes_download', choices = download_choices)
     updateCheckboxGroupInput(session, inputId = 'plotTheseBoxes',
                              choices  = plot_choices,
                              selected = plot_selected,
@@ -1005,19 +1014,21 @@ server = function(input, output, session) {
       data$tds_nc
       
       # all raster bricks for transition dates data
-      td_v6_names = c('Dormancy', 'Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'Senescence','QA_Overall', 'QA_Detailed')
+      td_v6_names = c('Greenup', 'Dormancy', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'Senescence','QA_Overall', 'QA_Detailed')
       # Get start date to add values from transition date data to
       dunits = ncatt_get(data$tds_nc,'Greenup', "units")$value
       start_date = as.Date(strsplit(dunits, 'days since ')[[1]][2], format = '%m-%d-%Y')
+      years = format(as.Date(data$td_v6_ncs['Greenup'][[1]]@data@names, 'X%Y.%m.%d'), '%Y')
       pixel_df_all_tds = data.frame()
       for (name in td_v6_names){
         incProgress(amount = (1/length(td_v6_names)))
         pixel_ids = as.vector(sm_pixels@data$ID)
-        dormancy_values = raster::extract(data$td_v6_ncs$Dormancy, sm_pixels)
-        rownames(dormancy_values) = pixel_ids
+        # Extract at transition date name
+        tds_values = raster::extract(data$td_v6_ncs[name][[1]], sm_pixels)
+        rownames(tds_values) = pixel_ids
         for (pixel in pixel_ids){
-          dates_at_pixel = as.vector(dormancy_values[pixel,]) + start_date
-          pixel_df = data.frame(dates = dates_at_pixel, layer = name, pixel = pixel, value = NA)
+          dates_at_pixel = as.vector(tds_values[pixel,]) + start_date
+          pixel_df = data.frame(dates = dates_at_pixel, layer = name, pixel = pixel, year = years, value = NA)
           pixel_df_all_tds = rbind(pixel_df_all_tds, pixel_df)
         }
       }
@@ -1979,9 +1990,13 @@ server = function(input, output, session) {
         paste0(input$site, '_ndvi_data.csv')
       } else if (input$dataTypes_download == 'EVI'){
         paste0(input$site, '_evi_data.csv')
-      }else if (input$dataTypes_download == 'GCC'){
-        paste0(input$site, '_gcc_data.csv')
-      }else if (input$dataTypes_download == 'Transition Dates'){
+      }else if (input$dataTypes_download == 'GCC Data'){
+        paste0(input$site, '_gcc_data_', data$pft_abbr ,'.csv')
+      }else if (input$dataTypes_download == 'GCC Spring Transition Dates'){
+        paste0(input$site, '_gcc_spring_td_', data$pft_abbr ,'.csv')
+      }else if (input$dataTypes_download == 'GCC Fall Transition Dates'){
+        paste0(input$site, '_gcc_fall_td_', data$pft_abbr ,'.csv')
+      }else if (input$dataTypes_download == 'MODIS Transition Dates'){
         paste0(input$site, '_tds_data.csv')
       }else if (input$dataTypes_download == 'Selected Pixel CSV')
         paste0(input$site, '_selected_pixels.csv')
@@ -1991,9 +2006,13 @@ server = function(input, output, session) {
         data = data$ndvi_pixels
       } else if (input$dataTypes_download == 'EVI'){
         data = data$evi_pixels
-      }else if (input$dataTypes_download == 'GCC'){
-        data = phenocam$gcc
-      }else if (input$dataTypes_download == 'Transition Dates'){
+      }else if (input$dataTypes_download == 'GCC Data'){
+        data = phenocam$gcc_all[[data$pft_abbr]]$gcc
+      }else if (input$dataTypes_download == 'GCC Spring Transition Dates'){
+        data = phenocam$gcc_all[[data$pft_abbr]]$spring
+      }else if (input$dataTypes_download == 'GCC Fall Transition Dates'){
+        data = phenocam$gcc_all[[data$pft_abbr]]$fall
+      }else if (input$dataTypes_download == 'MODIS Transition Dates'){
         data = data$pixel_df_all_tds
       }else if (input$dataTypes_download == 'Selected Pixel CSV'){
         data = data$pixel_df
@@ -2001,7 +2020,7 @@ server = function(input, output, session) {
       write.csv(data, file, row.names = FALSE)
     }
   )
-
+  
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #--------------------------------------------------------------------------------------------------------------------------------------
