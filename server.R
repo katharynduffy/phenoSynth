@@ -1028,7 +1028,7 @@ server = function(input, output, session) {
         rownames(tds_values) = pixel_ids
         for (pixel in pixel_ids){
           dates_at_pixel = as.vector(tds_values[pixel,]) + start_date
-          pixel_df = data.frame(dates = dates_at_pixel, layer = name, pixel = pixel, year = years, value = NA)
+          pixel_df = data.frame(dates = dates_at_pixel, layer = name, pixel = pixel, year = years, value = NA, stringsAsFactors = FALSE )
           pixel_df_all_tds = rbind(pixel_df_all_tds, pixel_df)
         }
       }
@@ -1197,15 +1197,11 @@ server = function(input, output, session) {
     }
     
     if ('NDVI' %in% selected_data){
-      # NDVI HIGH QUALITY
       ndvi_pixel_data_df = subset(data$ndvi_pixels, data$ndvi_pixels$pixel %in% sd$Pixel)
       print (as_tibble(ndvi_pixel_data_df))
       rownames(ndvi_pixel_data_df) = NULL
-      mNDVI=ndvi_pixel_data_df %>%
-        filter(!is.na(ndvi_pixel_data_df$ndvi_raw)) %>%
-        group_by(date) %>%
-        summarise(meanNDVI = mean(ndvi_raw))
       
+      # NDVI HIGH QUALITY
       if ('hiq_ndvi' %in% selected_plots){
         if (length(unique(ndvi_pixel_data_df$ndvi_filtered)) == 1){
           selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_ndvi')]
@@ -1229,23 +1225,23 @@ server = function(input, output, session) {
                             '<br>Pixel: ', pixel,
                             '<br>Data: NDVI')) %>%
             layout(xaxis = list(title = "Date"))
-          ## New spline edits here
-          if (length(unique(ndvi_pixel_data_df$ndvi_filtered)) >= 5){
-            mNDVIhq = ndvi_pixel_data_df %>%
-              filter(!is.na(ndvi_pixel_data_df$ndvi_filtered)) %>%
-              group_by(date) %>%
-              summarise(meanNDVI = mean(ndvi_filtered))
-            
-            p_ndvi= p_ndvi %>%
-              add_trace(
-                x = mNDVIhq$date, 
-                y =~ fitted(smooth.spline(mNDVIhq$meanNDVI~as.Date(mNDVIhq$date)), data=mNDVIhq),
-                # y=~fitted(smooth.spline(mNDVIhq$meanNDVIhq~as.numeric(mNDVIhq$date)), data=mNDVIhq),
-                mode = "lines",
-                line = list(width = 2, color = "rgb(120,120,120)"),
-                name = "NDVI loess fit",
-                showlegend = TRUE) %>% layout(xaxis = list(title = "Date"))
-            }
+          
+          # Spline added here
+          mNDVIhq = ndvi_pixel_data_df %>%
+            filter(!is.na(ndvi_pixel_data_df$ndvi_filtered)) %>%
+            group_by(date) %>%
+            summarise(meanNDVI = mean(ndvi_filtered))
+          # Loess ndvi df
+          smooth_ndvi_df_hq = data.frame(date = as.Date(mNDVIhq$date), ndvi_smooth = fitted(smooth.spline(mNDVIhq$meanNDVI~as.Date(mNDVIhq$date)), data=mNDVIhq))
+          
+          p_ndvi= p_ndvi %>%
+            add_trace(
+              x = smooth_ndvi_df_hq$date, 
+              y = smooth_ndvi_df_hq$ndvi_smooth,
+              mode = "lines",
+              line = list(width = 2, color = "rgb(120,120,120)"),
+              name = "NDVI loess HiQ",
+              showlegend = TRUE) %>% layout(xaxis = list(title = "Date"))
           
           p_ndvi = add_title_to_plot(df = p_ndvi,
                                      x_title_ = 'NDVI (High Quality data)',
@@ -1254,6 +1250,11 @@ server = function(input, output, session) {
       }
       # NDVI RAW
       if ('all_ndvi' %in% selected_plots){
+        mNDVI = ndvi_pixel_data_df %>%
+          filter(!is.na(ndvi_pixel_data_df$ndvi_raw)) %>%
+          group_by(date) %>%
+          summarise(meanNDVI = mean(ndvi_raw))
+        
         clean_ndvi_pixel_data_df = ndvi_pixel_data_df %>%
           subset(ndvi_pixel_data_df$pixel %in% sd$Pixel) %>%
           mutate(pixel = paste0('NDVI_all_', pixel), Date = date) %>%
@@ -1276,20 +1277,22 @@ server = function(input, output, session) {
                           '<br>Pixel: ', pixel,
                           '<br>Data: NDVI'))
         
+        # Spline added here
+        # Loess ndvi df
+        smooth_ndvi_df = data.frame(date = as.Date(mNDVI$date), ndvi_smooth = fitted(smooth.spline(mNDVI$meanNDVI~as.Date(mNDVI$date)), data=mNDVI))
         p_ndvi_raw = p_ndvi_raw %>%
           add_trace(
-            x = mNDVI$date, 
-            y = ~fitted(smooth.spline(mNDVI$meanNDVI~as.numeric(mNDVI$date)), data=mNDVI),
+            x = smooth_ndvi_df$date, 
+            y = smooth_ndvi_df$ndvi_smooth,
             mode = "lines",
             line = list(width = 2, color = "rgb(120,120,120)"),
-            name = "NDVI loess fit",
+            name = "NDVI loess All",
             showlegend = TRUE
-          )%>%layout(xaxis = list(title = "Date"))
+          ) %>%layout(xaxis = list(title = "Date"))
         
         p_ndvi_raw = add_title_to_plot(df = p_ndvi_raw,
                                        x_title_ = 'NDVI (All data)',
                                        y_title_ = 'NDVI value')
-
       }
     }
     
@@ -1301,6 +1304,7 @@ server = function(input, output, session) {
         filter(!is.na(evi_pixel_data_df$evi_raw)) %>%
         group_by(date) %>%
         summarise(meanEVI = mean(evi_raw))
+      
       if ('hiq_evi' %in% selected_plots){
         if (length(unique(evi_pixel_data_df$evi_filtered)) == 1){
           selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_evi')]
@@ -1332,14 +1336,16 @@ server = function(input, output, session) {
               group_by(date) %>%
               summarise(meanEVI = mean(evi_filtered))
             
+            # Loess evi df
+            smooth_evi_df_hq = data.frame(date = as.Date(mEVIhq$date), evi_smooth = fitted(smooth.spline(mEVIhq$meanEVI~as.Date(mEVIhq$date)), data=mEVIhq))
+            # Add loess curve
             p_evi= p_evi %>%
               add_trace(
-                x = mEVIhq$date, 
-                y = ~fitted(smooth.spline(mEVIhq$meanEVI~as.Date(mEVIhq$date)), data=mEVIhq),
-                # y=~fitted(smooth.spline(mEVIhq$meanEVIhq~as.numeric(mEVIhq$date)), data=mEVIhq),
+                x = smooth_evi_df_hq$date, 
+                y = smooth_evi_df_hq$evi_smooth,
                 mode = "lines",
                 line = list(width = 2, color = "rgb(120,120,120)"),
-                name = "EVI loess fit",
+                name = "EVI loess HiQ",
                 showlegend = TRUE) %>% layout(xaxis = list(title = "Date"))
           }
           
@@ -1371,14 +1377,16 @@ server = function(input, output, session) {
             text = ~paste("Date: ", Date,
                           '<br>Pixel: ', pixel,
                           '<br>Data: EVI'))
-        
+        # Loess evi df
+        smooth_evi_df = data.frame(date = as.Date(mEVI$date), evi_smooth = fitted(smooth.spline(mEVI$meanEVI~as.Date(mEVI$date)), data=mEVI))
+        # Add loess curve
         p_evi_raw = p_evi_raw %>%
           add_trace(
-            x=mEVI$date, 
-            y=~fitted(smooth.spline(mEVI$meanEVI~as.numeric(mEVI$date)), data=mEVI),
+            x = smooth_evi_df$date, 
+            y = smooth_evi_df$evi_smooth,
             mode = "lines",
             line = list(width = 2, color = "rgb(120,120,120)"),
-            name = "EVI loess fit",
+            name = "EVI loess All",
             showlegend = TRUE
           ) %>% layout(xaxis = list(title = "Date"))
         
@@ -1396,6 +1404,237 @@ server = function(input, output, session) {
                                   y_title_ = 'GCC value')
       }
     }
+    
+    
+    if ('Transition Dates' %in% selected_data){
+      if ('tds_sat' %in% selected_plots){
+        # Grab Transition date data from df (and only pixels in dataframe below plots)
+        tds_df = data$pixel_df_all_tds %>% subset(pixel %in% sd$Pixel)
+        # Filter out NA values in the date field
+        tds_df = tds_df[!is.na(tds_df$dates),]
+        # If tds_df is empty, aka no Transition date data available, skip adding transition dates
+        if (dim(tds_df)[1] == 0){
+          print ('Empty transition data')
+        }else {
+          # Clean the Transition dates Dataframe to exclude the QA values
+          tds_clean_df = tds_df %>% 
+            subset(tds_df$layer != 'QA_Overall' & tds_df$layer != 'QA_Detailed') %>%
+            dplyr::mutate(year = as.character(year))
+          
+          # Average the dates for each layer per year
+          tds_averages_df = tds_clean_df %>% dplyr::group_by(layer, year) %>% summarise(mean(dates))
+          
+          # Add a fake avg_date field to be able to plot all the values on the same X axis (1 year)
+          tds_averages_df['avg_date'] = as.Date(paste0( min(tds_averages_df$year) , '-' , format(tds_averages_df$`mean(dates)`,'%m-%d') ))
+          
+          # Order the tds_averages_df by the target char vector
+          target = c('Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'Senescence', 'Dormancy')
+          tds_averages_df = left_join(data.frame(layer = target), tds_averages_df, by = 'layer')
+          
+          # Transition dates df
+          tds_averages_df['avg_date'] = as.Date(format(tds_averages_df$`mean(dates)`,'%Y-%m-%d'))
+          
+          ##### COOL PLOT #### #### #### #### ####
+          # Transition date plot for comparison across years:
+          # n = length(unique(tds_averages_df$layer))
+          # color_palette = colorRampPalette(c("green", "blue"))(n)
+          # plot_ly(x = tds_averages_df$avg_date, y = tds_averages_df$year-2000,
+          #   text = paste0(tds_averages_df$year), sort = FALSE,
+          #   color = tds_averages_df$layer, colors=color_palette)
+          #### #### #### #### #### #### #### ####
+          tds_colors = c('Brown', 'Green', 'Dark Green', 'Dark Green', 'Light Green', 'Red', 'Orange')
+          
+          # Add transition dates to NDVI raw and high quality
+          if ('NDVI' %in% selected_data){
+            if ('hiq_ndvi' %in% selected_plots){
+              if (length(unique(ndvi_pixel_data_df$ndvi_filtered)) == 1){
+                selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_ndvi')]
+              }else {
+                # Calculate y value for transition dates
+                all_ndvi_hq_td = c()
+                for (x in 1:length(tds_averages_df$avg_date)){
+                  this_hq_ndvi = smooth_ndvi_df_hq$ndvi_smooth[birk::which.closest(tds_averages_df$avg_date[x], smooth_ndvi_df_hq$date)]
+                  all_ndvi_hq_td = c(all_ndvi_hq_td, this_hq_ndvi)
+                }
+                tds_averages_df['hq_ndvi_avg'] = all_ndvi_hq_td
+                
+                p_ndvi = p_ndvi %>%
+                  # Greenup
+                  add_markers(x = subset(tds_averages_df, layer == 'Greenup')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Greenup')$hq_ndvi_avg, type = 'scatter',
+                    marker = list(color = "#7FFF00", symbol = "circle", size = 10),
+                    name = "Greenup") %>% 
+                  # Maturity
+                  add_markers(x = subset(tds_averages_df, layer == 'Maturity')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Maturity')$hq_ndvi_avg, type = 'scatter',
+                    marker = list(color = "#66CD00", symbol = "square", size = 10),
+                    name = "Maturity") %>% 
+                  # Peak
+                  add_markers(x = subset(tds_averages_df, layer == 'Peak')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Peak')$hq_ndvi_avg, type = 'scatter',
+                    marker = list(color = "#458B00", symbol = "star", size = 10),
+                    name = "Peak") %>% 
+                  # MidGreendown
+                  add_markers(x = subset(tds_averages_df, layer == 'MidGreendown')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'MidGreendown')$hq_ndvi_avg, type = 'scatter',
+                    marker = list(color = "#FFB90F", symbol = "triange", size = 10),
+                    name = "MidGreendown") %>% 
+                  # Senescence
+                  add_markers(x = subset(tds_averages_df, layer == 'Senescence')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Senescence')$hq_ndvi_avg, type = 'scatter',
+                    marker = list(color = "#CD950C", symbol = "square", size = 10),
+                    name = "Senescence") %>% 
+                  # Dormancy
+                  add_markers(x = subset(tds_averages_df, layer == 'Dormancy')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Dormancy')$hq_ndvi_avg, type = 'scatter',
+                    marker = list(color = "Brown", symbol = "circle", size = 10),
+                    name = "Dormancy")
+              }
+            }
+            if ('all_ndvi' %in% selected_plots){
+              all_ndvi_td = c()
+              for (x in 1:length(tds_averages_df$avg_date)){
+                this_all_ndvi = smooth_ndvi_df$ndvi_smooth[birk::which.closest(tds_averages_df$avg_date[x], smooth_ndvi_df$date)]
+                all_ndvi_td = c(all_ndvi_td, this_all_ndvi)
+              }
+              tds_averages_df['all_ndvi_avg'] = all_ndvi_td
+              
+              p_ndvi_raw = p_ndvi_raw %>%
+                # Greenup
+                add_markers(x = subset(tds_averages_df, layer == 'Greenup')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Greenup')$all_ndvi_avg, type = 'scatter',
+                  marker = list(color = "#7FFF00", symbol = "circle", size = 10),
+                  name = "Greenup") %>% 
+                # Maturity
+                add_markers(x = subset(tds_averages_df, layer == 'Maturity')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Maturity')$all_ndvi_avg, type = 'scatter',
+                  marker = list(color = "#66CD00", symbol = "square", size = 10),
+                  name = "Maturity") %>% 
+                # Peak
+                add_markers(x = subset(tds_averages_df, layer == 'Peak')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Peak')$all_ndvi_avg, type = 'scatter',
+                  marker = list(color = "#458B00", symbol = "star", size = 10),
+                  name = "Peak") %>% 
+                # MidGreendown
+                add_markers(x = subset(tds_averages_df, layer == 'MidGreendown')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'MidGreendown')$all_ndvi_avg, type = 'scatter',
+                  marker = list(color = "#FFB90F", symbol = "triange", size = 10),
+                  name = "MidGreendown") %>% 
+                # Senescence
+                add_markers(x = subset(tds_averages_df, layer == 'Senescence')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Senescence')$all_ndvi_avg, type = 'scatter',
+                  marker = list(color = "#CD950C", symbol = "square", size = 10),
+                  name = "Senescence") %>% 
+                # Dormancy
+                add_markers(x = subset(tds_averages_df, layer == 'Dormancy')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Dormancy')$all_ndvi_avg, type = 'scatter',
+                  marker = list(color = "Brown", symbol = "circle", size = 10),
+                  name = "Dormancy")
+            }
+          }
+          # Add transition dates to NDVI raw and high quality
+          if ('EVI' %in% selected_data){
+            if ('hiq_evi' %in% selected_plots){
+              if (length(unique(evi_pixel_data_df$evi_filtered)) == 1){
+                selected_plots = selected_plots[ - which(selected_plots %in% 'hiq_evi')]
+              }else {
+                # Calculate y value for transition dates
+                all_evi_hq_td = c()
+                for (x in 1:length(tds_averages_df$avg_date)){
+                  this_hq_evi = smooth_evi_df_hq$evi_smooth[birk::which.closest(tds_averages_df$avg_date[x], smooth_evi_df_hq$date)]
+                  all_evi_hq_td = c(all_evi_hq_td, this_hq_evi)
+                }
+                tds_averages_df['hq_evi_avg'] = all_evi_hq_td
+                
+                p_evi = p_evi %>%
+                  # Greenup
+                  add_markers(x = subset(tds_averages_df, layer == 'Greenup')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Greenup')$hq_evi_avg, type = 'scatter',
+                    marker = list(color = "#7FFF00", symbol = "circle", size = 10),
+                    name = "Greenup") %>% 
+                  # Maturity
+                  add_markers(x = subset(tds_averages_df, layer == 'Maturity')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Maturity')$hq_evi_avg, type = 'scatter',
+                    marker = list(color = "#66CD00", symbol = "square", size = 10),
+                    name = "Maturity") %>% 
+                  # Peak
+                  add_markers(x = subset(tds_averages_df, layer == 'Peak')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Peak')$hq_evi_avg, type = 'scatter',
+                    marker = list(color = "#458B00", symbol = "star", size = 10),
+                    name = "Peak") %>% 
+                  # MidGreendown
+                  add_markers(x = subset(tds_averages_df, layer == 'MidGreendown')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'MidGreendown')$hq_evi_avg, type = 'scatter',
+                    marker = list(color = "#FFB90F", symbol = "triange", size = 10),
+                    name = "MidGreendown") %>% 
+                  # Senescence
+                  add_markers(x = subset(tds_averages_df, layer == 'Senescence')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Senescence')$hq_evi_avg, type = 'scatter',
+                    marker = list(color = "#CD950C", symbol = "square", size = 10),
+                    name = "Senescence") %>% 
+                  # Dormancy
+                  add_markers(x = subset(tds_averages_df, layer == 'Dormancy')$avg_date, 
+                    y = subset(tds_averages_df, layer == 'Dormancy')$hq_evi_avg, type = 'scatter',
+                    marker = list(color = "Brown", symbol = "circle", size = 10),
+                    name = "Dormancy")
+              }
+            }
+            if ('all_evi' %in% selected_plots){
+              all_evi_td = c()
+              for (x in 1:length(tds_averages_df$avg_date)){
+                this_all_evi = smooth_evi_df$evi_smooth[birk::which.closest(tds_averages_df$avg_date[x], smooth_evi_df$date)]
+                all_evi_td = c(all_evi_td, this_all_evi)
+              }
+              tds_averages_df['all_evi_avg'] = all_evi_td
+              
+              p_evi_raw = p_evi_raw %>%
+                # Greenup
+                add_markers(x = subset(tds_averages_df, layer == 'Greenup')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Greenup')$all_evi_avg, type = 'scatter',
+                  marker = list(color = "#7FFF00", symbol = "circle", size = 10),
+                  name = "Greenup") %>% 
+                # Maturity
+                add_markers(x = subset(tds_averages_df, layer == 'Maturity')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Maturity')$all_evi_avg, type = 'scatter',
+                  marker = list(color = "#66CD00", symbol = "square", size = 10),
+                  name = "Maturity") %>% 
+                # Peak
+                add_markers(x = subset(tds_averages_df, layer == 'Peak')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Peak')$all_evi_avg, type = 'scatter',
+                  marker = list(color = "#458B00", symbol = "star", size = 10),
+                  name = "Peak") %>% 
+                # MidGreendown
+                add_markers(x = subset(tds_averages_df, layer == 'MidGreendown')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'MidGreendown')$all_evi_avg, type = 'scatter',
+                  marker = list(color = "#FFB90F", symbol = "triange", size = 10),
+                  name = "MidGreendown") %>% 
+                # Senescence
+                add_markers(x = subset(tds_averages_df, layer == 'Senescence')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Senescence')$all_evi_avg, type = 'scatter',
+                  marker = list(color = "#CD950C", symbol = "square", size = 10),
+                  name = "Senescence") %>% 
+                # Dormancy
+                add_markers(x = subset(tds_averages_df, layer == 'Dormancy')$avg_date, 
+                  y = subset(tds_averages_df, layer == 'Dormancy')$all_evi_avg, type = 'scatter',
+                  marker = list(color = "Brown", symbol = "circle", size = 10),
+                  name = "Dormancy")
+            }
+          }
+        }
+      }
+    }
+    
+    
+    
+    
+    
+    print (selected_data)
+    print (selected_plots)
+    
+    
+    
+    
+    
     
 
     vector_length = length(selected_plots)
@@ -2188,8 +2427,8 @@ server = function(input, output, session) {
            # Calculate majority pft, majority pft % cover, and unique hterogeneity pfts
            data_df_at_pixel
            
-           pft_majority = subset(data_df_at_pixel, data_df_at_pixel$Freq == max(data_df_at_pixel$Freq))$pft_expanded
-           majority_percentage = max(data_df_at_pixel$Freq) / sum(data_df_at_pixel$Freq)
+           pft_mode = subset(data_df_at_pixel, data_df_at_pixel$Freq == max(data_df_at_pixel$Freq))$pft_expanded
+           mode_percentage = max(data_df_at_pixel$Freq) / sum(data_df_at_pixel$Freq)
            heterogeneity_pft = dim(data_df_at_pixel)[1]
          }
          
@@ -2213,8 +2452,8 @@ server = function(input, output, session) {
          }else {
            # Build Dataframe   reactive value = data$pixel_df
            data$pixel_df = rbind(data$pixel_df, data.frame(Pixel = id_, Site = name, pixel_color = variables$color, 
-             Lat_wgs = midcelly_wgs, Lon_wgs = midcellx_wgs, PFT_Majority = pft_majority, Type = '250m',
-             Majority_Percentage = majority_percentage, Heterogeneity_PFT = heterogeneity_pft,
+             Lat_wgs = midcelly_wgs, Lon_wgs = midcellx_wgs, PFT_Mode = pft_mode, Type = '250m',
+             Mode_Percentage = mode_percentage, Heterogeneity_PFT = heterogeneity_pft,
              pft = vegindex, Lat_sin = midcelly_sin, Lon_sin = midcellx_sin,
              pt1_lat = datalat_wgs[1], pt1_lon = datalon_wgs[1],
              pt2_lat = datalat_wgs[2], pt2_lon = datalon_wgs[2],
@@ -2223,7 +2462,7 @@ server = function(input, output, session) {
              pt5_lat = datalat_wgs[5], pt5_lon = datalon_wgs[5]))
            row.names(data$pixel_df) = c()
            data$pixel_df_table = data$pixel_df %>%
-             select(Site, Pixel, PFT_Majority, Majority_Percentage, Heterogeneity_PFT) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10), filter = 'top') %>%
+             select(Site, Pixel, PFT_Mode, Mode_Percentage, Heterogeneity_PFT) %>% datatable(options = list(searchHighlight = TRUE, pageLength = 10), filter = 'top') %>%
              formatStyle('Pixel', fontWeight = 'bold', backgroundColor = styleEqual(unique(data$pixel_df$Pixel), c(unique(as.character(data$pixel_df$pixel_color)))))
          }
 
