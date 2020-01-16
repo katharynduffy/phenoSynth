@@ -1,6 +1,9 @@
 # Server file for Shiny App phenoRemote
 
 server = function(input, output, session) {
+  observe({ 
+    shinyBS::toggleModal(session, 'curatedDataLogin')
+  })
 
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  REACTIVE VALUES
@@ -27,6 +30,9 @@ server = function(input, output, session) {
                            cached_ndvi = list())
 
   data    = reactiveValues(
+                      my_user = 'start',
+                      tasks = NULL,
+                      token = NULL,
                       NLCD = FALSE,
                       draw_mode = FALSE,
                       run   = 0,
@@ -52,6 +58,41 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OUTPUTS
   #--------------------------------------------------------------------------------------------------------------------------------------
+  
+  table1 = dplyr::arrange(appeears_tasks_ndvi_tera, site_name, .by_group=TRUE)
+  table2 = dplyr::arrange(appeears_tasks_ndvi_aqua, site_name, .by_group=TRUE)
+  table3 = dplyr::arrange(appeears_tasks_evi_tera, site_name, .by_group=TRUE)
+  table4 = dplyr::arrange(appeears_tasks_evi_aqua, site_name, .by_group=TRUE)
+  table5 = dplyr::arrange(appeears_tasks_lc, site_name, .by_group=TRUE)
+  table6 = dplyr::arrange(appeears_tasks_tds, site_name, .by_group=TRUE)
+  # Appeears ndvi_tera table
+  output$appeearsTable1 = DT::renderDataTable({
+    DT::datatable(table1 %>% dplyr::select(site_name, task_name, task_id, created))
+  })
+  # Appeears ndvi_aqua table
+  output$appeearsTable2 = DT::renderDataTable({
+    DT::datatable(table2 %>% dplyr::select(site_name, task_name, task_id, created))
+  })
+  # Appeears evi_tera table
+  output$appeearsTable3 = DT::renderDataTable({
+    DT::datatable(table3 %>% dplyr::select(site_name, task_name, task_id, created))
+  })
+  # Appeears evi_aqua table
+  output$appeearsTable4 = DT::renderDataTable({
+    DT::datatable(table4 %>% dplyr::select(site_name, task_name, task_id, created))
+  })
+  # Appeears MDOIS LC table
+  output$appeearsTable5 = DT::renderDataTable({
+    DT::datatable(table5 %>% dplyr::select(site_name, task_name, task_id, created))
+  })
+  # Appeears MODIS Tds table
+  output$appeearsTable6 = DT::renderDataTable({
+    DT::datatable(table6 %>% dplyr::select(site_name, task_name, task_id, created))
+  })
+  # Appeears my_appeears_tasks table
+  output$appeearsTable7 = DT::renderDataTable({
+    DT::datatable(data.frame())
+  })
 
   # Create the map
   output$map = renderLeaflet({
@@ -133,6 +174,91 @@ server = function(input, output, session) {
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
 
+  
+  observeEvent(input$navbar, {
+    if (input$navbar == 'AppEEARS' & is.null(data$token)){
+      print (data$my_user)
+      if (data$my_user == 'Phenocam'){
+        shinyjs::show(id = 'appeearsLogin')
+      } else {
+        shinyjs::show(id = 'curatedDataLogin')
+        shinyBS::toggleModal(session, 'curatedDataLogin')
+      }
+    }
+  })
+  
+  # Login to Appeears
+  observeEvent(input$butLogin, {
+    withBusyIndicatorServer("butLogin", {
+    print ('Loging into curated dataset')
+    
+    data$my_user = input$username
+    my_pass = input$pwInp
+    
+    data$token_response = appeears::appeears_start_session(data$my_user,my_pass)
+    data$token         = paste("Bearer", data$token_response$token)
+    
+    if (is.null(data$token_response$token)){
+      message('invalid username/password combo')
+      data$my_user = 'start'
+      shinyalert("Login error", 'Invalid username/password combo, try again.' , type = "error")
+    }else {
+      message('login successful')
+      shinyBS::toggleModal(session, 'curatedDataLogin')
+      # updateTabsetPanel(session, 'navbar', selected = 'curatedPanel')
+      shinyjs::show(id = 'appeearsLogout')
+      shinyjs::show(id = 'appeearsTools')
+      shinyjs::hide(id = 'appeearsLogin')
+    }
+    })
+  })
+  
+  # Login Popup
+  observeEvent(input$appeearsLogin,{
+    shinyBS::toggleModal(session, 'curatedDataLogin')
+  })
+  
+  # Import AppEEARS tasks
+  observeEvent(input$pullAppeearsTasks,{
+    withBusyIndicatorServer("pullAppeearsTasks", {
+      if (is.null(data$tasks)){
+      token         = data$token
+      response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
+      task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+      data$tasks = jsonlite::fromJSON(txt=task_response)
+      # Appeears ndvi_tera table
+      output$appeearsTable7 = DT::renderDataTable({
+        DT::datatable(data$tasks %>% 
+            dplyr::select(task_name, status, task_id, created) %>% 
+            dplyr::mutate(created = as.Date(created)))
+      })
+      shinyjs::show(id = 'myTasks')
+      }else{
+        print ('Already grabbed tasks')
+      }
+    })
+  })
+  
+  # Just use local Phenocam data, no password or username required
+  observeEvent(input$byPassLogin,{
+    data$my_user = 'phenocam'
+    shinyBS::toggleModal(session, 'curatedDataLogin')
+    shinyjs::show(id = 'appeearsLogin')
+    print (message('Not logging into Appeears and only using Phenocam tasks'))
+  })
+  
+  # Logout of AppEEARS
+  observeEvent(input$appeearsLogout,{
+    # Remove token and tasks when logging out
+    data$token_response = NULL
+    data$token          = NULL
+    data$my_user        = 'start'
+    # data$tasks          = data.frame(task_name = '<none>', status = '<none>',
+    #                                  task_id = '<none>', created = '<none>')
+    shinyjs::hide(id = 'appeearsLogout')
+    shinyjs::hide(id = 'appeearsTools')
+    updateTabsetPanel(session, 'navbar', selected = 'Site explorer')
+  })
   
   # Turns ROI off if drawImage is off
   observe({

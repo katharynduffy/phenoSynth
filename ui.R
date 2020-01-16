@@ -3,6 +3,20 @@
 ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/styles.css"),
                mainPanel(
                  img(src='phenoSynth.png', id = 'phenoSynthLogo'),
+                 hidden(bsModalNoClose("curatedDataLogin", "CuratedDataLogin",
+                   title="AppEEARS Login Details", size='small',
+                   textInput('username', 'AppEEARS Username', placeholder = '<username to earthdata>'),
+                   passwordInput('pwInp', 'AppEEARS Password', placeholder = '<password to earthdata>'),
+                   div(id = 'loginButtons',
+                     withBusyIndicatorUI(actionButton('butLogin', 'Login', class = 'btn-primary', icon = icon('sign-in'))),
+                     actionButton('byPassLogin', 'Use Phenocam Data')),
+                   # footer = h4(actionLink('create_account','Create an account'),align='right'),
+                   tags$head(tags$style("#curatedDataLogin .modal-footer{display:none}
+                     .modal-header .close{display:none}"),
+                     tags$script("$(document).ready(function(){
+                       $('#curatedDataLogin').modal();
+                       });"))),
+                   actionButton('phenosynthAppeearsBtn', 'PhenoSynth Data')),
                  bsModal("saveShpPopup",
                          "Download shapefile", "saveShp",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
@@ -27,7 +41,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                    size = "medium",
                    fileInput('shpFileName', 'Select shapefile', multiple = TRUE, accept = c('.shp','.dbf','.sbn','.sbx','.shx','.prj'))
                  ),
-                 bsModal("getDataPopup",
+                 bsModalNoClose("getDataPopup",
                          "Get Data for Analysis", "getData",
                          size = "medium",
                          # selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
@@ -38,7 +52,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                                #getDataPopup .modal-header button{ display:none } 
                                                #getDataPopup {keyboard:false; backdrop: 'static';}"))
                  ),
-                 bsModal("plotDataPopup",
+                 bsModalNoClose("plotDataPopup",
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
@@ -128,6 +142,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                     ), # close tab panel
                             
 
+           hidden(
            tabPanel('pAOI Management', value='paoiTab',
 
                     tags$div(id='pAOItab',
@@ -136,16 +151,18 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                     br(),
                     br(), br(),
                     DTOutput("pAOIchart"))
-           ),
+           )),
 
            tabPanel('phenoSynth User Guide',
-                    includeMarkdown('../phenoSynth/Images_for_UserGuide/UserGuide.Rmd')
+                    div(id = 'phenoSynthUserGuide',
+                      shiny::includeMarkdown('../phenoSynth/Images_for_UserGuide/UserGuide.Rmd') )
+              
            ),
                    
            tabPanel('PhenoCam Metadata',
                     dataTableOutput('phenoTable')
            ),
-                   
+    
            tabPanel('Plot Data', value = 'PlotPanel',
                     checkboxGroupInput("plotTheseBoxes", label = h4("Select Plots to Display"), 
                                        choices = list("GCC" = 'GCC', "All NDVI" = 'all_ndvi', "High Quality NDVI" = 'hiq_ndvi',
@@ -161,6 +178,55 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                     br(),
                     dataTableOutput('plotTable')
            ),
+           tabPanel('AppEEARS',
+             
+             hidden(actionButton('appeearsLogout', 'Logout')),
+             hidden(actionButton('appeearsLogin', 'Login')),
+             div( id = 'appeearsTab', 
+               h1("PhenoSynth's AppEEARS Data Center"),
+               br(),
+               # sidebarLayout(
+                 # sidebarPanel(
+                 #   conditionalPanel(
+                 #     'input.appeearsPanelPhenoSynth === "diamonds"',
+                 #     checkboxGroupInput("show_vars", "Columns in diamonds to show:",
+                 #       names(diamonds), selected = names(diamonds))
+                 #   ),
+                 #   conditionalPanel(
+                 #     'input.appeearsPanelPhenoSynth === "mtcars"',
+                 #     helpText("Click the column header to sort a column.")
+                 #   ),
+                 #   conditionalPanel(
+                 #     'input.appeearsPanelPhenoSynth === "iris"',
+                 #     helpText("Display 5 records by default.")
+                 #   )
+                 # ),
+                 mainPanel(
+                   hidden(absolutePanel(id = 'appeearsTools', class = 'panel panel-default', 
+                     draggable = TRUE,  top = -75, left = 'auto', right = '35%' , bottom = 'auto',
+                     width = 201, height = 54, style="z-index:500;",
+                     withBusyIndicatorUI(actionButton('pullAppeearsTasks', 'Import AppEEARS Tasks', class='btn-primary')))),
+                   tabsetPanel(
+                     id = 'appeearsPanelPhenoSynth',
+                     tabPanel("NDVI TERA", DT::dataTableOutput("appeearsTable1")),
+                     tabPanel("NDVI AQUA", DT::dataTableOutput("appeearsTable2")),
+                     tabPanel("EVI TERA", DT::dataTableOutput("appeearsTable3")),
+                     tabPanel("EVI AQUA", DT::dataTableOutput("appeearsTable4")),
+                     tabPanel("MODIS Landcover", DT::dataTableOutput("appeearsTable5")),
+                     tabPanel("MODIS Transition Dates", DT::dataTableOutput("appeearsTable6"))
+                   ),
+                   # hidden(
+                     # tabsetPanel(
+                     #   id = 'appeearsPanelCustom'
+                     # )),
+                     br(),
+                     hidden(div(id = 'myTasks',
+                       h2('My AppEEARS Tasks'),
+                       br(),
+                       tabPanel("All Tasks", DT::dataTableOutput("appeearsTable7"))
+                     ))
+               # )
+           ))),
                    
            conditionalPanel("false", icon("crosshair"))
       )

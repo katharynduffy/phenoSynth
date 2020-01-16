@@ -51,6 +51,15 @@ library(shinyalert)
 library(phenocamapi)
 library(changepoint)
 library(birk)
+library(appeears)
+
+# Function for Login Model
+bsModalNoClose = function(...) {
+  b = bsModal(...)
+  b[[2]]$`data-backdrop` = "static"
+  b[[2]]$`data-keyboard` = "false"
+  return(b)
+}
 
 # Set knitr table format
 options(knitr.table.format = "html")
@@ -90,6 +99,8 @@ appeears_tasks_evi_tera  = readRDS(file = './www/cache_df_evi_tera.df')
 appeears_tasks_evi_aqua  = readRDS(file = './www/cache_df_evi_aqua.df')
 appeears_tasks_tds       = readRDS(file = './www/cache_df_tds.df')
 appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
+
+
 
 # Allow for email mode (depreciated but still useful)
 EMAIL_MODE = FALSE

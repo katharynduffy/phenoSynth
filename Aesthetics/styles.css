@@ -5,6 +5,46 @@
   padding: 0px 40px;
 }
 
+#phenoSynthUserGuide{
+  margin-top:60px;
+  padding: 0px 40px;
+}
+
+/* AppEEARS tab */
+#appeearsTab{
+  margin-top:100px;
+  padding: 0px 40px;
+  margin-bottom: 100px;
+}
+
+#loginButtons{
+  display:flex;
+}
+#butLogin{
+  width:60;
+}
+#byPassLogin{
+  width:100;
+}
+
+#appeearsLogout{
+  position: fixed;
+  top:10px;
+  right:10px;
+  z-index:1000000;
+}
+#appeearsLogin{
+  position: fixed;
+  top:10px;
+  right:10px;
+  z-index:1000000;
+}
+
+#pullAppeearsTasks{
+  margin:10px;
+  border:3px;
+}
+
 /* User created polygon tab */
 #pAOItab{
   margin-top:60px;
