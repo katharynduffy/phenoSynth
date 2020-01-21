@@ -44,6 +44,12 @@
   margin:10px;
   border:3px;
 }
+#appeearsTools div{
+  margin-left:10px;
+}
+#appeearsTools div label{
+  margin-left:20px;
+}
 
 /* User created polygon tab */
 #pAOItab{
@@ -200,6 +206,7 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   width:15px;
   font-size: 8px;
   padding: 0px 0px;
+  top:-20px;
 }
 
 #showROIimage{
@@ -209,7 +216,27 @@ html, body, .col-sm-8, .tab-content, .tab-pane {
   font-size:8px;
   left: 20px;
   padding:0px 10px;
+  top:-20px;
 }
+#imagePlus{
+  z-index:10;
+  position:absolute;
+  height:15px;
+  font-size:8px;
+  left: 118px;
+  padding:0px 10px;
+  top:-20px;
+}
+#imageMinus{
+  z-index:10;
+  position:absolute;
+  height:15px;
+  font-size:8px;
+  left: 168px;
+  padding:0px 10px;
+  top:-20px;
+}
+
 
 #doneBuildingPlot, #buildingPlot{
   font-size:14px;

@@ -5,8 +5,8 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                  img(src='phenoSynth.png', id = 'phenoSynthLogo'),
                  hidden(bsModalNoClose("curatedDataLogin", "CuratedDataLogin",
                    title="AppEEARS Login Details", size='small',
-                   textInput('username', 'AppEEARS Username', placeholder = '<username to earthdata>'),
-                   passwordInput('pwInp', 'AppEEARS Password', placeholder = '<password to earthdata>'),
+                   textInput('username', 'Username', placeholder = '<username to earthdata>'),
+                   passwordInput('pwInp', 'Password', placeholder = '<password to earthdata>'),
                    div(id = 'loginButtons',
                      withBusyIndicatorUI(actionButton('butLogin', 'Login', class = 'btn-primary', icon = icon('sign-in'))),
                      actionButton('byPassLogin', 'Use Phenocam Data')),
@@ -118,6 +118,8 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                       width = 375, height = 225, style="z-index:500;",
                                       actionButton('showImage', '-', value=FALSE),
                                       actionButton('showROIimage', 'Overlay selected ROI'),
+                                      actionButton('imagePlus', 'Enlarge'),
+                                      actionButton('imageMinus', 'Shrink'),
                                       tags$div(id = 'image')
                         ),
                                      
@@ -204,8 +206,12 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                  mainPanel(
                    hidden(absolutePanel(id = 'appeearsTools', class = 'panel panel-default', 
                      draggable = TRUE,  top = -75, left = 'auto', right = '35%' , bottom = 'auto',
-                     width = 201, height = 54, style="z-index:500;",
-                     withBusyIndicatorUI(actionButton('pullAppeearsTasks', 'Import AppEEARS Tasks', class='btn-primary')))),
+                     width = 400, height = 'auto', style="z-index:500;",
+                     withBusyIndicatorUI(actionButton('pullAppeearsTasks', 'View AppEEARS Tasks', class='btn-primary')),
+                     selectInput('sitesCached', 'Sites Cached in AppEEARS', multiple = TRUE, selected = cams_$site[1], cams_$site),
+                     selectInput('camsWithRois', 'Cam Sites with ROIS', multiple = TRUE, selected = appeears_tasks_ndvi_tera$site_name[1], appeears_tasks_ndvi_tera$site_name),
+                     selectInput('siteDifference', 'Difference between ROIS and AppEEARS tasks', multiple = TRUE, selected = setdiff(cams_$site, appeears_tasks_ndvi_tera$site_name)[1],setdiff(cams_$site, appeears_tasks_ndvi_tera$site_name))
+                     )),
                    tabsetPanel(
                      id = 'appeearsPanelPhenoSynth',
                      tabPanel("NDVI TERA", DT::dataTableOutput("appeearsTable1")),

@@ -29,22 +29,22 @@ server = function(input, output, session) {
   modis   = reactiveValues(data = data.frame(),
                            cached_ndvi = list())
 
-  data    = reactiveValues(
-                      my_user = 'start',
-                      tasks = NULL,
-                      token = NULL,
-                      NLCD = FALSE,
-                      draw_mode = FALSE,
-                      run   = 0,
-                      names = c(),
-                      plot_data_table = FALSE,
-                      df    = data.frame(),
-                      all_data = data.frame(),
-                      veg_types = c(),
-                      select_pixel_mode_was_on = FALSE,
-                      pixel_sps = SpatialPolygons(list()),
-                      #pixel_sps_500m = SpatialPolygons(list()),
-                      pixel_sps_250m = SpatialPolygons(list()))
+  data    = reactiveValues(my_user = 'start',
+                           site_width = 375,
+                           site_height = 225,
+                           tasks = NULL,
+                           token = NULL,
+                           NLCD = FALSE,
+                           draw_mode = FALSE,
+                           run   = 0,
+                           names = c(),
+                           plot_data_table = FALSE,
+                           df    = data.frame(),
+                           all_data = data.frame(),
+                           veg_types = c(),
+                           select_pixel_mode_was_on = FALSE,
+                           pixel_sps = SpatialPolygons(list()),
+                           pixel_sps_250m = SpatialPolygons(list()))
 
   # Empty reactive spdf
   value = reactiveValues(drawnPoly = SpatialPolygonsDataFrame(SpatialPolygons(list()),
@@ -195,7 +195,7 @@ server = function(input, output, session) {
     data$my_user = input$username
     my_pass = input$pwInp
     
-    data$token_response = appeears::appeears_start_session(data$my_user,my_pass)
+    data$token_response = AppEEARS4R::appeears_start_session(data$my_user,my_pass)
     data$token         = paste("Bearer", data$token_response$token)
     
     if (is.null(data$token_response$token)){
@@ -686,6 +686,18 @@ server = function(input, output, session) {
                    site_type, cam_orientation, degrees,
                    active, date_end, date_start)
   })
+  
+  
+  # Change size of phenocam Image
+  observeEvent(input$imagePlus,{
+    data$site_width = data$site_width + (50 * (5/3))
+    data$site_height = data$site_height + 50
+  })
+  # Change size of phenocam Image
+  observeEvent(input$imageMinus,{
+    data$site_width = data$site_width - (50 * (5/3))
+    data$site_height = data$site_height - 50
+  })
 
   # Site Explorer Mode Images
   # CheckBox to Show image for site from dropdown
@@ -704,14 +716,17 @@ server = function(input, output, session) {
       if (is.na(pft)){
         pft_abbr = subset(roi_files, roi_files$site == this_site)[1,]$roitype
       }else{
-        pft_abbr  = (subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated)
+        pft_abbr  = subset(pft_df, pft_df$pft_expanded == pft)$pft_abbreviated
       }
+      
+      image_width = paste0('width:', data$site_width ,'px; ')
+      image_height = paste0('height:', data$site_height ,'px; ')
       
       shinyjs::show(id = 'currentImage')
       insertUI(selector = '#image',
         ui = tags$div(id='phenocamSiteImage',
                       tags$img(src=img_url, class= 'img',
-                               style="position: absolute; z-index: 1; top:0px; left:0px;")))}
+                               style=paste0("position: absolute; z-index: 1; top:0px; left:0px;",image_width, image_height))))}
       if (roi_bool == TRUE){
         pft_      = input$pftSelection
         pft       = strsplit(pft_, '_')[[1]][1]
@@ -726,7 +741,7 @@ server = function(input, output, session) {
           if (roi_url != 'Not Found'){
           insertUI(selector = '#phenocamSiteImage',
             ui =  tags$img(src=roi_url,
-                       class= 'roi', style='position: absolute; z-index: 2; top:0px; left:0px;'))}
+                       class= 'roi', style=paste0('position: absolute; z-index: 2; top:0px; left:0px;',image_width, image_height)))}
 
     }else if (draw_bool == FALSE){
       removeUI(selector = '#phenocamSiteImage')

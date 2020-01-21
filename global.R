@@ -51,7 +51,7 @@ library(shinyalert)
 library(phenocamapi)
 library(changepoint)
 library(birk)
-library(appeears)
+library(AppEEARS4R)
 
 # Function for Login Model
 bsModalNoClose = function(...) {
