@@ -208,9 +208,11 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                      draggable = TRUE,  top = -75, left = 'auto', right = '35%' , bottom = 'auto',
                      width = 400, height = 'auto', style="z-index:500;",
                      withBusyIndicatorUI(actionButton('pullAppeearsTasks', 'View AppEEARS Tasks', class='btn-primary')),
-                     selectInput('sitesCached', 'Sites Cached in AppEEARS', multiple = TRUE, selected = cams_$site[1], cams_$site),
-                     selectInput('camsWithRois', 'Cam Sites with ROIS', multiple = TRUE, selected = appeears_tasks_ndvi_tera$site_name[1], appeears_tasks_ndvi_tera$site_name),
-                     selectInput('siteDifference', 'Difference between ROIS and AppEEARS tasks', multiple = TRUE, selected = setdiff(cams_$site, appeears_tasks_ndvi_tera$site_name)[1],setdiff(cams_$site, appeears_tasks_ndvi_tera$site_name))
+                     # selectInput('sitesCached', 'Sites Cached in AppEEARS', multiple = TRUE, selected = cams_$site[1], cams_$site),
+                     # selectInput('camsWithRois', 'Cam Sites with ROIS', multiple = TRUE, selected = appeears_tasks_ndvi_tera$site_name[1], appeears_tasks_ndvi_tera$site_name),
+                     selectInput('siteDifference', 'Difference between ROIS and AppEEARS tasks', multiple = TRUE, choices=''),
+                     actionButton('submitTasks', 'Submit Tasks for selected'),
+                     textInput('submitionsLeft', 'Submitions left', value = 100)
                      )),
                    tabsetPanel(
                      id = 'appeearsPanelPhenoSynth',

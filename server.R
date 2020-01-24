@@ -30,6 +30,7 @@ server = function(input, output, session) {
                            cached_ndvi = list())
 
   data    = reactiveValues(my_user = 'start',
+                           tasks_left = 100,
                            site_width = 375,
                            site_height = 225,
                            tasks = NULL,
@@ -173,11 +174,10 @@ server = function(input, output, session) {
   #--------------------------------------------------------------------------------------------------------------------------------------
   #  OBSERVERS
   #--------------------------------------------------------------------------------------------------------------------------------------
-
   
+  # Login Switch
   observeEvent(input$navbar, {
     if (input$navbar == 'AppEEARS' & is.null(data$token)){
-      print (data$my_user)
       if (data$my_user == 'Phenocam'){
         shinyjs::show(id = 'appeearsLogin')
       } else {
@@ -209,9 +209,20 @@ server = function(input, output, session) {
       shinyjs::show(id = 'appeearsLogout')
       shinyjs::show(id = 'appeearsTools')
       shinyjs::hide(id = 'appeearsLogin')
+      shinyjs::hide(id = 'submitionsLeft')
+      print (length(setdiff(cams_$site, appeears_tasks_ndvi_tera$site_name)))
+      if (length(setdiff(cams_$site, appeears_tasks_ndvi_tera$site_name)) > 0){
+        shinyjs::show(id = 'siteDifference')
+        shinyjs::hide(id = 'submitTasks')
+        updateSelectInput(session, id = 'siteDifference', choices = setdiff(cams_$site, appeears_tasks_ndvi_tera$site_name))
+      }else {
+        shinyjs::hide(id = 'siteDifference')
+        shinyjs::hide(id = 'submitTasks')
+      }
     }
     })
   })
+  
   
   # Login Popup
   observeEvent(input$appeearsLogin,{
@@ -222,21 +233,29 @@ server = function(input, output, session) {
   observeEvent(input$pullAppeearsTasks,{
     withBusyIndicatorServer("pullAppeearsTasks", {
       if (is.null(data$tasks)){
-      token         = data$token
-      response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
-      task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
-      data$tasks = jsonlite::fromJSON(txt=task_response)
-      # Appeears ndvi_tera table
-      output$appeearsTable7 = DT::renderDataTable({
-        DT::datatable(data$tasks %>% 
-            dplyr::select(task_name, status, task_id, created) %>% 
-            dplyr::mutate(created = as.Date(created)))
-      })
-      shinyjs::show(id = 'myTasks')
+        token         = data$token
+        response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
+        task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+        data$tasks = jsonlite::fromJSON(txt=task_response)
+        # Appeears ndvi_tera table
+        output$appeearsTable7 = DT::renderDataTable({
+          DT::datatable(data$tasks %>% 
+              dplyr::select(task_name, status, task_id, created) %>% 
+              dplyr::mutate(created = as.Date(created)))
+        })
+        data$tasks_left = get_submitions_remaining(data$tasks)
+        updateTextInput(session, 'submitionsLeft', value = data$tasks_left)
+        shinyjs::show(id = 'submitionsLeft')
+        shinyjs::show(id = 'myTasks')
       }else{
         print ('Already grabbed tasks')
       }
     })
+  })
+  
+  # Submit tasks to Appeears for Diff between ROI and Cached Tasks
+  observeEvent(input$submitTasks, {
+    print ('Pretending to send tasks to AppEEARS')
   })
   
   # Just use local Phenocam data, no password or username required
@@ -901,7 +920,7 @@ server = function(input, output, session) {
       leafletProxy('map') %>%
         clearControls() %>%
         clearImages() %>%
-        addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c3$colors) %>%
+        addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c3$palette) %>%
         addRasterImage(rc, opacity = .2, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
         addLegend(labels = data$c3$names, colors = data$c3$colors, position = "bottomleft", opacity = .95, title = 'MODIS Landcover', group = 'MODIS Landcover') %>%
         addLegend(values = c(1,2), position = 'bottomright', title = 'Vegetation Cover Agreement',
@@ -939,7 +958,7 @@ server = function(input, output, session) {
         data$rc_nlcd_c = build_pft_palette(data$rc_nlcd)
         data$nlcd_modis_c = build_pft_palette(data$r_landcover, data$rc_nlcd)
         
-        leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+        leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
           clearControls() %>% 
           addLegend(labels = data$nlcd_modis_c$names, colors = data$nlcd_modis_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover')  %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
@@ -979,7 +998,7 @@ server = function(input, output, session) {
 
         leafletProxy('map') %>%
           clearImages() %>%
-          addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c3$colors) %>%
+          addRasterImage(data$r_landcover, opacity = .65, project=TRUE, group='MODIS Land Cover 2016', colors = data$c3$palette) %>%
           addRasterImage(rc, opacity = .35, project=TRUE, group= 'Vegetation Cover Agreement', colors= c('green','gray')) %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
                            overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement'),
@@ -988,7 +1007,7 @@ server = function(input, output, session) {
         
         # If NLCD layer exists for site, add it to map
         if (data$NLCD){
-          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
             addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
               overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
               position = c("topleft"), 
@@ -2102,7 +2121,7 @@ server = function(input, output, session) {
       
       # ADD NLCD back in after building grid
       if (data$NLCD){
-        leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+        leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
             overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD', '250m MODIS Grid'),
             position = c("topleft"), 
@@ -2195,7 +2214,7 @@ server = function(input, output, session) {
         
         # ADD NLCD back in after building grid
         if (data$NLCD){
-          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$colors, opacity = .7, group = '2016 NLCD') %>%
+          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
             addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
               overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD', '250m MODIS Grid'),
               position = c("topleft"), 

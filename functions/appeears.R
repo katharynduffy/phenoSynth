@@ -85,3 +85,27 @@ get_appeears_task = function(name, type){
     return (subset(appeears_tasks_lc, as.character(strsplit(appeears_tasks_lc$task_name, '_LC_sinu_v6')) == name))
   }else {print (paste0('failed to grab task: ',name , ', ', type))}
 }
+
+
+#' get_submitions_remaining
+#'
+#' @param name - site name
+#' @param type - site type
+#'
+#' @return Returns the number of submitions remaining for AppEEARS tasks
+#' 
+get_submitions_remaining = function(appeears_tasks){
+  # Get current time in POSIXct
+  now = Sys.time()
+  appeears_tasks$created = as.POSIXct(appeears_tasks$created,format="%Y-%m-%dT%H:%M", tz = 'UTC')
+  attributes(appeears_tasks$created)$tzone = 'MST'
+  
+  # Grab tasks created in the last 24 hours
+  last_24h_tasks = subset(appeears_tasks, appeears_tasks$created > (now - (60*60*24*1)))
+  
+  # Number of submitions remaining for the last 24hours
+  n_tasks_24h = dim(last_24h_tasks)[1]
+  submitions_remaining = 100 - n_tasks_24h
+  
+  return (submitions_remaining)
+}

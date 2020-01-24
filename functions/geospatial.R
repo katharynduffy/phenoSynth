@@ -50,7 +50,10 @@ build_pft_palette = function(raster_, raster2_=NULL){
       names  = c(names, name)
     }
   }
-  colors_ = list('colors' = colors, 'names' = names, 'pft_key' = v)
+  
+  col_palette = colorBin(colors, bins = c(v[1] -.5 ,v + .5))
+  
+  colors_ = list('colors' = colors, 'names' = names, 'pft_key' = v, 'palette' = col_palette)
   return (colors_)
 }
 
