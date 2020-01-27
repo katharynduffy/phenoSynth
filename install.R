@@ -14,7 +14,7 @@ if (length(new.packages)[1]==0){
 }else{
   for (i in 1:length(new.packages)){
     message(paste0('Installing: ', new.packages))
-    if (i == 'AppEEARS4R'){
+    if (new.packages[i] == 'AppEEARS4R'){
       library(devtools)
       devtools::install_github("katharynduffy/AppEEARS4R")
     }else {
