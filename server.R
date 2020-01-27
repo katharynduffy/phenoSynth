@@ -60,12 +60,12 @@ server = function(input, output, session) {
   #  OUTPUTS
   #--------------------------------------------------------------------------------------------------------------------------------------
   
-  table1 = dplyr::arrange(appeears_tasks_ndvi_tera, site_name, .by_group=TRUE)
-  table2 = dplyr::arrange(appeears_tasks_ndvi_aqua, site_name, .by_group=TRUE)
-  table3 = dplyr::arrange(appeears_tasks_evi_tera, site_name, .by_group=TRUE)
-  table4 = dplyr::arrange(appeears_tasks_evi_aqua, site_name, .by_group=TRUE)
-  table5 = dplyr::arrange(appeears_tasks_lc, site_name, .by_group=TRUE)
-  table6 = dplyr::arrange(appeears_tasks_tds, site_name, .by_group=TRUE)
+  table1 = dplyr::arrange(appeears_tasks_ndvi_tera, site_name)
+  table2 = dplyr::arrange(appeears_tasks_ndvi_aqua, site_name)
+  table3 = dplyr::arrange(appeears_tasks_evi_tera, site_name)
+  table4 = dplyr::arrange(appeears_tasks_evi_aqua, site_name)
+  table5 = dplyr::arrange(appeears_tasks_lc, site_name)
+  table6 = dplyr::arrange(appeears_tasks_tds, site_name)
   # Appeears ndvi_tera table
   output$appeearsTable1 = DT::renderDataTable({
     DT::datatable(table1 %>% dplyr::select(site_name, task_name, task_id, created))
