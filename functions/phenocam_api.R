@@ -38,8 +38,8 @@ cache_phenocam_data = function(){
   } else{
     # If directory exists check to see if todays cams and rois exist
     if (file.exists(todays_cams_name) & file.exists(todays_rois_name)){
-      cams_ = read.csv(todays_cams_name)
-      roi_files = read.csv(todays_rois_name)
+      cams_ = read.csv(todays_cams_name, stringsAsFactors = FALSE)
+      roi_files = read.csv(todays_rois_name, stringsAsFactors = FALSE)
     }else {
       roi_files = get_phenocam_roi_df()
       cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
