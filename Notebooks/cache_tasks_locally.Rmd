@@ -115,14 +115,14 @@ Loop through the sites_without_ndvi and download into the local cache
 ```{r}
 cache_pc_sites_modis_ndvi = function(sites){
   for (this_ndvi_site in sites){
-    site_row = subset(cams_, cams_$site == this_modis_lc_site)
+    site_row = subset(cams_, cams_$site == this_ndvi_site)
   
     # Set up directories to store data
-    file_path     = paste0('../www/site_data/', this_modis_lc_site, '/data_layers/')
+    file_path     = paste0('../www/site_data/', this_ndvi_site, '/data_layers/')
     main          = '../www/site_data'
     ndvi_filepath      = paste0(file_path,'ndvi/')
     ndvi_tera_filepath = paste0(ndvi_filepath, 'tera/')
-    main_site = paste0(main, '/', this_modis_lc_site)
+    main_site = paste0(main, '/', this_ndvi_site)
     
     # Build main path
     if (!file.exists(main)){
