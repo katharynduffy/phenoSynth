@@ -154,6 +154,63 @@ cache_pc_sites_modis_ndvi(sites_without_ndvi)
 
 
 
+How to cache all of the nlcd site layers into applications
+Get lat/lon for phenocam sites, reproject to merc, crop, and save out raster
+<!-- ```{r} -->
+<!-- library(raster) -->
+<!-- # Point to the nlcd 2016 raster .img file that you download from WSMR -->
+<!-- NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img') -->
+<!-- sites = cams_$site -->
+<!-- output_dir = '../www/landsat_lc' -->
+
+<!-- for (cam_site in sites){ -->
+<!--   # cam_site = 'NEON.D15.ONAQ.DP1.00033' -->
+<!--   print (cam_site) -->
+<!--   site_row = subset(cams_, cams_$site == cam_site) -->
+<!--   site_lat_wgs = site_row$lat -->
+<!--   site_lon_wgs = site_row$lon -->
+
+<!--   site_albs_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = alb_crs) -->
+<!--   site_lon_alb = site_albs_point@coords[[1]] -->
+<!--   site_lat_alb = site_albs_point@coords[[2]] -->
+
+<!--   site_sinu_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs) -->
+<!--   site_lon_sinu = site_sinu_point@coords[[1]] -->
+<!--   site_lat_sinu = site_sinu_point@coords[[2]] -->
+
+<!--   if (is.na(extract(NLCD_lc, site_albs_point)[1])){ -->
+<!--     print (paste0(cam_site, ' does not have NLCD data because it is outside of the NLCD extent')) -->
+<!--   } else{ -->
+<!--     site_merc_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = merc_crs) -->
+<!--     site_lon_merc = site_merc_point@coords[[1]] -->
+<!--     site_lat_merc = site_merc_point@coords[[2]] -->
+
+<!--     width  = 15000 -->
+<!--     height = 15000 -->
+
+<!--     e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons') -->
+
+<!--     crs(e) = alb_crs -->
+
+<!--     site_NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near') -->
+<!--     site_NLCD_lc_cropped_merc = projectRaster(site_NLCD_lc_cropped, crs=merc_crs, method='ngb') -->
+
+<!--     # Crop again in Merc -->
+<!--     width  = 10000 -->
+<!--     height = 10000 -->
+
+<!--     e2 = as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons') -->
+<!--     crs(e2) = merc_crs -->
+<!--     site_NLCD_lc_final_merc = raster::crop(site_NLCD_lc_cropped_merc, e2, snap='near') -->
+
+<!--     dir.create(output_dir) -->
+<!--     file_name  = paste0(cam_site, '_landsat_lc') -->
+<!--     output_file = paste0(output_dir, '/',file_name,'.tif') -->
+<!--     raster::writeRaster(site_NLCD_lc_final_merc, output_file, format='GTiff', overwrite=TRUE) -->
+<!--   } -->
+<!-- } -->
+<!-- ``` -->
+
 
 
 
