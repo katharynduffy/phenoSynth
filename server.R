@@ -2010,7 +2010,7 @@ server = function(input, output, session) {
         }else {
           # tds_bundle_df = get_appeears_bundle_df(appeears$tds$task_id)
           tds_files = list.files(tds_filepath)
-          tds_name  = tds_files[grepl('.nc', tds_files)]
+          tds_name  = tds_files[grepl('MCD12Q2.006_500m_aid0001.nc', tds_files)]
         }
         incProgress(amount = .1)
         # tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name

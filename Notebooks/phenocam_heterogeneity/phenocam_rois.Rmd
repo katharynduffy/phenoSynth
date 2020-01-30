@@ -1,0 +1,83 @@
+---
+title: "phenocam_analysis"
+author: "K. Enns"
+date: "1/29/2020"
+output: html_document
+---
+
+### RUN Global.R
+
+
+Find which sites to use based on local cache / NLCD availability
+```{r}
+sites_with_nlcd    = c()
+sites_without_nlcd = c()
+for (this_site in cams_$site){
+  this_nlcd_file = paste0('../../www/landsat_lc/', this_site, '_landsat_lc.tif')
+    # If NLCD layer exists for site, add it to map
+  if (file.exists(this_nlcd_file)){
+    sites_with_nlcd = c(sites_with_nlcd, this_site)
+  } else{
+    sites_without_nlcd = c(sites_without_nlcd, this_site)
+  }
+}
+```
+
+ROI data for Phenocams in Continental US
+```{r}
+# Start with sites all phenocam sites that have nlcd, modis landcover and phenocam ROI data.
+roi_pfts = c()
+# Loop through the phenocam sites
+for(pc_site in cams_$site){
+  # Extract Phenocam ROI data (Plant functional data)
+  pc_roi_rows = subset(roi_files, roi_files$site == pc_site)
+  pc_roi_types = unique(pc_roi_rows$roitype)
+  pc_roi_type_counts = length(pc_roi_types)
+  # Add all of the pc_roi_types to a char vector
+  roi_pfts = c(roi_pfts, pc_roi_types)
+}
+all_roi_pfts_df = as.data.frame(table(roi_pfts), stringsAsFactors = FALSE)
+
+nlcd_roi_pfts = c()
+# Loop through the phenocam sites
+for (pc_site in sites_with_nlcd){
+  # Extract Phenocam ROI data (Plant functional data)
+  pc_roi_rows = subset(roi_files, roi_files$site == pc_site)
+  pc_roi_types = unique(pc_roi_rows$roitype)
+  pc_roi_type_counts = length(pc_roi_types)
+  # Add all of the pc_roi_types to a char vector
+  nlcd_roi_pfts = c(nlcd_roi_pfts, pc_roi_types)
+}
+nlcd_roi_pfts_df =  as.data.frame(table(nlcd_roi_pfts), stringsAsFactors = FALSE)
+```
+
+
+Plot all the roi pfts and their frequency at the Phenocam Sites
+```{r}
+all_roi_cols = colorRampPalette(c("red", "green",'blue'))(length(all_roi_pfts_df$roi_pfts))
+nlcd_roi_cols = colorRampPalette(c("red", "green",'blue'))(length(nlcd_roi_pfts_df$nlcd_roi_pfts))
+
+all_rois_p = plot_ly(all_roi_pfts_df, x = ~roi_pfts, y = ~Freq, labels = ~roi_pfts, color = ~roi_pfts, colors = roi_cols)
+all_rois_p
+nlcd_rois_p = plot_ly(nlcd_roi_pfts_df, x = ~nlcd_roi_pfts, y = ~Freq, labels = ~nlcd_roi_pfts, color = ~nlcd_roi_pfts, colors = roi_cols)
+nlcd_rois_p
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
