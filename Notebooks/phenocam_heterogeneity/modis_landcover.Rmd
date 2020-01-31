@@ -5,9 +5,7 @@ date: "1/29/2020"
 output: html_document
 ---
 
-
 ### RUN Global.R
-
 
 Start with 1 phenocam site data
 ```{r}
@@ -223,20 +221,20 @@ leaflet() %>% addTiles() %>% addPolylines(data = g_5by) %>% addPolylines(data = 
 
 Calculate heterogeneity metrics for the 3 different sized extents (1x1, 3x3, 5x5)
 ```{r}
-data_df_at_extent_1 = as.data.frame(table(p_1by_merc_cropped_high_res_cr@data@values), stringsAsFactors=FALSE) %>% 
+data_df_at_extent_1 = as.data.frame(table(values(p_1by_merc_cropped_high_res_cr)), stringsAsFactors=FALSE) %>% 
   mutate(Var1 = as.double(Var1)) %>%
   left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
   mutate(id = '1by1') %>% mutate(total_pixels = sum(Freq)) %>%
   mutate(percent_cover = Freq/total_pixels) %>% 
   mutate(heterogeneity = length(Var1))
-data_df_at_extent_3 = as.data.frame(table(p_3by_merc_cropped_high_res_cr@data@values), stringsAsFactors=FALSE) %>% 
+data_df_at_extent_3 = as.data.frame(table(values(p_3by_merc_cropped_high_res_cr)), stringsAsFactors=FALSE) %>% 
   mutate(Var1 = as.double(Var1)) %>%
   left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
   mutate(id = '3by3') %>% mutate(total_pixels = sum(Freq)) %>%
   mutate(percent_cover = Freq/total_pixels) %>% 
   mutate(heterogeneity = length(Var1))
 # Sometimes it will fail here.. Not sure why??
-data_df_at_extent_5 = as.data.frame(table(p_5by_merc_cropped_high_res_cr@data@values), stringsAsFactors=FALSE) %>% 
+data_df_at_extent_5 = as.data.frame(table(values(p_5by_merc_cropped_high_res_cr)), stringsAsFactors=FALSE) %>% 
   mutate(Var1 = as.double(Var1)) %>%
   left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
   mutate(id = '5by5') %>% mutate(total_pixels = sum(Freq)) %>%
