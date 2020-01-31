@@ -57,9 +57,9 @@ Plot all the roi pfts and their frequency at the Phenocam Sites
 all_roi_cols = colorRampPalette(c("red", "green",'blue'))(length(all_roi_pfts_df$roi_pfts))
 nlcd_roi_cols = colorRampPalette(c("red", "green",'blue'))(length(nlcd_roi_pfts_df$nlcd_roi_pfts))
 
-all_rois_p = plot_ly(all_roi_pfts_df, x = ~roi_pfts, y = ~Freq, labels = ~roi_pfts, color = ~roi_pfts, colors = roi_cols)
+all_rois_p = plot_ly(all_roi_pfts_df, x = ~roi_pfts, y = ~Freq, labels = ~roi_pfts, color = ~roi_pfts, colors = all_roi_cols)
 all_rois_p
-nlcd_rois_p = plot_ly(nlcd_roi_pfts_df, x = ~nlcd_roi_pfts, y = ~Freq, labels = ~nlcd_roi_pfts, color = ~nlcd_roi_pfts, colors = roi_cols)
+nlcd_rois_p = plot_ly(nlcd_roi_pfts_df, x = ~nlcd_roi_pfts, y = ~Freq, labels = ~nlcd_roi_pfts, color = ~nlcd_roi_pfts, colors = nlcd_roi_cols)
 nlcd_rois_p
 ```
 
