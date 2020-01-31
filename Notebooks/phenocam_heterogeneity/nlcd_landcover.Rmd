@@ -46,7 +46,7 @@ for (this_site in cams_$site){
 }
 # Get a random site
 site_name = sites_with_nlcd[sample(1:length(sites_with_nlcd), 1)]
-# site_name   = 'bernatchez'
+# site_name   = 'arbutuslake'
 print (site_name)
 ```
 

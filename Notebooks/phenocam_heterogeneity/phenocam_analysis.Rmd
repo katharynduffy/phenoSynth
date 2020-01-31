@@ -276,7 +276,7 @@ for (pc_site in sites_with_nlcd){
     p_5by_merc_modis_cropped_high_res_cr = raster::crop(p_5by_merc_modis_cropped_high_res, p_5_merc, snap = 'in' )
     # p_5by_merc_modis_cropped_c = build_pft_palette(p_5by_merc_modis_cropped_high_res_cr)
     
-      # Build dataframes for each pixel for the amount of heterogeneity metrics
+    # Build dataframes for each pixel for the amount of heterogeneity metrics
     modis_lc_df_at_extent_1 = as.data.frame(table(values(p_1by_merc_modis_cropped_high_res_cr)), stringsAsFactors=FALSE) %>% 
       mutate(Var1 = as.double(Var1)) %>%
       left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
@@ -316,6 +316,7 @@ for (pc_site in sites_with_nlcd){
     all_data_df = rbind(all_data_df, mods_lc_df_at_extent_all, nlcd_df_at_extent_all)
   }
 }
+write.csv(all_data_df, paste0('phenocam_analysis_',format(Sys.time(), '%Y_%m_%d_%H%M%S'),'.csv'), row.names = FALSE )
 ```
 
 ROI data for Phenocams in Continental US
@@ -336,10 +337,8 @@ as.data.frame(table(roi_pfts), stringsAsFactors = FALSE)
 
 
 ```{r}
-# Just so we don't overwrite the data if we already have it stored
-everything_df = all_data_df
-write.csv(everything_df, paste0('phenocam_analysis_',format(Sys.time(), '%Y_%m_%d_%H%M%S'),'.csv'))
-unique(everything_df$site)
+# Find sites that didn't have NLCD data after cropping it (all values of the raster were equal to 0)
+sites_with_no_nlcd_data = setdiff(sites_with_nlcd, sites_with_nlcd_post_qc)
 ```
 
 
