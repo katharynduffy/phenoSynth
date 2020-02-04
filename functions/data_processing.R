@@ -349,7 +349,6 @@ get_tds_modis_df = function(pixels_, lats_, lngs_, netcdf_, progress_bar = FALSE
 #'
 #' @param name 
 #' @param roi_files_ 
-#' @param frequency_ 
 #' @param metrics_ 
 #' @param percentile_ 
 #' @param roi_type_ 
@@ -357,64 +356,87 @@ get_tds_modis_df = function(pixels_, lats_, lngs_, netcdf_, progress_bar = FALSE
 
 #' @return the list of 3_day or 1_day csv data from phenocam website with spring and fall
 #' 
-get_site_roi_csvs = function(name, roi_files_, frequency_, 
-                             metrics_ = c("gcc_mean","gcc_50", "gcc_75","gcc_90"), 
-                             percentile_, roi_type_){
-
+get_site_roi_csvs = function(name, roi_files_, 
+  metrics_ = c("gcc_mean","gcc_50", "gcc_75","gcc_90")){
+  
   unix = "1970-01-01"
   # Get rows that = Site and = roi_type
-  idx      = is.element(roi_files_$site, name)
-  idx2     = is.element(roi_files_$roitype, roi_type_)
-  num_rois = length(idx[idx == TRUE])
-  loc_rois = which(idx == TRUE & idx2 ==TRUE)
-  site_roi_rows = roi_files_[loc_rois,]
-  roi_seq_num = site_roi_rows$sequence_number
-  pheno_ts_df = data.frame()
-
-  # If frequency is 1 day
-  if (frequency_ == 1){
-    # Download the roi dataframes for all sequence numbers
+  site_roi_rows = subset(roi_files_, roi_files_$site == name)
+  unique_pfts = unique(site_roi_rows$roitype)
+  # All data in a list
+  all_phenocam_data = list()
+  this_pc_list      = list()
+  
+  print ('unique pfts')
+  print (unique_pfts)
+  
+  
+  
+  # Download everything, aka Fall/Spring for 1day and 3day and Transition dates
+  for (pft in unique_pfts){
+    roi_seq_num = subset(site_roi_rows, site_roi_rows$roitype == pft)$sequence_number
+    # Gcc
+    pheno_ts_df_1day = data.frame()
+    pheno_ts_df_3day = data.frame()
+    # Transition dates
+    pheno_td_df_1day = data.frame()
+    pheno_td_df_3day = data.frame()
+    print ('this pft')
+    print (pft)
+    print ('all roi_seq_nums')
+    print (roi_seq_num)
     for (seq in roi_seq_num){
-      print (seq)
-      this_df = phenocamapi::get_pheno_ts(name, roi_type_, seq, '1day')
-      if (length(pheno_ts_df)==0){
-        pheno_ts_df = this_df
+      # 1 Day data
+      frequency_ = 1
+      # Download 1 day gcc data
+      day1_df = phenocamapi::get_pheno_ts(name, pft, seq, '1day')
+      # Download 1 day gcc transition dates
+      url = paste0("https://phenocam.sr.unh.edu/data/archive/", name, "/ROI/", name,"_", pft, "_", seq, "_", frequency_,"day_transition_dates.csv")
+      print (url)
+      url_data = as.data.frame(data.table::fread(url), stringsAsFactors = FALSE)
+      day1_tds_df = subset(url_data, url_data$gcc_value == metrics_)
+      
+      if (length(pheno_ts_df_1day)==0){
+        pheno_ts_df_1day = day1_df
+        pheno_td_df_1day = day1_tds_df
       }else {
-        pheno_ts_df = rbind(pheno_ts_df, this_df)
+        pheno_ts_df_1day = rbind(pheno_ts_df_1day, day1_df)
+        pheno_td_df_1day = rbind(pheno_td_df_1day, day1_tds_df)
+      }
+      
+      # 3 Day data
+      frequency_ = 3
+      # Download 3 day gcc data
+      day3_df = phenocamapi::get_pheno_ts(name, pft, seq, '3day')
+      # Download 3 day gcc transition dates
+      url = paste0("https://phenocam.sr.unh.edu/data/archive/", name, "/ROI/", name,"_", pft, "_", seq, "_", frequency_,"day_transition_dates.csv")
+      print (url)
+      url_data = as.data.frame(data.table::fread(url), stringsAsFactors = FALSE)
+      day3_tds_df = subset(url_data, url_data$gcc_value == metrics_)
+      if (length(pheno_ts_df_3day)==0){
+        pheno_ts_df_3day = day3_df
+        pheno_td_df_3day = day3_tds_df
+      }else {
+        pheno_ts_df_3day = rbind(pheno_ts_df_3day, day3_df)
+        pheno_td_df_3day = rbind(pheno_td_df_3day, day3_tds_df)
       }
     }
+    
+    print ('Smoothing 3day gcc')
+    pheno_gcc_3day = smooth_ts(pheno_ts_df_3day, metrics = metrics_, force = TRUE, 3)
+    print ('Smoothing 1day gcc')
+    pheno_gcc_1day = smooth_ts(pheno_ts_df_1day, metrics = metrics_, force = TRUE, 1)
+    
+    this_pc_list[paste0(pft,'_tds_3day')] = list(pheno_td_df_3day)
+    this_pc_list[paste0(pft,'_gcc_3day')] = list(pheno_gcc_3day)
+    this_pc_list[paste0(pft,'_tds_1day')] = list(pheno_td_df_1day)
+    this_pc_list[paste0(pft,'_gcc_1day')] = list(pheno_gcc_1day)
+    
+    # this_pc_list = list(paste0(pft,'_tds_3day') = pheno_td_df_3day, paste0(pft,'_gcc_3day') = pheno_ts_df_3day, 
+    #   paste0(pft,'_gcc_1day') = pheno_ts_df_1day, paste0(pft,'_tds_1day') = pheno_td_df_1day)
+    all_phenocam_data[pft] = list(this_pc_list)
   }
-  # If frequency is 3 day
-  if (frequency_ == 3){
-    # Download the roi dataframes for all sequence numbers
-    for (seq in roi_seq_num){
-      print (seq)
-      this_df = phenocamapi::get_pheno_ts(name, roi_type_, seq, '3day')
-      if (length(pheno_ts_df)==0){
-        pheno_ts_df = this_df
-      }else {
-        pheno_ts_df = rbind(pheno_ts_df, this_df)
-      }
-    }
-  }
-  
-  plot_data = smooth_ts(pheno_ts_df, metrics = metrics_, force = TRUE, frequency_)
-  spring = transition_dates(plot_data,
-                            percentile = percentile_,
-                            reverse = FALSE)
-
-  fall = transition_dates(plot_data,
-                          percentile = percentile_,
-                          reverse = TRUE)
-  
-  # Creating a header for the file to save out to (metadata)
-  # format dates correctly (unix time to date format)
-  spring[, 1:9] = apply(spring[, 1:9], 2, function(x)
-    as.character(as.Date(x, origin = unix)))
-  fall[, 1:9] = apply(fall[, 1:9], 2, function(x)
-    as.character(as.Date(x, origin = unix)))
-  
-  return(list(plot_data, spring, fall))
+  return(this_pc_list)
 }
 
 

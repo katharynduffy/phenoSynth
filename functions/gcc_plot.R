@@ -15,8 +15,9 @@ gcc_plot = function(gcc, spring, fall){
     print ('No fall transition dates available')
     spring_data = FALSE
   } else{
-  spring[, 2:9] = apply(spring[, 2:9], 2, function(x)
-    as.character(as.Date(x, origin = unix)))
+    print ('Spring data exists')
+  # spring[, 6:14] = apply(spring[, 6:14], 2, function(x)
+  #   as.character(as.Date(x, origin = unix)))
   }
   
   fall_data = TRUE
@@ -25,8 +26,9 @@ gcc_plot = function(gcc, spring, fall){
     print ('No fall transition dates available')
     fall_data = FALSE
   } else{
-    fall[, 2:9] = apply(fall[, 2:9], 2, function(x)
-      as.character(as.Date(x, origin = unix)))
+    print ('Fall data exists')
+    # fall[, 6:14] = apply(fall[, 6:14], 2, function(x)
+    #   as.character(as.Date(x, origin = unix)))
   }
   
   print ('adding GCC')

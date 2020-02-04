@@ -289,7 +289,7 @@ server = function(input, output, session) {
   
   # Hides frequency UI element if GCC isn't selected for data to download/get
   observe({
-    data = input$dataTypes_get
+    data = input$dataTypes_plot
     if ('GCC' %in% data){
       shinyjs::show(id = 'phenocamFrequency')
     } else{
@@ -907,6 +907,7 @@ server = function(input, output, session) {
       }
       
       updateSelectInput(session, 'pftSelection', choices = veg_types)
+      
       data$veg_types = veg_types
       print (veg_types)
 
@@ -1141,10 +1142,13 @@ server = function(input, output, session) {
         
       # Get current pft from pftSelection observer
       pft_abbr = data$pft_abbr
+      freq_ = as.numeric(substring(input$phenocamFrequency, 1, 1))
+
       # Input into plotting gcc function
-      gcc_p = gcc_plot(phenocam$gcc_all[[pft_abbr]]$gcc, 
-                       phenocam$gcc_all[[pft_abbr]]$spring, 
-                       phenocam$gcc_all[[pft_abbr]]$fall)
+      gcc_p = gcc_plot(phenocam$gcc_all[[pft_abbr]][[paste0('gcc_', freq_,'day')]], 
+                       phenocam$gcc_all[[pft_abbr]][[paste0('spring_', freq_,'day')]], 
+                       phenocam$gcc_all[[pft_abbr]][[paste0('fall_', freq_,'day')]])
+
       data$gcc_p = gcc_p
       # Show and switch to plotpanel
       if (length(selected_data) == 1){
@@ -1785,17 +1789,8 @@ server = function(input, output, session) {
     }
     
     
-    
-    
-    
     print (selected_data)
     print (selected_plots)
-    
-    
-    
-    
-    
-    
 
     vector_length = length(selected_plots)
     if ('tds_sat' %in% selected_plots){
@@ -1925,8 +1920,6 @@ server = function(input, output, session) {
     evi_aqua_filepath  = paste0(evi_filepath, 'aqua/')
     tds_filepath       = paste0(file_path,'tds/')
     gcc_filepath       = paste0(file_path,'gcc/')
-    
-    temp_nc_ndvi = './www/deleteme/ndvi/'
     
     freq           = as.numeric(substring(input$phenocamFrequency, 1, 1))
     percentile_gcc = 90 
@@ -2234,96 +2227,170 @@ server = function(input, output, session) {
       withProgress(message = 'Importing GCC', value = .1, {
       phenocam$gcc_all = list()
       file_path = gcc_filepath
+      pc_metrics = 'gcc_90'
+      frequency = 3
       
       pft_abbr = data$pft_abbr
       # How many days old the GCC must be to refresh (re-download) it from phenocam
       refresh_at = 7
       todays_date = Sys.Date()
-        
-      gcc_filepath    = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day'), '.csv')
-      spring_filepath = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_spring_tds'), '.csv')
-      fall_filepath   = paste0(file_path, 'gcc_',pft_abbr, '_',paste0(freq,'_day_fall_tds'), '.csv')
       
-      # Add ping phenocam api to make sure it's up?
-      # Catch data that is older than the Refresh rate, Delete it if it is and re-download it
-      if (file.exists(gcc_filepath)){
-        print ('enter 1')
-        these_gccs = c(gcc_filepath, spring_filepath, fall_filepath)
-        dates_modified = as.Date(file.info(these_gccs)$mtime)
-        # If one of the dates is out of sink, rm all 3 and redownload      
-        if (length(unique(dates_modified)) > 1){
-          print ('Will Download GCC from Phenocam API.')
-          file.remove(these_gccs)
-          # Download gcc back
+      # Grab all pfts at this site
+      pft_abbrs = as.character(subset(pft_df, pft_df$pft_expanded %in% data$veg_types)$pft_abbreviated)
+      
+      # Loop through pfts to save out the data
+      for (pft_ in pft_abbrs){
+        
+        gcc_filepath_1day    = paste0(file_path, 'gcc_',pft_, '_1_day', '.csv')
+        spring_filepath_1day = paste0(file_path, 'gcc_',pft_, '_1_day_spring_tds', '.csv')
+        fall_filepath_1day   = paste0(file_path, 'gcc_',pft_, '_1_day_fall_tds', '.csv')
+  
+        gcc_filepath_3day    = paste0(file_path, 'gcc_',pft_, '_3_day', '.csv')
+        spring_filepath_3day = paste0(file_path, 'gcc_',pft_, '_3_day_spring_tds', '.csv')
+        fall_filepath_3day   = paste0(file_path, 'gcc_',pft_, '_3_day_fall_tds', '.csv')
+        
+        # Add ping phenocam api to make sure it's up?
+        # Catch data that is older than the Refresh rate, Delete it if it is and re-download it
+        if (file.exists(gcc_filepath)){
+          print ('enter 1')
+          these_gccs = c(gcc_filepath_1day, spring_filepath_1day, fall_filepath_1day,
+            gcc_filepath_3day, spring_filepath_3day, fall_filepath_3day)
+          dates_modified = as.Date(file.info(these_gccs)$mtime)
+          # If one of the dates is out of sink, rm all 3 and redownload      
+          if (length(unique(dates_modified)) > 1){
+            print ('Will Download GCC from Phenocam API.')
+            file.remove(these_gccs)
+            # Download gcc back
+            incProgress(amount = .2, detail = 'Downloading GCC data')
+            
+            # Download phenocam 1_day, 3_day gcc and tds data
+            site_pc_data = get_site_roi_csvs(name = site, 
+              roi_files_ = roi_files, 
+              metrics_ = pc_metrics)
+
+            # Subsetting data for 1 and 3 day at this pft
+            gcc_1day  = site_pc_data[paste0(pft_, '_gcc_1day')][[1]]
+            tds_1day = site_pc_data[paste0(pft_, '_tds_1day')][[1]]
+            spring_1day = subset(tds_1day, tds_1day$direction == 'rising')
+            fall_1day   = subset(tds_1day, tds_1day$direction == 'falling')
+            
+            gcc_3day  = site_pc_data[paste0(pft_, '_gcc_3day')][[1]]
+            tds_3day = site_pc_data[paste0(pft_, '_tds_3day')][[1]]
+            spring_3day = subset(tds_3day, tds_3day$direction == 'rising')
+            fall_3day   = subset(tds_3day, tds_3day$direction == 'falling')
+            
+            # Save global variable for phenocam data
+            phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
+                                            spring_1day = spring_1day,
+                                            fall_1day   = fall_1day,
+                                            gcc_3day    = gcc_3day,
+                                            spring_3day = spring_3day,
+                                            fall_3day   = fall_3day)
+            
+            # Write out the phenocam gcc data 
+            write.csv(gcc_1day,    file = gcc_filepath_1day)
+            write.csv(spring_1day, file = spring_filepath_1day)
+            write.csv(fall_1day,   file = fall_filepath_1day)
+            write.csv(gcc_3day,    file = gcc_filepath_3day)
+            write.csv(spring_3day, file = spring_filepath_3day)
+            write.csv(fall_3day,   file = fall_filepath_3day)
+            
+          # Remove files if they are older than the refresh_at value (7 days) and redownload
+          }else if(length(these_gccs[dates_modified < (todays_date - refresh_at)]) > 0){
+            print ('Will Download GCC from Phenocam API.')
+            file.remove(these_gccs[dates_modified < (todays_date - refresh_at)])
+            # Download phenocam 1_day, 3_day gcc and tds data
+            site_pc_data = get_site_roi_csvs(name = site, 
+              roi_files_ = roi_files, 
+              metrics_ = pc_metrics)
+            incProgress(amount = .2, detail = 'Downloading GCC data')
+
+            # Subsetting data for 1 and 3 day at this pft
+            gcc_1day  = site_pc_data[paste0(pft_, '_gcc_1day')][[1]]
+            tds_1day = site_pc_data[paste0(pft_, '_tds_1day')][[1]]
+            spring_1day = subset(tds_1day, tds_1day$direction == 'rising')
+            fall_1day   = subset(tds_1day, tds_1day$direction == 'falling')
+            
+            gcc_3day  = site_pc_data[paste0(pft_, '_gcc_3day')][[1]]
+            tds_3day = site_pc_data[paste0(pft_, '_tds_3day')][[1]]
+            spring_3day = subset(tds_3day, tds_3day$direction == 'rising')
+            fall_3day   = subset(tds_3day, tds_3day$direction == 'falling')
+            
+            # Save global variable for phenocam data
+            phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
+              spring_1day = spring_1day,
+              fall_1day   = fall_1day,
+              gcc_3day    = gcc_3day,
+              spring_3day = spring_3day,
+              fall_3day   = fall_3day)
+            
+            # Write out the phenocam gcc data 
+            write.csv(gcc_1day,    file = gcc_filepath_1day)
+            write.csv(spring_1day, file = spring_filepath_1day)
+            write.csv(fall_1day,   file = fall_filepath_1day)
+            write.csv(gcc_3day,    file = gcc_filepath_3day)
+            write.csv(spring_3day, file = spring_filepath_3day)
+            write.csv(fall_3day,   file = fall_filepath_3day)
+            
+            # If dates are current, just use local gcc files
+          }else {
+            print (paste0('Will import GCC from local file. Current within ', refresh_at, ' days.'))
+            incProgress(amount = .2, detail = 'Importing GCC CSV')
+            
+            gcc_1day = read.csv(gcc_filepath_1day, stringsAsFactors = FALSE)
+            spring_1day = read.csv(spring_filepath_1day, stringsAsFactors = FALSE)
+            fall_1day = read.csv(fall_filepath_1day, stringsAsFactors = FALSE)
+            gcc_3day = read.csv(gcc_filepath_3day, stringsAsFactors = FALSE)
+            spring_3day = read.csv(spring_filepath_3day, stringsAsFactors = FALSE)
+            fall_3day = read.csv(fall_filepath_3day, stringsAsFactors = FALSE)
+            
+            phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
+                                            spring_1day = spring_1day,
+                                            fall_1day   = fall_1day,
+                                            gcc_3day    = gcc_3day,
+                                            spring_3day = spring_3day,
+                                            fall_3day   = fall_3day)
+          }
+          
+          # Download gcc data if it doesn't exist at all     
+        }else{
           incProgress(amount = .2, detail = 'Downloading GCC data')
-          phenocam$data = get_site_roi_csvs(name        = site,
-                                            roi_files_  = roi_files,
-                                            frequency_  = freq,
-                                            percentile_ = percentile_gcc,
-                                            roi_type_   = pft_abbr)
-          gcc    = phenocam$data[[1]]
-          spring = phenocam$data[[2]]
-          fall   = phenocam$data[[3]]
-          phenocam$gcc_all[[pft_abbr]] = list(gcc    = gcc,
-                                              spring = spring,
-                                              fall   = fall)
-          incProgress(amount = .1)
-          write.csv(gcc,    file = gcc_filepath)
-          write.csv(spring, file = spring_filepath)
-          write.csv(fall,   file = fall_filepath)
-        # Remove files if they are older than the refresh_at value (7 days) and redownload
-        }else if(length(these_gccs[dates_modified < (todays_date - refresh_at)]) > 0){
           print ('Will Download GCC from Phenocam API.')
-          file.remove(these_gccs[dates_modified < (todays_date - refresh_at)])
-          # Download gcc back
-          incProgress(amount = .2, detail = 'Downloading GCC data')
-          phenocam$data = get_site_roi_csvs(name        = site,
-                                            roi_files_  = roi_files,
-                                            frequency_  = freq,
-                                            percentile_ = percentile_gcc,
-                                            roi_type_   = pft_abbr)
-          gcc    = phenocam$data[[1]]
-          spring = phenocam$data[[2]]
-          fall   = phenocam$data[[3]]
-          phenocam$gcc_all[[pft_abbr]] = list(gcc    = gcc,
-                                              spring = spring,
-                                              fall   = fall)
-          incProgress(amount = .1)
-          write.csv(gcc,    file = gcc_filepath)
-          write.csv(spring, file = spring_filepath)
-          write.csv(fall,   file = fall_filepath)
-        # If dates are current, just use local gcc files
-        }else {
-          print (paste0('Will import GCC from local file. Current within ', refresh_at, ' days.'))
-          incProgress(amount = .2, detail = 'Importing GCC CSV')
-          gcc    = read.csv(gcc_filepath, header = TRUE)
-          spring = read.csv(spring_filepath, header = TRUE)
-          fall   = read.csv(fall_filepath, header = TRUE)
-          phenocam$gcc_all[[pft_abbr]] = list(gcc    = gcc,
-                                              spring = spring,
-                                              fall   = fall)
+          
+          # Download phenocam 1_day, 3_day gcc and tds data
+          site_pc_data = get_site_roi_csvs(name = site, 
+            roi_files_ = roi_files, 
+            metrics_ = pc_metrics)
+          # Subsetting data for 1 and 3 day at this pft
+          gcc_1day  = site_pc_data[paste0(pft_, '_gcc_1day')][[1]]
+          tds_1day = site_pc_data[paste0(pft_, '_tds_1day')][[1]]
+          spring_1day = subset(tds_1day, tds_1day$direction == 'rising')
+          fall_1day   = subset(tds_1day, tds_1day$direction == 'falling')
+          
+          gcc_3day  = site_pc_data[paste0(pft_, '_gcc_3day')][[1]]
+          tds_3day = site_pc_data[paste0(pft_, '_tds_3day')][[1]]
+          spring_3day = subset(tds_3day, tds_3day$direction == 'rising')
+          fall_3day   = subset(tds_3day, tds_3day$direction == 'falling')
+          
+          # Save global variable for phenocam data
+          phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
+            spring_1day = spring_1day,
+            fall_1day   = fall_1day,
+            gcc_3day    = gcc_3day,
+            spring_3day = spring_3day,
+            fall_3day   = fall_3day)
+          
+          # Write out the phenocam gcc data 
+          write.csv(gcc_1day,    file = gcc_filepath_1day)
+          write.csv(spring_1day, file = spring_filepath_1day)
+          write.csv(fall_1day,   file = fall_filepath_1day)
+          write.csv(gcc_3day,    file = gcc_filepath_3day)
+          write.csv(spring_3day, file = spring_filepath_3day)
+          write.csv(fall_3day,   file = fall_filepath_3day)
         }
-      # Download gcc data if it doesn't exist at all     
-      }else{
-        incProgress(amount = .2, detail = 'Downloading GCC data')
-        print ('Will Download GCC from Phenocam API.')
-        phenocam$data = get_site_roi_csvs(name        = site,
-                                          roi_files_  = roi_files,
-                                          frequency_  = freq,
-                                          percentile_ = percentile_gcc,
-                                          roi_type_   = pft_abbr)
-        incProgress(amount = .2, detail = 'GCC data Downloaded')
-        gcc    = phenocam$data[[1]]
-        spring = phenocam$data[[2]]
-        fall   = phenocam$data[[3]]
-        phenocam$gcc_all[[pft_abbr]] = list(gcc    = gcc,
-                                            spring = spring,
-                                            fall   = fall)
-        incProgress(amount = .1)
-        write.csv(gcc,    file = gcc_filepath)
-        write.csv(spring, file = spring_filepath)
-        write.csv(fall,   file = fall_filepath)
-      }
+      } # PFT loop
+      # Show frequency selection
+      shinyjs::show(id = 'phenocamFrequency')
       
       }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
