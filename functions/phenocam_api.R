@@ -25,12 +25,12 @@ get_phenocam_roi_df = function(){
 
 
 # Cache out the cams_ and rois_ dataframes from phenocam api
-cache_phenocam_data = function(){
+cache_phenocam_data = function(dir = '.'){
   todays_date = Sys.Date()
-  todays_cams_name = paste0('./www/phenocam_data/cams_', todays_date)
-  todays_rois_name = paste0('./www/phenocam_data/rois_', todays_date)
-  if(dir.exists('./www/phenocam_data')==FALSE){
-    dir.create('./www/phenocam_data')
+  todays_cams_name = paste0(dir, '/www/phenocam_data/cams_', todays_date)
+  todays_rois_name = paste0(dir, '/www/phenocam_data/rois_', todays_date)
+  if(dir.exists(paste0(dir, '/www/phenocam_data'))==FALSE){
+    dir.create(paste0(dir, '/www/phenocam_data'))
     roi_files = get_phenocam_roi_df()
     cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
     write.csv(roi_files, todays_rois_name)
@@ -52,10 +52,10 @@ cache_phenocam_data = function(){
 
 
 # Remove any phenocam data that is older than 30 days
-remove_old_cached_phenocam_data = function(days_back = 30){
+remove_old_cached_phenocam_data = function(days_back = 30, dir = '.'){
   todays_date = Sys.Date()
-  if(dir.exists('./www/phenocam_data')){
-    phenocam_cached_files = list.files('./www/phenocam_data')
+  if(dir.exists(paste0(dir, '/www/phenocam_data'))){
+    phenocam_cached_files = list.files(paste0(dir, '/www/phenocam_data'))
     if(phenocam_cached_files > 0){
       # Extract the dates from the files
       cams_cached = phenocam_cached_files[grepl('cams_',phenocam_cached_files )]
@@ -64,10 +64,10 @@ remove_old_cached_phenocam_data = function(days_back = 30){
       rois_dates = as.Date(unlist(strsplit(rois_cached, 'rois_'))[unlist(strsplit(rois_cached, 'rois_')) != ''])
       remove_cams_dates = paste0('cams_',cams_dates[cams_dates < (todays_date -days_back)])
       remove_rois_dates = paste0('rois_',rois_dates[cams_dates < (todays_date -days_back)])
-      remove_cams_dates = remove_cams_dates[file.exists(paste0('./www/phenocam_data/',remove_cams_dates))]
-      remove_rois_dates = remove_rois_dates[file.exists(paste0('./www/phenocam_data/',remove_rois_dates))]
-      file.remove(paste0('./www/phenocam_data/',remove_cams_dates))
-      file.remove(paste0('./www/phenocam_data/',remove_rois_dates))
+      remove_cams_dates = remove_cams_dates[file.exists(paste0(dir, '/www/phenocam_data/',remove_cams_dates))]
+      remove_rois_dates = remove_rois_dates[file.exists(paste0(dir, '/www/phenocam_data/',remove_rois_dates))]
+      file.remove(paste0(dir, '/www/phenocam_data/',remove_cams_dates))
+      file.remove(paste0(dir, '/www/phenocam_data/',remove_rois_dates))
     }
   }
 }
