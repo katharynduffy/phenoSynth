@@ -72,11 +72,13 @@ print (length(roi_sites_))
 submit_all_tasks_for_site_appeears(appeears_token=token, 
   roi_sites = roi_sites_, 
   layers_ = c('NDVI_tera_sinu', 'EVI_tera_sinu', 'NDVI_aqua_sinu', 'EVI_aqua_sinu', 'TDS_v6', 'LC_sinu_nc'), 
-  test = TRUE, 
+  test = FALSE, 
   phenocam_roi_df = cams_,
-  void_size_ = TRUE)
+  void_size_ = FALSE)
 
 ```
+
+
 
 
 
