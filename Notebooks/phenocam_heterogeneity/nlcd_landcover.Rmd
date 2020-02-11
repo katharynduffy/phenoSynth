@@ -23,12 +23,6 @@ Start with 1 phenocam site data
 #######################################################
 # Be sure to run global.R before running this script
 #######################################################
-
-# Select site 
-# site_name   = 'kelloggkorn'
-# site_name   = 'acadia'
-# site_name   = 'archboldavir'
-# site_name   = 'bbc1'
 ```
 
 Use random site 
@@ -46,7 +40,7 @@ for (this_site in cams_$site){
 }
 # Get a random site
 site_name = sites_with_nlcd[sample(1:length(sites_with_nlcd), 1)]
-# site_name   = 'arbutuslake'
+# site_name   = 'NEON.D14.JORN.DP1.00033'
 print (site_name)
 ```
 
@@ -187,14 +181,14 @@ r_5by      = raster::crop(ndvi_raster_merc, e_5, snap='out')
 
 
 # Build Map (1x1)
-g_1by = build_raster_grid(r_1by, crs='merc')
-leaflet() %>% addTiles() %>% addRasterImage(r_1by, colors = cb) %>% addLegend(pal = cb, values = at) %>% addPolylines(data = g_1by) %>%
-  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
-
-# Build Map (3x3)
-g_3by = build_raster_grid(r_3by, crs='merc')
-leaflet() %>% addTiles() %>% addRasterImage(r_3by, colors = cb) %>% addLegend(pal = cb, values = at) %>% addPolylines(data = g_3by) %>%
-  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+# g_1by = build_raster_grid(r_1by, crs='merc')
+# leaflet() %>% addTiles() %>% addRasterImage(r_1by, colors = cb) %>% addLegend(pal = cb, values = at) %>% addPolylines(data = g_1by) %>%
+#   addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+# 
+# # Build Map (3x3)
+# g_3by = build_raster_grid(r_3by, crs='merc')
+# leaflet() %>% addTiles() %>% addRasterImage(r_3by, colors = cb) %>% addLegend(pal = cb, values = at) %>% addPolylines(data = g_3by) %>%
+#   addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
 
 # Build Map (5x5)
 g_5by = build_raster_grid(r_5by, crs='merc')
@@ -220,17 +214,17 @@ p_1_merc
 p_3_merc
 p_5_merc
 
-# 1x1 GRID display
-leaflet() %>% addTiles() %>% addPolylines(data = g_1by) %>% addPolylines(data = e_1_wgs) %>% addRasterImage(site_rc_nlcd, colors = site_rc_nlcd_c$palette) %>%
-  addLegend(labels = site_rc_nlcd_c$names, colors = site_rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
-  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
-  setView(lat = site_lat, lng = site_lon, zoom = 17)
-
-# 3x3 GRID display
-leaflet() %>% addTiles() %>% addPolylines(data = g_3by) %>% addPolylines(data = e_3_wgs) %>% addRasterImage(site_rc_nlcd, colors = site_rc_nlcd_c$palette) %>%
-  addLegend(labels = site_rc_nlcd_c$names, colors = site_rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
-  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
-  setView(lat = site_lat, lng = site_lon, zoom = 16)
+# # 1x1 GRID display
+# leaflet() %>% addTiles() %>% addPolylines(data = g_1by) %>% addPolylines(data = e_1_wgs) %>% addRasterImage(site_rc_nlcd, colors = site_rc_nlcd_c$palette) %>%
+#   addLegend(labels = site_rc_nlcd_c$names, colors = site_rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+#   addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
+#   setView(lat = site_lat, lng = site_lon, zoom = 17)
+# 
+# # 3x3 GRID display
+# leaflet() %>% addTiles() %>% addPolylines(data = g_3by) %>% addPolylines(data = e_3_wgs) %>% addRasterImage(site_rc_nlcd, colors = site_rc_nlcd_c$palette) %>%
+#   addLegend(labels = site_rc_nlcd_c$names, colors = site_rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+#   addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
+#   setView(lat = site_lat, lng = site_lon, zoom = 16)
 
 # 5x5 GRID display
 leaflet() %>% addTiles() %>% addPolylines(data = g_5by) %>% addPolylines(data = e_5_wgs) %>% addRasterImage(site_rc_nlcd, colors = site_rc_nlcd_c$palette) %>%
@@ -257,19 +251,19 @@ p_5by_merc_cropped_high_res   = raster::projectRaster(from = p_5by_merc_cropped,
 p_5by_merc_cropped_high_res_cr = raster::crop(p_5by_merc_cropped_high_res, p_5_merc, snap = 'in' )
 p_5by_merc_cropped_c = build_pft_palette(p_5by_merc_cropped_high_res_cr)
 
-# Map display for 1x1
-leaflet() %>% addTiles() %>% addPolylines(data = g_1by) %>% addPolylines(data = e_1_wgs) %>%
-  addRasterImage(p_1by_merc_cropped_high_res_cr, colors = p_1by_merc_cropped_c$palette) %>%
-  addLegend(labels = p_1by_merc_cropped_c$names, colors = p_1by_merc_cropped_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
-  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
-  setView(lat = site_lat, lng = site_lon, zoom = 15)
-
-# Map display for 3x3
-leaflet() %>% addTiles() %>% addPolylines(data = g_3by) %>% addPolylines(data = e_3_wgs) %>%
-  addRasterImage(p_3by_merc_cropped_high_res_cr, colors = p_3by_merc_cropped_c$palette) %>%
-  addLegend(labels = p_3by_merc_cropped_c$names, colors = p_3by_merc_cropped_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
-  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
-  setView(lat = site_lat, lng = site_lon, zoom = 15)
+# # Map display for 1x1
+# leaflet() %>% addTiles() %>% addPolylines(data = g_1by) %>% addPolylines(data = e_1_wgs) %>%
+#   addRasterImage(p_1by_merc_cropped_high_res_cr, colors = p_1by_merc_cropped_c$palette) %>%
+#   addLegend(labels = p_1by_merc_cropped_c$names, colors = p_1by_merc_cropped_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+#   addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
+#   setView(lat = site_lat, lng = site_lon, zoom = 15)
+# 
+# # Map display for 3x3
+# leaflet() %>% addTiles() %>% addPolylines(data = g_3by) %>% addPolylines(data = e_3_wgs) %>%
+#   addRasterImage(p_3by_merc_cropped_high_res_cr, colors = p_3by_merc_cropped_c$palette) %>%
+#   addLegend(labels = p_3by_merc_cropped_c$names, colors = p_3by_merc_cropped_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+#   addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
+#   setView(lat = site_lat, lng = site_lon, zoom = 15)
 
 # Map display for 5x5 
 leaflet() %>% addTiles() %>% addPolylines(data = g_5by) %>% addPolylines(data = e_5_wgs) %>% 

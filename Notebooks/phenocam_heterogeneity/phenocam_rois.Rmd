@@ -49,6 +49,8 @@ for (pc_site in sites_with_nlcd){
   nlcd_roi_pfts = c(nlcd_roi_pfts, pc_roi_types)
 }
 nlcd_roi_pfts_df =  as.data.frame(table(nlcd_roi_pfts), stringsAsFactors = FALSE)
+
+roi_files
 ```
 
 

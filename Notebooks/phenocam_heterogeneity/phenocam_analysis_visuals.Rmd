@@ -14,7 +14,9 @@ pc_analysis_df = read.csv('phenocam_analysis_2020_01_30_141833.csv', stringsAsFa
   mutate(pft_expanded = replace(pft_expanded, Var1 == 17, 'Water'))
 pc_analysis_df
 ```
-
+```{r}
+names(pc_analysis_df)
+```
 
 Get variables we will use later
 ```{r}

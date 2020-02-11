@@ -1,0 +1,415 @@
+---
+title: "cache_appeears_tasks.Rmd"
+author: "K. Enns"
+date: "2/28/2018"
+output: html_document
+---
+
+# How to cache all of the files from AppEEARS (evi and ndvi (tara+aqua))
+
+Get token for AppEEARS
+```{r}
+####################################################################################
+# GO RUN global.R for variables and libraries required in this RMD file
+####################################################################################
+
+# devtools::install_github("ennsk/AppEEARS4R")
+library(jsonlite)
+library(AppEEARS4R)
+library(httr)
+username = 'kenns'
+password = .rs.askForPassword('Password')
+
+token_response = AppEEARS4R::appeears_start_session(username,password)
+rm(password)
+```
+
+### Creates a dataframe out of all of the tasks submitted to AppEEARS under your account
+```{r}
+token         = paste("Bearer", token_response$token)
+response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
+task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+tasks = jsonlite::fromJSON(txt=task_response)
+# tasks = tasks %>% distinct(task_id,task_name)
+tasks
+```
+
+Get number of submitions remaining for AppEEARS
+```{r}
+get_submitions_remaining = function(appeears_tasks){
+  # Get current time in POSIXct
+  now = Sys.time()
+  appeears_tasks$created = as.POSIXct(appeears_tasks$created,format="%Y-%m-%dT%H:%M", tz = 'UTC')
+  attributes(appeears_tasks$created)$tzone = 'MST'
+  
+  # Grab tasks created in the last 24 hours
+  last_24h_tasks = subset(appeears_tasks, appeears_tasks$created > (now - (60*60*24*1)))
+  
+  # Number of submitions remaining for the last 24hours
+  n_tasks_24h = dim(last_24h_tasks)[1]
+  submitions_remaining = 100 - n_tasks_24h
+  
+  return (submitions_remaining)
+}
+
+tasks_left = get_submitions_remaining(tasks)
+tasks_left
+```
+
+- SUBMIT MISSING TASKS
+1. Find difference between the site ROIS available and the AppEEARS cached tasks in PhenoSynth
+2. Select 1-16 of those sites to submit new tasks to AppEEARS with
+3. Don't submit more than 100 (use function created above to calculate submitions in last 24hrs)
+
+- REFRESH SELECTED SITE TASKS
+1. Select sites (1-16)
+2. Resubmit the 6 tasks (NDVI(a/t), EVI(a/t), TDS, LC) per site
+3. Don't submit more than 100 (use function created above to calculate submitions in last 24hrs)
+
+- ADD YOUR OWN TASKS to the task list
+
+
+
+
+
+
+
+
+Check differences between phenocam rois api and current tasks
+```{r}
+# Run the globalf ile to get roi_files and cams_ ( or you can run this code below )
+# roi_files = get_phenocam_roi_df()
+# cams_     = get_phenocam_camera_df(pc_roi_df = roi_files) %>% dplyr::select(-c('flux_networks'))
+
+# Check to make sure roi_files and cams_ are the same
+setdiff(cams_$site, unique(roi_files$site))
+setdiff(unique(roi_files$site), cams_$site)
+
+unique_pc_sites = unique(roi_files$site)
+appeears_tasks_ndvi_tera = readRDS(file = '../../www/cache_df_ndvi_tera.df')
+appeears_tasks_ndvi_aqua = readRDS(file = '../../www/cache_df_ndvi_aqua.df')
+appeears_tasks_evi_tera  = readRDS(file = '../../www/cache_df_evi_tera.df')
+appeears_tasks_evi_aqua  = readRDS(file = '../../www/cache_df_evi_aqua.df')
+appeears_tasks_tds       = readRDS(file = '../../www/cache_df_tds.df')
+appeears_tasks_lc        = readRDS(file = '../../www/cache_df_lc.df')
+```
+
+#### CACHE TASKS AT SITES
+```{r}
+# ready_tasks = subset(tasks, status=='done')[1:20,]
+tasks_df = tasks
+
+# Given all of your tasks and the task type, save the file in the www directory of the app
+cache_appeears_task = function(appeears_tasks, type, out_dir){
+  
+  task_strs    = c('_EVI_v6_tera_sinu', '_EVI_v6_aqua_sinu', '_NDVI_v6_tera_sinu',  '_NDVI_v6_aqua_sinu', '_TDs_v6', '_LC_sinu_v6')
+  task_str_ids = c('evi_tera', 'evi_aqua','ndvi_tera', 'ndvi_aqua', 'tds', 'lc_v6')
+  
+  if (!type %in% task_str_ids){
+    return (message(paste0("Invalid task type: ", type, 
+      ". Must be one of the following types: evi_tera | evi_aqua | ndvi_tera | ndvi_aqua | tds | lc_v6")))
+  }
+  
+  str_lookup_df = data.frame(task_str_id = task_str_ids, 
+                             task_str    = task_strs, stringsAsFactors = FALSE)
+  t_str         = subset(str_lookup_df, str_lookup_df$task_str_id == type)$task_str
+  t_type        = type
+  
+  tasks_df = appeears_tasks[grep(c(t_str), appeears_tasks$task_name),]
+  cache_df = tasks_df %>% select('task_id', 'task_name', 'created')
+  cache_df_names = as.character(strsplit(cache_df$task_name, t_str))
+  cache_df$created = as.Date(cache_df$created)
+  cache_df$site_name = cache_df_names
+  
+  counts_df = as.data.frame(table(cache_df$site_name))
+  duplicates_df = subset(counts_df, counts_df$Freq > 1)
+  rm_this_task_df = data.frame()
+  
+  if (dim(duplicates_df)[1] > 0){
+    max_n = max(duplicates_df$Freq)
+    # Loop through number of max duplicates found
+    for (n in 1:max_n){
+      counts_df     = as.data.frame(table(cache_df$site_name))
+      duplicates_df = subset(counts_df, counts_df$Freq > 1)
+      # Remove the old tasks from duplicates
+      for (x in duplicates_df$Var1){
+        this_site_df = subset(cache_df, cache_df$site_name == x)
+        this_site_df[base::order(as.Date(this_site_df$created, format="%Y-%m-%d"), decreasing = TRUE),]
+        most_current_site_task_df = this_site_df[1,]
+        rm_this_task = this_site_df[2,]
+        rm_this_task_id = rm_this_task$task_id
+        
+        if (dim(rm_this_task_df)[1]==0){
+          rm_this_task_df = rm_this_task
+        }else{
+          rm_this_task_df = rbind(rm_this_task_df,rm_this_task)
+        }
+        
+        cache_df
+        cache_df = cache_df[!(cache_df$task_id == rm_this_task_id),]
+      }
+    }
+  }
+  row.names(cache_df) = NULL
+  saveRDS(cache_df, file = out_dir)
+  return (cache_df)
+}
+
+evi_t_tasks = cache_appeears_task(tasks, 'evi_tera', '/users/kenns/projects/r/apis/phenosynth/www/cache_df_evi_tera.df')
+evi_a_tasks = cache_appeears_task(tasks, 'evi_aqua', '/users/kenns/projects/r/apis/phenosynth/www/cache_df_evi_aqua.df')
+ndvi_t_tasks = cache_appeears_task(tasks, 'ndvi_tera', '/users/kenns/projects/r/apis/phenosynth/www/cache_df_ndvi_tera.df')
+ndvi_a_tasks = cache_appeears_task(tasks, 'ndvi_aqua', '/users/kenns/projects/r/apis/phenosynth/www/cache_df_ndvi_aqua.df')
+tds_tasks = cache_appeears_task(tasks, 'tds', '/users/kenns/projects/r/apis/phenosynth/www/cache_df_tds.df')
+lc_tasks = cache_appeears_task(tasks, 'lc_v6', '/users/kenns/projects/r/apis/phenosynth/www/cache_df_lc.df')
+
+# check differences between the landcover and all other cached data.
+setdiff(lc_tasks$site_name, evi_t_tasks$site_name)
+setdiff(lc_tasks$site_name, evi_a_tasks$site_name)
+setdiff(lc_tasks$site_name, ndvi_t_tasks$site_name)
+setdiff(lc_tasks$site_name, ndvi_a_tasks$site_name)
+setdiff(lc_tasks$site_name, tds_tasks$site_name)
+
+setdiff(evi_t_tasks$site_name, lc_tasks$site_name)
+setdiff(evi_a_tasks$site_name, lc_tasks$site_name)
+setdiff(ndvi_t_tasks$site_name, lc_tasks$site_name)
+setdiff(ndvi_a_tasks$site_name, lc_tasks$site_name)
+setdiff(tds_tasks$site_name, lc_tasks$site_name)
+
+  # tasks_df = tasks[grep(c('_EVI_v6_tera_sinu'), tasks$task_name),]
+  # cache_df = tasks_df %>% select('task_id', 'task_name', 'created')
+  # cache_df_names = as.character(strsplit(cache_df$task_name, t_str))
+  # cache_df$created = as.Date(cache_df$created)
+  # cache_df$site_name = cache_df_names
+
+
+
+# submit_all_tasks_for_site_appeears(appeears_token=token, roi_sites=setdiff(tds_tasks$site_name, lc_tasks$site_name), layers_ = c('LC_sinu_nc'), test=TRUE, void_size_ = TRUE)
+# length(unique(cache_df$site_name))
+# length(cache_df$site_name)
+```
+
+
+Some bundles don't have all the data == this is a test
+```{r}
+# Example: forbes only has 4 files in bundle where acadia has 10
+
+test = subset(appeears_tasks_ndvi_tera, appeears_tasks_ndvi_tera$site_name == 'juncabalejo')
+test_junca = '3ec987cb-1122-4285-87ca-d0e4b1ddf001'
+junca_bundle = get_appeears_bundle_df(test_junca)
+forbes_id = "6d31f315-cb53-4583-9748-d8f6b16838c2"
+acadia_id = "9c48f602-7e74-4f86-8970-429996c58b76"
+forbes_bundle = get_appeears_bundle_df(forbes_id)
+acadia_bundle = get_appeears_bundle_df(acadia_id)
+tasks 
+
+# Search through TDS tasks to see if there are any other tasks like forbes
+appeears_tasks_tds = readRDS(file = '../../www/cache_df_tds.df')
+tds_task_ids = appeears_tasks_tds$task_id
+correct_tds = 0
+incorrect_tds = 0
+list_of_bad_tds_tasks = c()
+list_of_bad_tds_tasks_ids = c()
+for (tds_task_id in tds_task_ids){
+  bundle = get_appeears_bundle_df(tds_task_id)
+  if (dim(bundle)[1] == 14){
+    correct_tds = correct_tds + 1
+  } else {
+    task_name = subset(appeears_tasks_tds, task_id == tds_task_id)$task_name
+    incorrect_tds = incorrect_tds + 1
+    list_of_bad_tds_tasks = c(list_of_bad_tds_tasks, task_name)
+    list_of_bad_tds_tasks_ids = c(list_of_bad_tds_tasks_ids, tds_task_id)
+  }
+}
+print (correct_tds)
+print (incorrect_tds)
+list_of_bad_tds_tasks
+list_of_bad_tds_tasks_ids
+submit_these_tds = as.character(strsplit(list_of_bad_tds_tasks, '_TDs_v6'))
+
+# submit_all_tasks_for_site_appeears(appeears_token=token, roi_sites=submit_these_tds, layers_ = c('TDS_v6'), test=TRUE, void_size_ = TRUE)
+# tds_tasks$task_id
+# for (delete_id in tds_tasks$task_id){
+#   response = DELETE(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/task/", delete_id, sep = ""), add_headers(Authorization = token))
+# }
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+
+evi_tera = ready_tasks[grep(c('_EVI_v6_tera_sinu'), ready_tasks$task_name),]
+cache_evi_tera = evi_tera %>% select('task_id','task_name')
+saveRDS(cache_evi_tera, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_evi_tera.df')
+print (length(evi_aqua$task_name))
+
+evi_aqua = ready_tasks[grep(c('_EVI_v6_aqua_sinu'), ready_tasks$task_name),]
+cache_evi_aqua = evi_aqua %>% select('task_id','task_name')
+saveRDS(cache_evi_aqua, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_evi_aqua.df')
+print (length(evi_aqua$task_name))
+
+ndvi_tera = ready_tasks[grep(c('_NDVI_v6_tera_sinu'), ready_tasks$task_name),]
+cache_ndvi_tera = ndvi_tera %>% select('task_id','task_name')
+saveRDS(cache_ndvi_tera, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_ndvi_tera.df')
+print (length(ndvi_tera$task_name))
+
+ndvi_aqua = ready_tasks[grep(c('_NDVI_v6_aqua_sinu'), ready_tasks$task_name),]
+cache_ndvi_aqua = ndvi_aqua %>% select('task_id','task_name')
+saveRDS(cache_ndvi_aqua, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_ndvi_aqua.df')
+print (length(ndvi_aqua$task_name))
+
+tds = ready_tasks[grep(c('_TDs_v6'), ready_tasks$task_name),]
+cache_ndvi_aqua = tds %>% select('task_id','task_name')
+saveRDS(cache_ndvi_aqua, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_tds.df')
+print (length(tds$task_name))
+
+lc = ready_tasks[grep(c('_LC_sinu_v6'), ready_tasks$task_name),]
+# lc = ready_tasks[grep(c('LC_nc_v6'), ready_tasks$task_name),]
+cache_df_lc = lc %>% select('task_id','task_name','created')
+cache_df_names = as.character(strsplit(cache_df$task_name, '_LC_sinu_v6'))
+cache_df_lc$created = as.Date(cache_df_lc$created)
+cache_df_lc$site_name = cache_df_names
+saveRDS(cache_df_lc, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_lc.df')
+print (length(lc$task_name))
+
+
+```
+
+
+
+#### CACHE WGS84 TASKS AT SITES
+Seperate all the tasks that are done, and then into ndvi/evi and tera/aqua
+```{r}
+ready_tasks = subset(tasks, status=='done')
+ready_tasks 
+
+evi_tera = ready_tasks[grep(c('EVI_MOD13Q1_v6_tera'), ready_tasks$task_name),]
+cache_evi_tera = evi_tera %>% select('task_id','task_name')
+saveRDS(cache_evi_tera, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_evi_tera.df')
+print (length(evi_tera$task_name))
+
+evi_aqua = ready_tasks[grep(c('EVI_MOD13Q1_v6_aqua'), ready_tasks$task_name),]
+cache_evi_aqua = evi_aqua %>% select('task_id','task_name')
+saveRDS(cache_evi_aqua, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_evi_aqua.df')
+print (length(evi_aqua$task_name))
+
+ndvi_tera = ready_tasks[grep(c('NDVI_v6_tera'), ready_tasks$task_name),]
+cache_ndvi_tera = ndvi_tera %>% select('task_id','task_name')
+saveRDS(cache_ndvi_tera, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_ndvi_tera.df')
+print (length(ndvi_tera$task_name))
+
+ndvi_aqua = ready_tasks[grep(c('NDVI_v6_aqua'), ready_tasks$task_name),]
+cache_ndvi_aqua = ndvi_aqua %>% select('task_id','task_name')
+saveRDS(cache_ndvi_aqua, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_ndvi_aqua.df')
+print (length(ndvi_aqua$task_name))
+```
+
+### Cache out appeears task into a df that Pheno-synth can use as a key to download associated EVI data for selected phenocam site (make sure they have all finished downloading, see tasks$status)
+```{r}
+# evi_tera$task_name[1]
+# strsplit(evi_tera$task_name[1], split = '_', fixed=TRUE)[[1]][1]
+
+evi_tera_cache_file = cache_tasks(evi_tera, evi_tera_sites, 'evi_tera_df', 'balh')
+dim(evi_tera_cache_file)
+```
+
+```{r}
+
+cache_df = cache_df %>% distinct(task_id, task_name)
+
+n_occur_    = data.frame(table(cache_df$task_name))
+duplicates_ = n_occur_[n_occur_$Freq > 1,]
+duplicates_ = as.character(duplicates_$Var1)
+duplicates_
+```
+
+### Cache out the dataframe we just created above (cache_df)
+```{r}
+saveRDS(cache_df, file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_evi.df')
+```
+
+### Load in file
+```{r}
+evi_df = readRDS(file = '/users/kenns/projects/r/apis/phenosynth/www/cache_df_evi.df')
+```
+
+#######
+Remove a task
+```{r}
+# response <- DELETE(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/task/", 'dbed8c3e-4776-429c-86b0-42474ae33fc5', sep = ""), add_headers(Authorization = token))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

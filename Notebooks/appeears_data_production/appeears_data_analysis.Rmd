@@ -20,12 +20,17 @@ library(leaflet)
 ```{r}
 site_task_id = 'e106f82f-7191-4050-a8af-f142e2f981d3'
 response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, sep = ""))
-bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
 
-# all files in bundle
-document = jsonlite::fromJSON(txt=bundle_response)
-files = document$files
-class(files)
+if (response$status_code == 500){
+  warning('Warning: AppEEArs is Down')
+}else {
+  bundle_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+  
+  # all files in bundle
+  document = jsonlite::fromJSON(txt=bundle_response)
+  files = document$files
+  class(files)
+}
 ```
 
 ### Getting netcdf id + other file ids from the bundle

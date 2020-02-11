@@ -12,40 +12,274 @@ Get token for AppEEARS
 ####################################################################################
 # GO RUN global.R for variables and libraries required in this RMD file
 ####################################################################################
+username = 'earth_data_username'
+password = .rs.askForPassword('Password')
 
-# devtools::install_github("ennsk/AppEEARS4R")
-library(jsonlite)
-library(appeears)
-library(httr)
-username = ''
-password = ''
-
-token_response = appeears::appeears_start_session(username,password)
+token_response = AppEEARS4R::appeears_start_session(username,password)
 rm(password)
 ```
+
 View all AppEEARS tasks under user
 ```{r}
 token         = paste("Bearer", token_response$token)
 response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
 task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
 tasks = jsonlite::fromJSON(txt=task_response)
-# tasks = tasks %>% distinct(task_id,task_name)
-tasks[,2:dim(tasks)[2]]
+tasks
+
+# See how many submissions are available.  
+get_submitions_remaining(tasks)
 ```
+
+Submit ALL SINU tasks at a site:
+```{r}
+# Tasks submitted in alphabetical order: 1:4
+source('submit_appeears_tasks.R')
+# Get phenocam sites to submit to appeears
+phenocam_sites = cams_$site
+
+# If you download all data types at once than you can assume all the different
+#   data types exist for each site already submitted.  This means we can
+#   use either of the two below (cached_lc_names or cached_ndvi_names) to
+#   find the difference between tasks we have submitted to AppEEARS and
+#   tasks we need to submit.
+
+# cached_lc_names
+lc = tasks[grep(c('LC_sinu_v6'), tasks$task_name),]
+cached_lc = lc %>% select('task_id','task_name')
+cached_lc_names = as.character(strsplit(cached_lc$task_name, '_LC_sinu_v6'))
+# Grab first 16 of the site names that need to be submitted as tasks 
+#  - 16 is 16*6=96 which is less than 100 (the limit per day)
+roi_sites_ = setdiff(phenocam_sites, cached_lc_names)[1:16]
+roi_sites_
+
+# cached_ndvi_names
+ndvi = tasks[grep(c('NDVI_v6_tera_sinu'), tasks$task_name),]
+cached_ndvi = ndvi %>% select('task_id','task_name')
+cached_ndvi_names = as.character(strsplit(cached_ndvi$task_name, '_NDVI_v6_tera_sinu'))
+# Grab first 16 of the site names that need to be submitted as tasks
+roi_sites_ = setdiff(phenocam_sites, cached_ndvi_names)[1:16]
+roi_sites_
+
+# tasks[grep(c('gaspard'), tasks$task_name),]
+```
+
+Submit missing tasks from previous cell
+```{r}
+# Layer choices = 'NDVI_tera_sinu' | 'EVI_tera_sinu' | 'NDVI_aqua_sinu' | 'EVI_aqua_sinu' | 'TDS_v6' | 'LC_sinu_nc'
+# size length should be 16
+print (length(roi_sites_))
+submit_all_tasks_for_site_appeears(appeears_token=token, 
+  roi_sites = roi_sites_, 
+  layers_ = c('NDVI_tera_sinu', 'EVI_tera_sinu', 'NDVI_aqua_sinu', 'EVI_aqua_sinu', 'TDS_v6', 'LC_sinu_nc'), 
+  test = TRUE, 
+  phenocam_roi_df = cams_,
+  void_size_ = TRUE)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+pc_data   = cache_phenocam_data(dir = '../..')
+cams_     = pc_data$cams
+roi_files = pc_data$rois
+
+source('submit_appeears_tasks.R')
+# size length should be 16
+print (length(roi_sites_))
+submit_all_tasks_for_site_appeears(appeears_token=token, 
+  roi_sites = roi_sites_, 
+  layers_ = c('NDVI_tera_sinu', 'EVI_tera_sinu', 'NDVI_aqua_sinu', 'EVI_aqua_sinu', 'TDS_v6', 'LC_sinu_nc'), 
+  test = FALSE, 
+  phenocam_roi_df = cams_,
+  void_size_ = TRUE)
+
+
+# submit_all_tasks_for_site_appeears(appeears_token=token, roi_sites= roi_sites_, test = TRUE, void_size_ = FALSE)
+# submit_all_tasks_for_site_appeears(appeears_token=token, roi_sites=roi_sites_, layers_ = c('LC_sinu_nc'), test=TRUE, void_size_ = TRUE)
+```
+
+
+
+
+find failed tasks with only 1 year of data!
+```{r}
+getwd()
+year1_data = c()
+sites_ = cams_$site
+for (site_ in sites_with_nlcd){
+  file_location = paste0('../../www/site_data/', site_ ,'/data_layers/ndvi/tera/', gsub("\\.", "-", site_),'-NDVI-v6-tera-sinu-request.json')
+  start_d = read_json(file_location)$params$dates[[1]]$startDate
+  if (start_d == "01-01-2018"){
+    year1_data = c(year1_data, site_)
+  }
+}
+
+length(year1_data)
+
+
+
+test = list.files('../../www/site_data/')
+length(test)
+
+subset(cams_, cams_$site != 'asa')
+
+setdiff(cams_$site, test)
+
+'../../www/site_data/NEON.D01.BART.DP1.00033/data_layers/ndvi/tera/NEON-D01-BART-DP1-00033-NDVI-v6-tera-sinu-request.json'
+
+```
+
+
+
+```{r}
+all_sites = cameras$Sitename
+
+
+# Function and example to grab all the rows from a vector of phenocams like priority_cams
+get_phenocam_site_row = function(names, phenocam_df){
+  selected_phenocam_df = data.frame()
+  for (name in names){
+    row = (subset(phenocam_df, phenocam_df$Sitename == name))
+    selected_phenocam_df = rbind(selected_phenocam_df, row)
+  }
+  return (selected_phenocam_df)
+}
+get_phenocam_site_row('harvard', cameras)
+
+# Search for sites in site list
+all_sites[grepl('jer', all_sites)]
+
+# Build high priority list of phenocam sites PIs from Andrew for email functionality
+priority_cams = c('harvard', 'harvardbarn', 'harvardbarn2', 'harvardblo', 'harvardfarmnorth', 'harvardfarmsouth', 'harvardgarden', 'harvardhemlock', 'harvardhemlock2', 'harvardlph',
+                  'morganmonroe', 'morganmonroe2', 
+                  'proctor',
+                  'uiefmaize', 'uiefmiscanthus', 'uiefprairie', 'uiefswitchgrass',
+                  'butte',
+                  'bartlett', 'bartlettir',
+                  'howland1', 'howland2',
+                  'kamuela',
+                  'woodshole',
+                  'oregonMP',
+                  'tonzi',
+                  'vaira',
+                  'lethbridge',
+                  'missouriozarks',
+                  'turkeypointdbf', 'turkeypointenf02', 'turkeypointenf39', 'turkeypointenf74',
+                  'alligatorriver',
+                  'konza',
+                  'southerngreatplains',
+                  'willowcreek',
+                  'kendall',
+                  'westpond',
+                  'arbutuslake',
+                  'burnssagebrush',
+                  'kansas',
+                  'merbleue',
+                  'niwot3',
+                  'downerwoods',
+                  'uwmfieldsta',
+                  'bostoncommon',
+                  'dukehw',
+                  'worcester',
+                  'silverton',
+                  'twitchell',
+                  'gcesapelo',
+                  'laurentides',
+                  'umichbiological', 'umichbiological2',
+                  'usmpj', 'sevilletagrass', 'sevilletashrub',
+                  'jasperridge',
+                  'coweeta',
+                  'ibp', 'ibp0',
+                  'jerbajada'
+                  )
+
+# check to see if sites are in all_sites list
+priority_cams %in% all_sites
+
+# Create the csv to send to andrew and katharyn
+priority_phenocam_df = get_phenocam_site_row(priority_cams, cameras)
+priority_phenocam_df_contacts = priority_phenocam_df %>% select(Sitename, contact1, contact2, date_first, date_last)
+priority_phenocam_df_contacts[grep(c('turkeypoint'), priority_phenocam_df_contacts$Sitename),]$contact2 = 'Eric Beamesderfer <beamesde AT mcmaster DOT ca>'
+write.csv(x = priority_phenocam_df_contacts, file = '/users/kenns/downloads/PI_priority_phenocams.csv', row.names = FALSE)
+read.csv('/users/kenns/downloads/PI_priority_phenocams.csv')
+
+
+# check to see what sites already have ndvi/evi/td data tasks created
+ndvi = tasks[grep(c('NDVI_v6_aqua_sinu'), tasks$task_name),] %>% select(task_name, user_id)
+ndvi[,'task_name'] = as.character(strsplit(ndvi[,'task_name'], '_NDVI_v6_aqua_sinu'))
+
+needs_lc = c()
+sites_without_any_tasks    = c()
+good_to_go  = c()
+needs_all_but_lc = c()
+for (site in priority_cams){
+  if (dim(subset(ndvi, ndvi$task_name == site))[1]==1){
+    if (site %in% cached_lc_names){
+      good_to_go = c(good_to_go, site)
+    }else {
+      needs_lc = c(needs_lc, site)
+    }
+  }else{
+    if (site %in% cached_lc_names){
+      needs_all_but_lc = c(needs_all_but_lc, site)
+    }else {
+      sites_without_any_tasks = c(sites_without_any_tasks, site)
+    }
+  }
+}
+
+
+landcover_tasks_to_submit = setdiff(needs_lc, cached_lc_names)
+
+
+need_all_but_lc = setdiff(sites_without_any_tasks, cached_lc_names)
+
+
+tasks[grep(c('NDVI_v6_aqua_sinu'), tasks$task_name),]
+
+```
+
+```{r}
+ndvi_tera = ready_tasks[grep(c('NDVI_v6_tera_sinu'), ready_tasks$task_name),]
+cache_ndvi_tera = ndvi_tera %>% select('task_id','task_name')
+
+
+```
+
+submit tasks
+```{r}
+# submit_all_tasks_for_site_appeears(appeears_token=token, roi_sites=landcover_tasks_to_submit, layers_ = c('LC_sinu_nc'), test=FALSE, void_size_ = TRUE)
+# submit_all_tasks_for_site_appeears(appeears_token=token, roi_sites= c('arscolesnorth'), layers_ = c('NDVI_tera_sinu', 'EVI_tera_sinu', 'NDVI_aqua_sinu', 'EVI_aqua_sinu', 'TDS_v6'), test=TRUE, void_size_ = TRUE)
+submit_all_tasks_for_site_appeears(appeears_token=token, roi_sites= sites_without_any_tasks, test=TRUE, void_size_ = TRUE)
+```
+
+
 
 Submit transition dates tasks to appeears
 ```{r}
-layer_     = 'TDS_v6'
-source('submit_appeears_tasks.R')
-submit_appeears_tasks(appeears_token=token, roi_sites=c('acadia'), data_layer=layer_, test=FALSE)
+# layer_     = 'TDS_v6'
+# source('submit_appeears_tasks.R')
+# submit_appeears_tasks(appeears_token=token, roi_sites=c('acadia'), data_layer=layer_, test=TRUE)
 ```
 
-Downloadj transition date task for acadia
-```{r}
-# download_bundle_file(site_task_id_ = 'dbed8c3e-4776-429c-86b0-42474ae33fc5' , filepath_ = '/users/kenns/downloads/')
-tds_brick = raster::brick('/users/kenns/downloads/MCD12Q2.006_500m_aid0001.nc', varnames)
-names(tds_brick)
-```
 
 submit phenocam tasks for NDVI_aqua
 ```{r}

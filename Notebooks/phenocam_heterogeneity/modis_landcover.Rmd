@@ -12,9 +12,6 @@ Start with 1 phenocam site data
 #######################################################
 # Be sure to run global.R before running this script
 #######################################################
-source('../../functions/geospatial.R')
-# Select site 
-site_name   = 'bbc1'
 ```
 
 Use random site 
@@ -32,7 +29,7 @@ for (this_site in cams_$site){
 }
 # Get a random site
 site_name = sites_with_nlcd[sample(1:length(sites_with_nlcd), 1)]
-site_name   = 'NEON.D15.ONAQ.DP1.00033'
+# site_name   = 'NEON.D15.ONAQ.DP1.00033'
 print (site_name)
 ```
 
