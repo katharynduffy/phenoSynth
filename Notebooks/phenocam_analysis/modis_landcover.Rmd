@@ -1,0 +1,287 @@
+---
+title: "modis_landcover"
+author: "K. Enns"
+date: "1/29/2020"
+output: html_document
+---
+
+### RUN Global.R
+
+Start with 1 phenocam site data
+```{r}
+#######################################################
+# Be sure to run global.R before running this script
+#######################################################
+```
+
+Use random site 
+```{r}
+sites_with_nlcd    = c()
+sites_without_nlcd = c()
+for (this_site in cams_$site){
+  this_nlcd_file = paste0('../../www/landsat_lc/', this_site, '_landsat_lc.tif')
+    # If NLCD layer exists for site, add it to map
+  if (file.exists(this_nlcd_file)){
+    sites_with_nlcd = c(sites_with_nlcd, this_site)
+  } else{
+    sites_without_nlcd = c(sites_without_nlcd, this_site)
+  }
+}
+# Get a random site
+site_name = sites_with_nlcd[sample(1:length(sites_with_nlcd), 1)]
+# site_name   = 'NEON.D15.ONAQ.DP1.00033'
+print (site_name)
+```
+
+Get phenocam site Data
+```{r}
+# Get phenocam data
+site_row = subset(cams_, cams_$site == site_name)
+# Extract lat and lon from site data
+lat_wgs = site_row$lat
+lng_wgs = site_row$lon
+# from wgs to sinusoidal
+pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
+lat_sin = pt_sinu@coords[2]
+lng_sin = pt_sinu@coords[1]
+# from wgs to web mercator
+pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+lat_merc = pt_merc@coords[2]
+lng_merc = pt_merc@coords[1]
+```
+
+Import the MODIS NDVI layer for this site
+```{r}
+# Read in NDVI raster brick to resample the MODIS landcover
+modis_ndvi_dir = paste0('../../www/site_data/', site_name, '/data_layers/ndvi/tera/')
+modis_ndvi_files = list.files(modis_ndvi_dir)
+this_modis_ndvi_file = paste0(modis_ndvi_dir, modis_ndvi_files[grep('MOD13Q1.006_250m_aid0001.nc', modis_ndvi_files)])
+ndvi_tera_brick  = raster::brick(this_modis_ndvi_file, varname='_250m_16_days_NDVI', crs=sinu_crs)
+ndvi_raster_t    = raster::subset(ndvi_tera_brick, 1)
+ndvi_raster_merc = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
+ndvi_r_m_c = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
+
+colors = c('red','green')
+at     = seq(0, maxValue(ndvi_r_m_c), length.out = 10)
+cb     = colorBin(palette = colors, bins = at, domain = at)
+
+leaflet('map') %>% addTiles() %>% addRasterImage(ndvi_r_m_c, colors = cb) %>% addLegend(pal = cb, values = at) %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+```
+
+Import the MODIS Landcover layer for this site
+```{r}
+# Read in MODIS landcover
+modis_lc_dir   = paste0('../../www/site_data/', site_name, '/data_layers/lc/')
+modis_lc_files = list.files(modis_lc_dir)
+this_modis_lc_file = paste0(modis_lc_dir, modis_lc_files[grep('MCD12Q1.006_500m_aid0001.nc', modis_lc_files)])
+# Read in MODIS landcover raster brick using ndvi to resample it
+lc_brick  = raster::brick(this_modis_lc_file, crs=sinu_crs) #ONAQ breaks here
+lc_raster = raster::subset(lc_brick, 1)
+lc_raster_ = raster::resample(x = lc_raster, y = ndvi_raster_t, crs = sinu_crs, method='ngb')
+lc_raster_merc = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t))
+lc_raster_merc_cr = crop_raster(lat_merc, lng_merc, lc_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
+lc_raster_merc_cr_c = build_pft_palette(lc_raster_merc_cr)
+
+leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_cr, colors = lc_raster_merc_cr_c$palette) %>% 
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+```
+
+
+Build 3 different scales of NDVI grid to use for analysis
+```{r}
+source('../../functions/geospatial.R')
+
+# Set colors and legend values
+colors = c('red','green')
+at     = seq(0, maxValue(ndvi_r_m_c), length.out = 10)
+cb     = colorBin(palette = colors, bins = at, domain = at)
+
+
+resolution = res(ndvi_r_m_c)[1]
+
+s_1      = .1
+e_1      = as(extent(lng_merc -s_1, lng_merc +s_1, lat_merc -s_1, lat_merc +s_1), 'SpatialPolygons')
+crs(e_1) =  merc_crs
+
+s_3      = resolution
+e_3      = as(extent(lng_merc -s_3, lng_merc +s_3, lat_merc -s_3, lat_merc +s_3), 'SpatialPolygons')
+crs(e_3) =  merc_crs
+
+s_5      = resolution *2
+e_5      = as(extent(lng_merc -s_5, lng_merc +s_5, lat_merc -s_5, lat_merc +s_5), 'SpatialPolygons')
+crs(e_5) =  merc_crs
+
+r_1by      = raster::crop(ndvi_r_m_c, e_1, snap='out')
+r_3by      = raster::crop(ndvi_r_m_c, e_3, snap='out')
+r_5by      = raster::crop(ndvi_r_m_c, e_5, snap='out')
+
+
+# Build Map (1x1)
+g_1by = build_raster_grid(r_1by, crs='merc')
+leaflet() %>% addTiles() %>% addRasterImage(r_1by, colors = cb) %>% addLegend(pal = cb, values = at) %>% addPolylines(data = g_1by) %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+
+# Build Map (3x3)
+g_3by = build_raster_grid(r_3by, crs='merc')
+leaflet() %>% addTiles() %>% addRasterImage(r_3by, colors = cb) %>% addLegend(pal = cb, values = at) %>% addPolylines(data = g_3by) %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+
+# Build Map (5x5)
+g_5by = build_raster_grid(r_5by, crs='merc')
+leaflet() %>% addTiles() %>% addRasterImage(r_5by, colors = cb) %>% addLegend(pal = cb, values = at) %>% addPolylines(data = g_5by) %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+```
+
+
+use the extents from above to create polygons
+```{r}
+p_1_merc = as(extent(r_1by), 'SpatialPolygons')
+crs(p_1_merc) = merc_crs
+p_3_merc = as(extent(r_3by), 'SpatialPolygons')
+crs(p_3_merc) = merc_crs
+p_5_merc = as(extent(r_5by), 'SpatialPolygons')
+crs(p_5_merc) = merc_crs
+
+# The WGS polygons.
+e_1_wgs = spTransform(p_1_merc, wgs_crs)
+e_3_wgs = spTransform(p_3_merc, wgs_crs)
+e_5_wgs = spTransform(p_5_merc, wgs_crs)
+# The Merc Polygons (will use to extract percent cover and heterogeneity)
+p_1_merc
+p_3_merc
+p_5_merc
+
+# 1x1 GRID display
+leaflet() %>% addTiles() %>% addPolylines(data = g_1by) %>% addPolylines(data = e_1_wgs) %>% addRasterImage(lc_raster_merc_cr, colors = lc_raster_merc_cr_c$palette) %>%
+  addLegend(labels = lc_raster_merc_cr_c$names, colors = lc_raster_merc_cr_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
+  setView(lat = lat_wgs, lng = lng_wgs, zoom = 17)
+
+# 3x3 GRID display
+leaflet() %>% addTiles() %>% addPolylines(data = g_3by) %>% addPolylines(data = e_3_wgs) %>% addRasterImage(lc_raster_merc_cr, colors = lc_raster_merc_cr_c$palette) %>%
+  addLegend(labels = lc_raster_merc_cr_c$names, colors = lc_raster_merc_cr_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
+  setView(lat = lat_wgs, lng = lng_wgs, zoom = 16)
+
+# 5x5 GRID display
+leaflet() %>% addTiles() %>% addPolylines(data = g_5by) %>% addPolylines(data = e_5_wgs) %>% addRasterImage(lc_raster_merc_cr, colors = lc_raster_merc_cr_c$palette) %>%
+  addLegend(labels = lc_raster_merc_cr_c$names, colors = lc_raster_merc_cr_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>% 
+  setView(lat = lat_wgs, lng = lng_wgs, zoom = 15)
+```
+
+
+
+Extract heterogeneity metrics under the shapefile (p_1_merc, p_3_merc, and p_5_merc)
+```{r}
+# Method to get 100% of the nlcd raster under the MODIS polygon 1x1
+p_1by_merc_cropped = raster::crop(lc_raster_merc_cr, p_1_merc, snap = 'out' )
+p_1by_merc_cropped_high_res   = raster::projectRaster(from = p_1by_merc_cropped, crs = merc_crs, method='ngb', res = res(p_1by_merc_cropped)/40.5)
+p_1by_merc_cropped_high_res_cr = raster::crop(p_1by_merc_cropped_high_res, p_1_merc, snap = 'in' )
+p_1by_merc_cropped_c = build_pft_palette(p_1by_merc_cropped_high_res_cr)
+# Method to get 100% of the nlcd raster under the MODIS polygon 3x3
+p_3by_merc_cropped = raster::crop(lc_raster_merc_cr, p_3_merc, snap = 'out' )
+p_3by_merc_cropped_high_res   = raster::projectRaster(from = p_3by_merc_cropped, crs = merc_crs, method='ngb', res = res(p_3by_merc_cropped)/40.5)
+p_3by_merc_cropped_high_res_cr = raster::crop(p_3by_merc_cropped_high_res, p_3_merc, snap = 'in' )
+p_3by_merc_cropped_c = build_pft_palette(p_3by_merc_cropped_high_res_cr)
+# Method to get 100% of the nlcd raster under the MODIS polygon 5x5
+p_5by_merc_cropped = raster::crop(lc_raster_merc_cr, p_5_merc, snap = 'out' )
+p_5by_merc_cropped_high_res   = raster::projectRaster(from = p_5by_merc_cropped, crs = merc_crs, method='ngb', res = res(p_5by_merc_cropped)/40.5)
+p_5by_merc_cropped_high_res_cr = raster::crop(p_5by_merc_cropped_high_res, p_5_merc, snap = 'in' )
+p_5by_merc_cropped_c = build_pft_palette(p_5by_merc_cropped_high_res_cr)
+
+# Map display for 1x1
+leaflet() %>% addTiles() %>% addPolylines(data = g_1by) %>% addPolylines(data = e_1_wgs) %>%
+  addRasterImage(p_1by_merc_cropped_high_res_cr, colors = p_1by_merc_cropped_c$palette) %>%
+  addLegend(labels = p_1by_merc_cropped_c$names, colors = p_1by_merc_cropped_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
+  setView(lat = lat_wgs, lng = lng_wgs, zoom = 15)
+
+# Map display for 3x3
+leaflet() %>% addTiles() %>% addPolylines(data = g_3by) %>% addPolylines(data = e_3_wgs) %>%
+  addRasterImage(p_3by_merc_cropped_high_res_cr, colors = p_3by_merc_cropped_c$palette) %>%
+  addLegend(labels = p_3by_merc_cropped_c$names, colors = p_3by_merc_cropped_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>%
+  setView(lat = lat_wgs, lng = lng_wgs, zoom = 15)
+
+# Map display for 5x5 
+leaflet() %>% addTiles() %>% addPolylines(data = g_5by) %>% addPolylines(data = e_5_wgs) %>% 
+  addRasterImage(p_5by_merc_cropped_high_res_cr, colors = p_5by_merc_cropped_c$palette) %>%
+  addLegend(labels = p_5by_merc_cropped_c$names, colors = p_5by_merc_cropped_c$colors, position = "bottomleft", opacity = .95, title = 'Landcover') %>%
+  addCircleMarkers(lat = lat_wgs, lng = lng_wgs, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name) %>% 
+  setView(lat = lat_wgs, lng = lng_wgs, zoom = 15)
+
+```
+
+
+
+Calculate heterogeneity metrics for the 3 different sized extents (1x1, 3x3, 5x5)
+```{r}
+data_df_at_extent_1 = as.data.frame(table(values(p_1by_merc_cropped_high_res_cr)), stringsAsFactors=FALSE) %>% 
+  mutate(Var1 = as.double(Var1)) %>%
+  left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
+  mutate(id = '1by1') %>% mutate(total_pixels = sum(Freq)) %>%
+  mutate(percent_cover = Freq/total_pixels) %>% 
+  mutate(heterogeneity = length(Var1))
+data_df_at_extent_3 = as.data.frame(table(values(p_3by_merc_cropped_high_res_cr)), stringsAsFactors=FALSE) %>% 
+  mutate(Var1 = as.double(Var1)) %>%
+  left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
+  mutate(id = '3by3') %>% mutate(total_pixels = sum(Freq)) %>%
+  mutate(percent_cover = Freq/total_pixels) %>% 
+  mutate(heterogeneity = length(Var1))
+# Sometimes it will fail here.. Not sure why??
+data_df_at_extent_5 = as.data.frame(table(values(p_5by_merc_cropped_high_res_cr)), stringsAsFactors=FALSE) %>% 
+  mutate(Var1 = as.double(Var1)) %>%
+  left_join(pft_df, by = c('Var1' = 'pft_key')) %>% 
+  mutate(id = '5by5') %>% mutate(total_pixels = sum(Freq)) %>%
+  mutate(percent_cover = Freq/total_pixels) %>% 
+  mutate(heterogeneity = length(Var1))
+
+
+modis_lc_df_at_extent_all = rbind(data_df_at_extent_5,data_df_at_extent_3,data_df_at_extent_1)
+```
+
+Plot the heterogeneity metrics 
+```{r}
+all_pfts = unique(modis_lc_df_at_extent_all$pft_abbreviated)
+all_pfts_expanded = unique(modis_lc_df_at_extent_all$pft_expanded)
+
+plot_data_1 = data.frame(pft_abbreviated = all_pfts, pft_expanded = all_pfts_expanded,
+  stringsAsFactors = FALSE) %>% left_join(data_df_at_extent_1)
+plot_data_3 = data.frame(pft_abbreviated = all_pfts, pft_expanded = all_pfts_expanded,
+  stringsAsFactors = FALSE) %>% left_join(data_df_at_extent_3)
+plot_data_5 = data.frame(pft_abbreviated = all_pfts, pft_expanded = all_pfts_expanded,
+  stringsAsFactors = FALSE) %>% left_join(data_df_at_extent_5)
+
+p = plot_ly(x = all_pfts, y = plot_data_1$percent_cover, type = 'bar', name = '1 x 1 Extent', 
+  marker = list(color = 'rgb(49,130,189)')) %>%
+  add_trace(y = plot_data_3$percent_cover, name = '3 x 3 Extent', marker = list(color = 'rgb(256,100,100)')) %>%
+  add_trace(y = plot_data_5$percent_cover, name = '5 x 5 Extent', marker = list(color = 'rgb(123,204,12)')) %>%
+  layout(xaxis = list(title = "Plant functional types", tickangle = -45),
+         yaxis = list(title = "Percentages"),
+         margin = list(b = 100),
+         barmode = 'group')
+p
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

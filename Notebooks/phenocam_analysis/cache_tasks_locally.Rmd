@@ -1,0 +1,231 @@
+---
+title: "Cache tasks locally"
+author: "K. Enns"
+date: "1/29/2020"
+output: html_document
+---
+
+## RUN GLOBAL.R IN MAIN DIRECTORY FIRST!
+
+Check for ndvi and landcover data in www/site_data/site_name/data_layers/ndvi/ndvi and lc.
+Check for nlcd landcover data in www/landsat_lc/site_name_landsat_lc.tif
+  - Build lists for sites without ndvi and MODIS landcover but that include NLCD
+Find which sites to use based on local cache / NLCD availability
+```{r}
+source('../../functions/geospatial.R')
+sites_with_nlcd    = c()
+sites_without_nlcd = c()
+for (this_site in cams_$site){
+  this_nlcd_file = paste0('../../www/landsat_lc/', this_site, '_landsat_lc.tif')
+    # If NLCD layer exists for site, add it to map
+  if (file.exists(this_nlcd_file)){
+    sites_with_nlcd = c(sites_with_nlcd, this_site)
+  } else{
+    sites_without_nlcd = c(sites_without_nlcd, this_site)
+  }
+}
+sites_with_modis_lc    = c()
+sites_without_modis_lc = c()
+sites_with_ndvi        = c()
+sites_without_ndvi     = c()
+# Loop through the phenocam sites
+for (this_site in sites_with_nlcd){
+  # Get site Data
+  # Extract nlcd file
+  this_nlcd_file = paste0('../../www/landsat_lc/', this_site, '_landsat_lc.tif')
+  # Extract modis NDVI file
+  modis_ndvi_dir = paste0('../../www/site_data/', this_site, '/data_layers/ndvi/tera/')
+  modis_ndvi_files = list.files(modis_ndvi_dir)
+  this_modis_ndvi_file = paste0(modis_ndvi_dir, modis_ndvi_files[grep('MOD13Q1.006_250m_aid0001.nc', modis_ndvi_files)])
+  # Extract modis LC file
+  modis_lc_dir   = paste0('../../www/site_data/', this_site, '/data_layers/lc/')
+  modis_lc_files = list.files(modis_lc_dir)
+  this_modis_lc_file = paste0(modis_lc_dir, modis_lc_files[grep('MCD12Q1.006_500m_aid0001.nc', modis_lc_files)])
+  
+  
+  # MODIS LC
+  if (length(modis_lc_files) == 0){
+    sites_without_modis_lc = c(sites_without_modis_lc, this_site)
+  }else {
+    if(file.exists(this_modis_lc_file)){
+      if (length(this_modis_lc_file) > 1){
+        print (paste0('This site has more than 1 file: ', this_modis_lc_file))
+      }
+      sites_with_modis_lc = c(sites_with_modis_lc, this_site)
+    }else{
+      sites_without_modis_lc = c(sites_without_modis_lc, this_site)
+    }
+  }
+  
+  # MODIS NDVI 
+  if (length(modis_ndvi_files) == 0){
+    sites_without_ndvi = c(sites_without_ndvi, this_site)
+  }else{
+    if(file.exists(this_modis_ndvi_file)){
+      sites_with_ndvi = c(sites_with_ndvi, this_site)
+    }else{
+      sites_without_ndvi = c(sites_without_ndvi, this_site)
+    }
+  }
+}
+print ('------------------ NLCD ------------------')
+print ('Sites That have no NLCD layer:')
+length(sites_without_nlcd)
+print ('Sites with NLCD layer:')
+length(sites_with_nlcd)
+print ('------------------ Sites with NLCD ------------------')
+print ('------------------ MODIS LC ------------------')
+print ('Sites That have no MODIS LC layer:')
+length(sites_without_modis_lc)
+print ('Sites with MODIS LC layer:')
+length(sites_with_modis_lc)
+print ('------------------ MODIS NDVI ------------------')
+print ('Sites That have no MDOIS NDVI layer:')
+length(sites_without_ndvi)
+print ('Sites with MODIS NDVI layer:')
+length(sites_with_ndvi)
+```
+
+
+Loop through the sites_without_modis_lc and download into the local cache
+-  Time estimate at 15 minutes to run
+```{r}
+cache_pc_sites_modis_lc = function(sites){
+  for (this_modis_lc_site in sites){
+    site_row = subset(cams_, cams_$site == this_modis_lc_site)
+    
+    # Set up directories to store data
+    file_path     = paste0('../../www/site_data/', this_modis_lc_site, '/data_layers/')
+    main          = '../../www/site_data'
+    main_site = paste0(main, '/', this_modis_lc_site)
+    lc_filepath        = paste0(file_path, 'lc/')
+    
+    # Build main path
+    if (!file.exists(main)){
+      dir.create(file.path(main))
+    }
+    # Build main_site path
+    if (!file.exists(main_site)){
+      dir.create(file.path(main_site))
+    }
+    # Build data_layers dir
+    if (!file.exists(file_path)){
+        dir.create(file.path(file_path))
+    }
+    # Build modis landcover path
+    if (!file.exists(lc_filepath)){
+      dir.create(file.path(lc_filepath))
+    }
+    # Download  landcover for this site
+    this_landcover_row = get_appeears_task(this_modis_lc_site, type = 'landcover')
+    lc_bundle_df = download_bundle_file(this_landcover_row$task_id, lc_filepath)
+  }
+}
+cache_pc_sites_modis_lc(sites_without_modis_lc)
+
+```
+
+### For 500 sites this is over 15 GB of data.. (note)
+Loop through the sites_without_ndvi and download into the local cache
+```{r}
+cache_pc_sites_modis_ndvi = function(sites){
+  for (this_ndvi_site in sites){
+    site_row = subset(cams_, cams_$site == this_ndvi_site)
+  
+    # Set up directories to store data
+    file_path     = paste0('../../www/site_data/', this_ndvi_site, '/data_layers/')
+    main          = '../../www/site_data'
+    ndvi_filepath      = paste0(file_path,'ndvi/')
+    ndvi_tera_filepath = paste0(ndvi_filepath, 'tera/')
+    main_site = paste0(main, '/', this_ndvi_site)
+    
+    # Build main path
+    if (!file.exists(main)){
+      dir.create(file.path(main))
+    }
+    # Build main_site path
+    if (!file.exists(main_site)){
+      dir.create(file.path(main_site))
+    }
+    # Build ndvi path
+    if (!file.exists(ndvi_filepath)){
+      dir.create(file.path(ndvi_filepath))
+    }
+    # Build data_layers dir
+    if (!file.exists(file_path)){
+        dir.create(file.path(file_path))
+    }
+    # Build ndvi tera path
+    if (!file.exists(ndvi_tera_filepath)){
+      dir.create(file.path(ndvi_tera_filepath))
+    }
+    # Download NDVI for this site 
+    ndvi_tera_row = get_appeears_task(this_ndvi_site, type = 'ndvi_tera')
+    ndvi_bundle_df_tera = download_bundle_file(ndvi_tera_row$task_id, ndvi_tera_filepath)
+  }
+}
+cache_pc_sites_modis_ndvi(sites_without_ndvi)
+```
+
+
+
+How to cache all of the nlcd site layers into applications
+Get lat/lon for phenocam sites, reproject to merc, crop, and save out raster
+# ```{r}
+# library(raster)
+# # Point to the nlcd 2016 raster .img file that you download from WSMR
+# NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+# sites = cams_$site
+# output_dir = '../www/landsat_lc'
+# 
+# for (cam_site in sites){
+#   # cam_site = 'NEON.D15.ONAQ.DP1.00033'
+#   print (cam_site)
+#   site_row = subset(cams_, cams_$site == cam_site)
+#   site_lat_wgs = site_row$lat
+#   site_lon_wgs = site_row$lon
+# 
+#   site_albs_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = alb_crs)
+#   site_lon_alb = site_albs_point@coords[[1]]
+#   site_lat_alb = site_albs_point@coords[[2]]
+# 
+#   site_sinu_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
+#   site_lon_sinu = site_sinu_point@coords[[1]]
+#   site_lat_sinu = site_sinu_point@coords[[2]]
+# 
+#   if (is.na(extract(NLCD_lc, site_albs_point)[1])){
+#     print (paste0(cam_site, ' does not have NLCD data because it is outside of the NLCD extent'))
+#   } else{
+#     site_merc_point = from_crs1_to_crs2_lon_lat(lon_ = site_lon_wgs, lat_ = site_lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+#     site_lon_merc = site_merc_point@coords[[1]]
+#     site_lat_merc = site_merc_point@coords[[2]]
+# 
+#     width  = 15000
+#     height = 15000
+# 
+#     e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons')
+# 
+#     crs(e) = alb_crs
+# 
+#     site_NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
+#     site_NLCD_lc_cropped_merc = projectRaster(site_NLCD_lc_cropped, crs=merc_crs, method='ngb')
+# 
+#     # Crop again in Merc
+#     width  = 10000
+#     height = 10000
+# 
+#     e2 = as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons')
+#     crs(e2) = merc_crs
+#     site_NLCD_lc_final_merc = raster::crop(site_NLCD_lc_cropped_merc, e2, snap='near')
+# 
+#     dir.create(output_dir)
+#     file_name  = paste0(cam_site, '_landsat_lc')
+#     output_file = paste0(output_dir, '/',file_name,'.tif')
+#     raster::writeRaster(site_NLCD_lc_final_merc, output_file, format='GTiff', overwrite=TRUE)
+#   }
+# }
+# ```
+
+
+
+
