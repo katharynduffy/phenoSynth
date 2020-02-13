@@ -5,13 +5,12 @@ date: "4/12/2019"
 output: html_document
 ---
 
+A notebook that shows the process to download NPN geospatial data from R.
 
 ```{r}
-devtools::install_github('usa-npn/rnpn')
-library(rnpn)
-library(leaflet)
-library(raster)
-library(sp)
+####################################################################################
+# GO RUN global.R for variables and libraries required in this RMD file
+####################################################################################
 ```
 
 
@@ -20,27 +19,62 @@ library(sp)
 layers = npn_get_layer_details()
 names(layers)
 layers
+names(layers)
 ```
 ```{r}
-average_leaf_prism_raster = npn_download_geospatial('si-x:arnoldred_leaf_prism', '1900-11-01')
-
+# A function we built in this package
+average_leaf_prism_raster = npn_download_geospatial_('si-x:average_leaf_prism', '2017-11-01')
+# Display on a leaflet map
 leaflet() %>% addTiles() %>% addRasterImage(average_leaf_prism_raster)
 
 
 ```
 
-
 ```{r}
-# build dates list
+download_npn_brick_ = function(out_dir = '/Users/Kenns/Downloads/test_npn/average_leaf_prism',
+                              out_file = '/Users/Kenns/Downloads/test_npn/average_leaf_prism_brick.nc',
+                              layer    = 'si-x:average_leaf_prism',
+                              number_of_years = 18){
+  dates = c()
+  files_ = c()
+  average_leaf_prism_brick = raster::brick()
+  for (x in c(1:number_of_years)){
+    year = 2001 + x - 1
+    date = paste0(as.character(year),'-12-31')
+    dates = c(dates, date)
+    file_ = paste0(out_dir, date)
+    files_ = c(files_, file_)
+    print (file_)
+    #4k Resolution <https://docs.google.com/document/d/1jDqeh8k30t0vEBAJu2ODiipaofLZ2PFgsaNzhhzz3xg/pub>
+    npn_download_geospatial(layer, date, output_path = file_)
+    this_date_raster = raster::raster(file_)
+    average_leaf_prism_brick = raster::addLayer(average_leaf_prism_brick, this_date_raster)
+  }
+  
+  #save out brick
+  npn_brick = raster::writeRaster(average_leaf_prism_brick, out_file, 
+                              format = 'CDF', overwrite=TRUE)
+  for (f in files_){
+    file.remove(f)
+  }
+  return (npn_brick)
+}
+npn_data = download_npn_brick()
+```
+
+Save out each layer from NPN for specific gridded product
+```{r}
 dates = c()
 files_ = c()
 average_leaf_prism_brick = raster::brick()
-for (x in c(1:37)){
-  year = 1981 + x - 1
+for (x in c(1:18)){
+  year = 2001 + x - 1
   date = paste0(as.character(year),'-12-31')
   dates = c(dates, date)
-  file_ = paste0('/Users/Kenns/Downloads/test_npn/average_leaf_prism', date)
+  out_file = '/Users/Kenns/Downloads/test_npn/average_leaf_prism'
+  file_ = paste0(out_file, date)
   files_ = c(files_, file_)
+  #4k Resolution <https://docs.google.com/document/d/1jDqeh8k30t0vEBAJu2ODiipaofLZ2PFgsaNzhhzz3xg/pub>
   npn_download_geospatial('si-x:average_leaf_prism', date, output_path = file_)
   this_date_raster = raster::raster(file_)
   average_leaf_prism_brick = raster::addLayer(average_leaf_prism_brick, this_date_raster)
@@ -51,7 +85,7 @@ average_leaf_prism_brick
 dim(average_leaf_prism_brick)
 
 for (f in files_){
-  # file.remove(f)
+  file.remove(f)
   print (f)
 }
 
