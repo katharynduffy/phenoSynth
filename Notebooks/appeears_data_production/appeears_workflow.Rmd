@@ -6,6 +6,20 @@ output: html_document
 ---
 
 
+Get token for AppEEARS
+```{r}
+####################################################################################
+# GO RUN global.R for variables and libraries required in this RMD file
+####################################################################################
+username = 'earth_data_username'
+password = .rs.askForPassword('Password')
+
+token_response = AppEEARS4R::appeears_start_session(username,password)
+rm(password)
+token         = paste("Bearer", token_response$token)
+
+```
+
 
 ## Get Products list (33 is MOD13Q1, and 4 is MCD12Q1)
 
@@ -53,7 +67,6 @@ task <- list(task_type       = task_type_,
              projection_name = projection_name_)
 
 # submit the task request
-token <- paste("Bearer", content(token_response)$token)
 response <- POST("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", query = task, add_headers(Authorization = token))
 response
 ```

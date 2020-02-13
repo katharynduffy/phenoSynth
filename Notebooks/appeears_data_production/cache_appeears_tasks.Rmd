@@ -13,11 +13,7 @@ Get token for AppEEARS
 # GO RUN global.R for variables and libraries required in this RMD file
 ####################################################################################
 
-# devtools::install_github("ennsk/AppEEARS4R")
-library(jsonlite)
-library(AppEEARS4R)
-library(httr)
-username = 'kenns'
+username = 'earth_data_username'
 password = .rs.askForPassword('Password')
 
 token_response = AppEEARS4R::appeears_start_session(username,password)
