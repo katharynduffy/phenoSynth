@@ -12,7 +12,7 @@ Get token for AppEEARS
 ####################################################################################
 # GO RUN global.R for variables and libraries required in this RMD file
 ####################################################################################
-username = 'earth_data_username'
+username = 'pheno.synth'
 password = .rs.askForPassword('Password')
 
 token_response = AppEEARS4R::appeears_start_session(username,password)

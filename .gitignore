@@ -28,3 +28,5 @@ testmEVI.rds
 binder_docker/
 phenocam_data/
 notebooks/phenocam_heterogeneity/*.csv
+appears_cache_tasks.Rmd
+appeears_cache_tasks.Rmd
