@@ -24,7 +24,7 @@ cameras=get_phenos()
 ```
 ```{r}
 site <-'ibp' # phenocam site name
-Years <- 2013:2019 # vector of years to make the animation
+Years <- 2019 # vector of years to make the animation
 vegType <- 'GR' # vegetation type DB = deciduous broadloeaf
 roiID <- 1000  # ROI ID 
 ```
