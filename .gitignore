@@ -4,7 +4,8 @@
 .Ruserdata
 .Rapp.history
 .DS_Store
-
+ibp/
+ffmpeg/
 rsconnect/
 tokens/
 tokens.R
