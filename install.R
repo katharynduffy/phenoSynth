@@ -1,8 +1,8 @@
 # Packages you will need for this shiny app
-packages = c('shiny','shinyjs','leaflet','leaflet.extras','httr','tidyr','readr','scales','lattice','jsonlite', 
+packages = c('shiny','shinyjs','leaflet','leaflet.extras','httr','tidyr','readr','scales','lattice','jsonlite',
              'DT', 'shinyBS', 'sp', 'ncdf4', 'rvest', 'ggthemes', 'httr', 'shinycssloaders', 'changepoint', 'rnpn',
              'data.table', 'grDevices', 'plotly' , 'knitr', 'kableExtra', 'rgdal', 'rjson', 'RCurl', 'phenocamapi',
-             'birk', 'devtools', 'AppEEARS4R')
+             'birk', 'devtools', 'AppEEARS4R', 'birk')
 
 
 # Identify new (not installed) packages
