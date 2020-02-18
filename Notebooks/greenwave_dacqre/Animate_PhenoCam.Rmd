@@ -63,7 +63,7 @@ gcc_file_tbl[,midday_dest:=paste0(site, '/', basename(midday_url))]
 gcc_file_tbl <- na.omit(gcc_file_tbl) # removing the NA values
 
 
-gcc_file_tbl <- gcc_file_tbl[month(YYYYMMDD)==5]
+#gcc_file_tbl <- gcc_file_tbl[month(YYYYMMDD)==5]
 
 ```
 Download all the selected midday images
