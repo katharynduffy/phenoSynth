@@ -1,6 +1,282 @@
 ---
-title: "submit_appeears_tasks.Rmd"
+title: "site_point_extraction.Rmd"
 author: "K. Enns"
 date: "2/18/2020"
 output: html_document
 ---
+
+#
+
+Run Global in main directory of project
+```{r}
+#######################################################
+# Be sure to run global.R before running this script
+#######################################################
+```
+
+Read in CSV
+```{r}
+jornada_sites_df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)
+jornada_sites_df
+```
+
+Subset cams_ dataframe using the site names from the jornada_sites.csv
+```{r}
+sites_ = jornada_sites_df$Name
+jorn_cams_df = subset(cams_, cams_$site %in% sites_)
+jorn_cams_df
+```
+
+Grab the modis pixel that the phenocam site lives
+```{r}
+site_name = sites_[sample(1:length(sites_), 1)]
+print (site_name)
+
+site_row = subset(jorn_cams_df, jorn_cams_df$site == site_name)
+
+# Extract lat and lon from site data
+site_lat = site_row$lat
+site_lon = site_row$lon
+
+###############################################################################################################################
+# Note: Be sure to run app and go to this site and enter analyzer mode.  This will download the MODIS NDVI layer we can use to 
+#    calculate the pixel boundaries for analysis
+###############################################################################################################################
+
+ndvi_dir   = paste0('../../www/site_data/',site_name,'/data_layers/ndvi/tera/')
+ndvi_files = list.files(ndvi_dir)
+ndvi_tera_name   = ndvi_files[grepl('MOD13Q1.006_250m_aid0001.nc', ndvi_files)]
+ndvi_tera_path   = paste0(ndvi_dir, ndvi_tera_name)
+ndvi_tera_brick  = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI', crs=sinu_crs)
+ndvi_raster_t    = raster::subset(ndvi_tera_brick, 1)
+ndvi_raster_merc = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
+
+# Building Landcover layer and color pallette for specific pft composition in clipped raster
+lat_wgs = site_lat
+lng_wgs = site_lon
+# from wgs to sinusoidal
+pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
+lat_sin = pt_sinu@coords[2]
+lng_sin = pt_sinu@coords[1]
+# from wgs to web mercator
+pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+lat_merc = pt_merc@coords[2]
+lng_merc = pt_merc@coords[1]
+
+ndvi_r_m_c = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
+ndvi_r_m_c
+```
+
+Display NDVI raster and site
+```{r}
+# Set colors and legend values
+colors = c('red','green')
+at     = seq(0, maxValue(ndvi_r_m_c), length.out = 10)
+cb     = colorBin(palette = colors, bins = at, domain = at)
+# Build map
+leaflet('map') %>% addTiles() %>% addRasterImage(ndvi_r_m_c, colors = cb) %>% addLegend(pal = cb, values = at) %>%
+  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+```
+
+
+Build 5x5 grid of NDVI to use for analysis
+```{r}
+source('../../functions/geospatial.R')
+
+# Set colors and legend values
+colors = c('red','green')
+at     = seq(0, maxValue(ndvi_raster_merc), length.out = 10)
+cb     = colorBin(palette = colors, bins = at, domain = at)
+
+resolution = res(ndvi_raster_merc)[1]
+
+s_5      = resolution *2
+e_5      = as(extent(lng_merc -s_5, lng_merc +s_5, lat_merc -s_5, lat_merc +s_5), 'SpatialPolygons')
+crs(e_5) =  merc_crs
+
+r_5by      = raster::crop(ndvi_raster_merc, e_5, snap='out')
+
+
+
+
+# Build Map (5x5)
+g_5by = build_raster_grid(r_5by, crs='merc')
+leaflet() %>% addTiles() %>% addRasterImage(r_5by, colors = cb) %>% addLegend(pal = cb, values = at) %>% addPolylines(data = g_5by) %>%
+  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 5, color = 'black', weight=2, opacity = 1, label = site_name)
+```
+
+Extract all the pixel center points and create a dataframe with id/lat/lng 
+```{r}
+# Values needed to calculate center pixels to use on analysis of netcdf data
+r_         = r_5by
+xmin       = xmin(extent(r_))
+xmax       = xmax(extent(r_))
+ymin       = ymin(extent(r_))
+ymax       = ymax(extent(r_))
+nrows      = nrow(r_)
+ncols      = ncol(r_)
+resolution = res(r_)[1]
+
+lngs = c()
+lats = c()
+lng_start = xmin + .5*(resolution)
+lat_start = ymax + .5*(resolution)
+for (row in c(1:nrows)){
+  for (col in c(1:ncols)){
+    lng = lng_start + (resolution)*(col-1)
+    lat = lat_start - (resolution)*(row)
+    lngs = c(lngs,lng)
+    lats = c(lats,lat)
+  }
+}
+pixel_ids = c(1:(ncols*nrows))
+all_site_pixels_df = data.frame(pixel_id=pixel_ids, lat = lats, lng = lngs, site='acadia')
+all_site_pixels_df
+
+pts_wgs = from_crs1_to_crs2_lon_lat(lon_ = all_site_pixels_df$lng, lat_ = all_site_pixels_df$lat, from_crs = merc_crs, to_crs = wgs_crs)
+lats_wgs = pts_wgs@coords[,2]
+lngs_wgs = pts_wgs@coords[,1]
+
+```
+
+display the centroids of the grid
+```{r}
+leaflet() %>% addTiles() %>% addPolylines(data = g_5by) %>%
+  addCircleMarkers(lat = site_lat, lng = site_lon, radius = 7, color = 'red', weight=3, opacity = 1, label = site_name) %>%
+   addCircleMarkers(lat = lats_wgs, lng = lngs_wgs, radius = 3, color = 'grey', weight=2, opacity =1)
+```
+
+
+create the dataframe with sitename and centroids to give to CSP team (use case 2)
+```{r}
+site_name 
+data.frame(site = rep(site_name, length(lats_wgs)), latitude = lats_wgs, longitude = lngs_wgs)
+```
+
+# Run all the above code in one chunk
+```{r}
+jornada_sites_df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)
+
+sites_ = jornada_sites_df$Name
+jorn_cams_df = subset(cams_, cams_$site %in% sites_)
+
+final_jorns_df = data.frame(stringsAsFactors = FALSE)
+for (site_name in sites_){
+  print (site_name)
+  site_row = subset(jorn_cams_df, jorn_cams_df$site == site_name)
+  
+  # Extract lat and lon from site data
+  site_lat = site_row$lat
+  site_lon = site_row$lon
+  
+  ###############################################################################################################################
+  # Note: Be sure to run app and go to this site and enter analyzer mode.  This will download the MODIS NDVI layer we can use to 
+  #    calculate the pixel boundaries for analysis
+  ###############################################################################################################################
+  
+  ndvi_dir   = paste0('../../www/site_data/',site_name,'/data_layers/ndvi/tera/')
+  ndvi_files = list.files(ndvi_dir)
+  ndvi_tera_name   = ndvi_files[grepl('MOD13Q1.006_250m_aid0001.nc', ndvi_files)]
+  ndvi_tera_path   = paste0(ndvi_dir, ndvi_tera_name)
+  ndvi_tera_brick  = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI', crs=sinu_crs)
+  ndvi_raster_t    = raster::subset(ndvi_tera_brick, 1)
+  ndvi_raster_merc = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
+  
+  # Building Landcover layer and color pallette for specific pft composition in clipped raster
+  lat_wgs = site_lat
+  lng_wgs = site_lon
+  # from wgs to sinusoidal
+  pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
+  lat_sin = pt_sinu@coords[2]
+  lng_sin = pt_sinu@coords[1]
+  # from wgs to web mercator
+  pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+  lat_merc = pt_merc@coords[2]
+  lng_merc = pt_merc@coords[1]
+  
+  ndvi_r_m_c = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 10000, width = 10000, crs_str = merc_crs)
+  
+  # Set colors and legend values
+  colors = c('red','green')
+  at     = seq(0, maxValue(ndvi_r_m_c), length.out = 10)
+  cb     = colorBin(palette = colors, bins = at, domain = at)
+  
+  source('../../functions/geospatial.R')
+  
+  # Set colors and legend values
+  colors = c('red','green')
+  at     = seq(0, maxValue(ndvi_raster_merc), length.out = 10)
+  cb     = colorBin(palette = colors, bins = at, domain = at)
+  
+  resolution = res(ndvi_raster_merc)[1]
+  
+  s_5      = resolution *2
+  e_5      = as(extent(lng_merc -s_5, lng_merc +s_5, lat_merc -s_5, lat_merc +s_5), 'SpatialPolygons')
+  crs(e_5) =  merc_crs
+  
+  r_5by      = raster::crop(ndvi_raster_merc, e_5, snap='out')
+  g_5by = build_raster_grid(r_5by, crs='merc')
+  # Values needed to calculate center pixels to use on analysis of netcdf data
+  r_         = r_5by
+  xmin       = xmin(extent(r_))
+  xmax       = xmax(extent(r_))
+  ymin       = ymin(extent(r_))
+  ymax       = ymax(extent(r_))
+  nrows      = nrow(r_)
+  ncols      = ncol(r_)
+  resolution = res(r_)[1]
+  
+  lngs = c()
+  lats = c()
+  lng_start = xmin + .5*(resolution)
+  lat_start = ymax + .5*(resolution)
+  for (row in c(1:nrows)){
+    for (col in c(1:ncols)){
+      lng = lng_start + (resolution)*(col-1)
+      lat = lat_start - (resolution)*(row)
+      lngs = c(lngs,lng)
+      lats = c(lats,lat)
+    }
+  }
+  pixel_ids = c(1:(ncols*nrows))
+  all_site_pixels_df = data.frame(pixel_id=pixel_ids, lat = lats, lng = lngs, site='acadia')
+  all_site_pixels_df
+  
+  pts_wgs = from_crs1_to_crs2_lon_lat(lon_ = all_site_pixels_df$lng, lat_ = all_site_pixels_df$lat, from_crs = merc_crs, to_crs = wgs_crs)
+  lats_wgs = pts_wgs@coords[,2]
+  lngs_wgs = pts_wgs@coords[,1]
+  this_site_df = data.frame(site = rep(site_name, length(lats_wgs)), latitude = lats_wgs, longitude = lngs_wgs)
+  
+  if (length(final_jorns_df)[1] == 0){
+    final_jorns_df = this_site_df
+  }else{
+    final_jorns_df = rbind(final_jorns_df, this_site_df)
+  }
+  jorn_ls = leaflet() %>% addTiles() %>% addPolylines(data = g_5by) %>%
+    addCircleMarkers(lat = site_lat, lng = site_lon, radius = 7, color = 'red', weight=3, opacity = 1, label = site_name) %>%
+     addCircleMarkers(lat = lats_wgs, lng = lngs_wgs, radius = 3, color = 'grey', weight=2, opacity =1) %>%
+      setView(lat = site_lat, lng = site_lon, zoom = 14)
+  
+  print (jorn_ls)
+}
+```
+
+display dataframe
+```{r}
+final_jorns_df
+write.csv(final_jorns_df, 'jornada_site_centroids.csv', row.names = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

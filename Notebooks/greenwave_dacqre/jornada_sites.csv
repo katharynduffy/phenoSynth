@@ -1,0 +1,11 @@
+Name,Lat,Lon,Elevation,Description,Group,Dominant Species,Primary Veg Type,Secondary Veg Type,MAT (daymet),MAP (daymet),Koeppen Geiger Climate Class,EcoRegion,LandCover IGBP,Phenocam start date,NPN for grasses?,NPN for shrubs?,
+ibp,32.589,-106.847,1325,"Jornada Experimental Range, New Mexico",LTAR,"Bouteloua eriopoda, Prosopis glandulosa, Sporobolus spp.",GR,SH,15.85,272,BWk,10,7,2013-05-10,Yes,Yes,"NPN data, high grass cover"
+jerbajada,32.57992,-106.6338,1402,"Jornada Experimental Range, New Mexico",LTAR,Larrea tridentada,SH,NA,15.55,340,BWk,10,7,2014-04-21,,,NPN data
+jergrassland,32.5833,-106.8333,1331,Black grama grassland at Jornada Experimental Range,LTAR ARS USDA,Bouteloua eriopoda,GR,SH,15.9,272,BWk,10,7,2019-02-18,,,
+jernort,32.619,-106.788,1328,"Jornada Experimental Range, New Mexico",LTAR,Prosopis glandulosa,SH,NA,15.9,272,BWk,10,7,2014-03-04,,,bare interspaces
+jernovel,32.6335,-106.8334,1324,Grass-recovered shrubland on Jornada Experimental Range,LTAR ARS USDA,Prosopis glandulosa,SH,GR,15.85,270,BWk,10,7,2019-02-13,,,
+jernwern,32.6271,-106.7387,1325,"National Wind Erosion Research Network site, Jornada Experimental Range, New Mexico",LTAR,Prosopis glandulosa; Sporobolus R.; Pleuraphis mutica; Bouteloua eriopoda; Scleropogon brevifolius,SH,GR,15.9,278,BWk,10,7,2017-11-06,,,
+jersand,32.515,-106.798,1363,"Jornada Experimental Range, New Mexico",PhenoCam,Larrea tridentata,SH,,15.25,337,BWk,10,7,2014-02-28,,,
+jershrubland,32.6502,-106.8334,1328,Honey mesquite shrubland on Jornada Experimental Range,LTAR ARS USDA,Prosopis glandulosa,SH,NV,15.85,269,BWk,10,7,2019-02-13,,,
+NEON.D14.JORN.DP1.00033,32.59068,-106.8425,1321,"NEON Site - D14 (Desert Southwest) Jornada LTER, New Mexico - top-of-tower camera",NEON LTAR LTER AMERIFLUX,"Yucca elata, Bouteloua eriopoda, Prosopis glandulosa",GR,SH,15.85,272,BWk,10,7,2017-02-24,2015-10-3,2015-10-3,
+NEON.D14.JORN.DP1.00042,32.59068,-106.8425,1321,"NEON Site - D14 (Desert Southwest) Jornada LTER, New Mexico - mid-tower camera",NEON LTAR LTER AMERIFLUX,"Yucca elata, Bouteloua eriopoda, Prosopis glandulosa",GR,SH,15.85,272,BWk,10,7,2017-02-24,2015-10-3,2015-10-3,
