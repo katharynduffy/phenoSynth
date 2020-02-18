@@ -245,7 +245,7 @@ for (site_name in sites_){
   pts_wgs = from_crs1_to_crs2_lon_lat(lon_ = all_site_pixels_df$lng, lat_ = all_site_pixels_df$lat, from_crs = merc_crs, to_crs = wgs_crs)
   lats_wgs = pts_wgs@coords[,2]
   lngs_wgs = pts_wgs@coords[,1]
-  this_site_df = data.frame(site = rep(site_name, length(lats_wgs)), latitude = lats_wgs, longitude = lngs_wgs)
+  this_site_df = data.frame(site = rep(site_name, length(lats_wgs)), latitude = lats_wgs, longitude = lngs_wgs, stringsAsFactors = FALSE)
   
   if (length(final_jorns_df)[1] == 0){
     final_jorns_df = this_site_df
