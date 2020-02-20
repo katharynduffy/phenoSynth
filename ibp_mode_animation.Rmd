@@ -1,0 +1,65 @@
+---
+title: "Bi-modal vs. Non Animation"
+author: "K Duffy"
+date: "2/18/2020"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(phenocamapi)
+library(lubridate)
+library(jpeg)
+```
+
+Extracting a list of midday images (only one image a day) can be useful. 
+```{r midday-list, fig.height=5, fig.width=8, message=FALSE}
+# obtaining midday_images for HARV
+PC_middays <- get_midday_list('ibp')
+# see the first few rows
+head(PC_middays)
+```
+
+Now we have a list of all the midday images from this Phenocam. Let's download
+them and plot 
+```{r midday-download, fig.height=5, fig.width=8}
+# download a file
+destfile <- tempfile(fileext = '.jpg')
+# download only the first available file
+# modify the `[1]` to download other images
+download.file(PC_middays[1], destfile = destfile, mode = 'wb')
+# plot the image
+img <- try(readJPEG(destfile))
+if(class(img)!='try-error'){
+  par(mar= c(0,0,0,0))
+  plot(0:1,0:1, type='n', axes= FALSE, xlab= '', ylab = '')
+  rasterImage(img, 0, 0, 1, 1)
+}
+```
+
+```{r midday-time-range, fig.height=6, fig.width=8, message=FALSE, eval=TRUE}
+# open a temporary directory
+tmp_dir <- '/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/Unimodal_ibp'
+# download a subset. Example NEON.D01.HARV.DP1.00033 2017
+download_midday_images(site = 'ibp', # which site
+                       y = 2016, # which year(s)
+                       months = 6:8, # which month(s)
+                       days = 1:30, # which days on month(s)
+                       download_dir = tmp_dir) # where on your computer
+# list of downloaded files
+PC_middays_path <- dir(tmp_dir, pattern = 'ibp*', full.names = TRUE)
+head(PC_middays_path)
+```
+We can demonstrate the seasonality of ibp observed from the camera. (Note
+this code may take a while to run through the loop).
+```{r plot-monthly-forest, fig.height=6, fig.width=8, message=FALSE, eval=TRUE}
+n <- length(PC_middays_path)
+par(mar= c(0,0,0,0), mfrow=c(10,9), oma=c(0,0,3,0))
+for(i in 1:n){
+  img <- readJPEG(PC_middays_path[i])
+  plot(0:1,0:1, type='n', axes= FALSE, xlab= '', ylab = '')
+  rasterImage(img, 0, 0, 1, 1)
+  mtext(month.name[i], line = -2)
+}
+mtext('Seasonal variation of at ibp', font = 2, outer = TRUE)
+```
