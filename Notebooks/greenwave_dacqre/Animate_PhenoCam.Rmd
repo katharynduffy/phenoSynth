@@ -24,7 +24,7 @@ cameras=get_phenos()
 ```
 ```{r}
 site <-'ibp' # phenocam site name
-Years <- 2019 # vector of years to make the animation
+Years <- 2017 # vector of years to make the animation
 vegType <- 'GR' # vegetation type DB = deciduous broadloeaf
 roiID <- 1000  # ROI ID 
 ```
@@ -92,7 +92,7 @@ show_midday <- function(i){
   
   img <- readJPEG(gcc_file_tbl$midday_dest[i])
   rasterImage(img, 0, 0, 1, 1)
-  mtext('Greenup Seasonality at Duke Forest', col = '#51fddc')
+  mtext('Greenup Seasonality at IBP', col = '#51fddc')
   
   par(fig = c(0,1, 0, 0.3), new = T, mar=c(2,2,0,0))  
   plot(gcc_file_tbl$YYYYMMDD[1:i], 
@@ -136,5 +136,6 @@ saveVideo(interval = 0.5, # animation interval in seconds
             show_midday(i)
           })
 ```
+
 
 if FFmpeg is cranky or hard, you could always use some software like iMovie etc to generate an .mp4.

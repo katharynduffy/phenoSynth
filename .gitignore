@@ -37,3 +37,5 @@ Under_development_Kyle
 Notebooks/phenocam_analysis/*.csv
 Notebooks/sink.R
 Notebooks/sink.Rmd
+*.mp4
+Unimodal_ibp/
