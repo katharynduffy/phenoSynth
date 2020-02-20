@@ -1,0 +1,160 @@
+---
+title: "leaflet_paper_fig.Rmd"
+author: "K. Enns"
+date: "2/20/2020"
+output: html_document
+---
+
+
+Extract the sites
+```{r}
+####################################################################################
+# GO RUN global.R for variables and libraries required in this RMD file
+####################################################################################
+sites_df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)[1:9,] # Removing one of the NEON.d14.JORN.DP1 sites
+paper_sites = sites_df$Name
+```
+
+Crop nlcd to the sites
+```{r}
+# Download the NLCD 2016 CON"US landcover layers from online"
+library(raster)
+NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+landsat_atts = NLCD_lc@data@attributes
+# raster::plot(NLCD_lc)
+```
+
+```{r}
+width = 50000
+height = 50000
+
+e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons')
+
+crs(e) = alb_crs
+
+site_NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
+site_NLCD_lc_cropped_merc = projectRaster(site_NLCD_lc_cropped, crs=merc_crs, method='ngb')
+
+width = 25000
+height = 25000
+
+e2 = as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons')
+crs(e2) = merc_crs
+site_NLCD_lc_final_merc = raster::crop(site_NLCD_lc_cropped_merc, e2, snap='near')
+
+file_name  = 'paper_landsat_lc.tif'
+raster::writeRaster(site_NLCD_lc_final_merc, file_name, format='GTiff', overwrite=TRUE)
+
+test_merc = raster::raster(file_name)
+```
+
+
+# The leaflet map we will be using for the figure
+```{r}
+test_raster = test_merc
+
+landsat_lc = Landsat_Landcover %>% 
+  mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 3, NA)) %>%
+  mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 2, NA)) %>% 
+  mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 7, NA))
+# create a landsat to modis lookup (so that no landsat values are left out)
+landsat_lc_lookup = read.csv('../../www/landsat_lc/nlcd_key.csv') %>% 
+  dplyr::select(ID,NLCD.Land.Cover.Class) %>% left_join(landsat_lc, by = c('ID' = 'Landsat.Class')) %>%
+  mutate(MODIS.Class = replace(MODIS.Class, ID == 12, NA)) %>%
+  left_join(pft_df, by = c('MODIS.Class' = 'pft_key'))
+        
+
+# Build crosswalk matrix for reclassify function (rcl)
+from_values = landsat_lc_lookup$ID
+becomes_values   = landsat_lc_lookup$MODIS.Class
+
+# Build matrix to use in reclassify function
+m = matrix(ncol = 2, nrow = length(from_values))
+m[,1] = from_values
+m[,2] = becomes_values
+
+# reclassified nlcd layer to match modis values
+rc_nlcd = reclassify(test_raster, m)
+# Color palette for both nlcd and modis landcover
+rc_nlcd_c = build_pft_palette(rc_nlcd)
+
+  
+# Only colors found in the Landsat nlcd Layer
+leaflet() %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
+  addLegend(labels = rc_nlcd_c$names, colors = rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>%
+  addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, label=c('A','B','C','D','E','F','G','H','I'),
+  radius = 1, color = 'rgb(0,0,0,0)', weight=2, opacity = 1, labelOptions = labelOptions(noHide = T,textOnly = TRUE, 
+    direction = 'bottom',
+    style = list(
+        "color" = "black",
+        "font-style" = "bold",
+        "font-size" = "36px",
+        "border" = '0px',
+        'box-shadow'='0px',
+        "background" = 'rgb(0,0,0,0)'
+      ))) %>% addScaleBar() %>% 
+            addMiniMap(tiles = 'Esri',
+             toggleDisplay = F,
+             zoomLevelFixed = 5,
+              minimized = FALSE, width = 200, height = 200)
+#test
+```
+
+
+# Leaflet map we won't be using but nice to have
+```{r}
+pallete_ = rainbow(length(paper_sites))
+pallete_ =  colorRampPalette(c('blue', 'red','green'))(length(paper_sites))
+
+m = leaflet() %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
+  addLegend(labels = rc_nlcd_c$names, colors = rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>%
+  addLegend(labels = sites_df$Name, colors = pallete_, position = "bottomright", opacity = .95, title = 'Phenocam Sites')
+
+count = 0
+for (p_site in paper_sites){
+  count = count + 1
+  this_color =  pallete_[count]
+  this_row = subset(sites_df, sites_df$Name == p_site)
+    m = m %>% addCircleMarkers(lat=this_row$Lat, lng = this_row$Lon, label= this_row$Name, color = this_color,
+        radius = 8, weight=3, opacity = 1, fillColor = this_color, fillOpacity = .6) 
+}
+m = m %>% addScaleBar() %>% 
+            addMiniMap(tiles = 'Esri',
+             toggleDisplay = F,
+             zoomLevelFixed = 2.5,
+              minimized = FALSE, width = 200, height = 200)
+m
+#test
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
