@@ -180,61 +180,40 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                     br(),
                     dataTableOutput('plotTable')
            ),
-           tabPanel('AppEEARS',
-             
-             hidden(actionButton('appeearsLogout', 'Logout')),
-             hidden(actionButton('appeearsLogin', 'Login')),
-             div( id = 'appeearsTab', 
-               h1("PhenoSynth's AppEEARS Data Center"),
-               br(),
-               # sidebarLayout(
-                 # sidebarPanel(
-                 #   conditionalPanel(
-                 #     'input.appeearsPanelPhenoSynth === "diamonds"',
-                 #     checkboxGroupInput("show_vars", "Columns in diamonds to show:",
-                 #       names(diamonds), selected = names(diamonds))
-                 #   ),
-                 #   conditionalPanel(
-                 #     'input.appeearsPanelPhenoSynth === "mtcars"',
-                 #     helpText("Click the column header to sort a column.")
-                 #   ),
-                 #   conditionalPanel(
-                 #     'input.appeearsPanelPhenoSynth === "iris"',
-                 #     helpText("Display 5 records by default.")
-                 #   )
-                 # ),
-                 mainPanel(
-                   hidden(absolutePanel(id = 'appeearsTools', class = 'panel panel-default', 
-                     draggable = TRUE,  top = -75, left = 'auto', right = '35%' , bottom = 'auto',
-                     width = 400, height = 'auto', style="z-index:500;",
-                     withBusyIndicatorUI(actionButton('pullAppeearsTasks', 'View AppEEARS Tasks', class='btn-primary')),
-                     # selectInput('sitesCached', 'Sites Cached in AppEEARS', multiple = TRUE, selected = cams_$site[1], cams_$site),
-                     # selectInput('camsWithRois', 'Cam Sites with ROIS', multiple = TRUE, selected = appeears_tasks_ndvi_tera$site_name[1], appeears_tasks_ndvi_tera$site_name),
-                     selectInput('siteDifference', 'Difference between ROIS and AppEEARS tasks', multiple = TRUE, choices=''),
-                     actionButton('submitTasks', 'Submit Tasks for selected'),
-                     textInput('submitionsLeft', 'Submitions left', value = 100)
-                     )),
-                   tabsetPanel(
-                     id = 'appeearsPanelPhenoSynth',
-                     tabPanel("NDVI TERA", DT::dataTableOutput("appeearsTable1")),
-                     tabPanel("NDVI AQUA", DT::dataTableOutput("appeearsTable2")),
-                     tabPanel("EVI TERA", DT::dataTableOutput("appeearsTable3")),
-                     tabPanel("EVI AQUA", DT::dataTableOutput("appeearsTable4")),
-                     tabPanel("MODIS Landcover", DT::dataTableOutput("appeearsTable5")),
-                     tabPanel("MODIS Transition Dates", DT::dataTableOutput("appeearsTable6"))
-                   ),
-                   # hidden(
-                     # tabsetPanel(
-                     #   id = 'appeearsPanelCustom'
-                     # )),
-                     br(),
-                     hidden(div(id = 'myTasks',
-                       h2('My AppEEARS Tasks'),
-                       br(),
-                       tabPanel("All Tasks", DT::dataTableOutput("appeearsTable7"))
-                     ))
-               # )
-           ))),
+                   
+           # tabPanel('AppEEARS',
+           #   hidden(actionButton('appeearsLogout', 'Logout')),
+           #   hidden(actionButton('appeearsLogin', 'Login')),
+           #   div( id = 'appeearsTab', 
+           #     h1("PhenoSynth's AppEEARS Data Center"),
+           #     br(),
+           #       mainPanel(
+           #         hidden(absolutePanel(id = 'appeearsTools', class = 'panel panel-default', 
+           #           draggable = TRUE,  top = -75, left = 'auto', right = '35%' , bottom = 'auto',
+           #           width = 400, height = 'auto', style="z-index:500;",
+           #           withBusyIndicatorUI(actionButton('pullAppeearsTasks', 'View AppEEARS Tasks', class='btn-primary')),
+           #           # selectInput('sitesCached', 'Sites Cached in AppEEARS', multiple = TRUE, selected = cams_$site[1], cams_$site),
+           #           # selectInput('camsWithRois', 'Cam Sites with ROIS', multiple = TRUE, selected = appeears_tasks_ndvi_tera$site_name[1], appeears_tasks_ndvi_tera$site_name),
+           #           selectInput('siteDifference', 'Difference between ROIS and AppEEARS tasks', multiple = TRUE, choices=''),
+           #           actionButton('submitTasks', 'Submit Tasks for selected'),
+           #           textInput('submitionsLeft', 'Submitions left', value = 100)
+           #           )),
+           #         tabsetPanel(
+           #           id = 'appeearsPanelPhenoSynth',
+           #           tabPanel("NDVI TERA", DT::dataTableOutput("appeearsTable1")),
+           #           tabPanel("NDVI AQUA", DT::dataTableOutput("appeearsTable2")),
+           #           tabPanel("EVI TERA", DT::dataTableOutput("appeearsTable3")),
+           #           tabPanel("EVI AQUA", DT::dataTableOutput("appeearsTable4")),
+           #           tabPanel("MODIS Landcover", DT::dataTableOutput("appeearsTable5")),
+           #           tabPanel("MODIS Transition Dates", DT::dataTableOutput("appeearsTable6"))
+           #         ),
+           #           br(),
+           #           hidden(div(id = 'myTasks',
+           #             h2('My AppEEARS Tasks'),
+           #             br(),
+           #             tabPanel("All Tasks", DT::dataTableOutput("appeearsTable7"))
+           #           ))
+           # ))),
                    
            conditionalPanel("false", icon("crosshair"))
       )

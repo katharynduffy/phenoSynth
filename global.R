@@ -51,7 +51,6 @@ library(shinyalert)
 library(phenocamapi)
 library(changepoint)
 library(birk)
-library(AppEEARS4R)
 library(rnpn)
 
 # Function for Login Model
