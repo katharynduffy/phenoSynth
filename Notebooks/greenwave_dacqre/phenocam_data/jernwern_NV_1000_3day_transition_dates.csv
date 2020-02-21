@@ -1,0 +1,17 @@
+#
+# Transition date estimate for jernwern
+#
+# Site: jernwern
+# Veg Type: NV
+# ROI ID Number: 1000
+# Aggregation period: 3day
+# Year min: Inf
+# Year max: -Inf
+# Final Processing Date: 2020-02-20
+# Final Processing Time: 15:57:17
+# Spline RMSE gcc_mean: 0.00095
+# Spline RMSE gcc_50: 0.00101
+# Spline RMSE gcc_75: 0.00081
+# Spline RMSE gcc_90: 0.00075
+#
+site,veg_type,roi_id,direction,gcc_value,transition_10,transition_25,transition_50,transition_10_lower_ci,transition_25_lower_ci,transition_50_lower_ci,transition_10_upper_ci,transition_25_upper_ci,transition_50_upper_ci,threshold_10,threshold_25,threshold_50,min_gcc,max_gcc
