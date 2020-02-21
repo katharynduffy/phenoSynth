@@ -43,23 +43,50 @@ tmp_dir <- '/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre
 # download a subset. Example NEON.D01.HARV.DP1.00033 2017
 download_midday_images(site = 'ibp', # which site
                        y = 2016, # which year(s)
-                       months = 6:8, # which month(s)
+                       months = 7:9, # which month(s)
                        days = 1:30, # which days on month(s)
                        download_dir = tmp_dir) # where on your computer
 # list of downloaded files
-PC_middays_path <- dir(tmp_dir, pattern = 'ibp*', full.names = TRUE)
-head(PC_middays_path)
+PC_middays_path2016 <- dir(tmp_dir, pattern = 'ibp*', full.names = TRUE)
+head(PC_middays_path2016)
 ```
 We can demonstrate the seasonality of ibp observed from the camera. (Note
 this code may take a while to run through the loop).
-```{r plot-monthly-forest, fig.height=6, fig.width=8, message=FALSE, eval=TRUE}
-n <- length(PC_middays_path)
+```{r plot-phenology, fig.height=6, fig.width=8, message=FALSE, eval=TRUE}
+n <- length(PC_middays_path2016)
 par(mar= c(0,0,0,0), mfrow=c(10,9), oma=c(0,0,3,0))
 for(i in 1:n){
-  img <- readJPEG(PC_middays_path[i])
+  img <- readJPEG(PC_middays_path2016[i])
   plot(0:1,0:1, type='n', axes= FALSE, xlab= '', ylab = '')
   rasterImage(img, 0, 0, 1, 1)
-  mtext(month.name[i], line = -2)
+  #mtext(month.name[i], line = -2)
 }
-mtext('Seasonal variation of at ibp', font = 2, outer = TRUE)
+mtext('Interannual variation in peak greenness at ibp - Unimodal 2016', font = 2, outer = TRUE)
+```
+
+```{r midday-time-range, fig.height=6, fig.width=8, message=FALSE, eval=TRUE}
+# open a temporary directory
+tmp_dir <- '/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/Bimodal_ibp'
+# download a subset. Example NEON.D01.HARV.DP1.00033 2017
+download_midday_images(site = 'ibp', # which site
+                       y = 2017, # which year(s)
+                       months = 7:9, # which month(s)
+                       days = 1:30, # which days on month(s)
+                       download_dir = tmp_dir) # where on your computer
+# list of downloaded files
+PC_middays_path2017 <- dir(tmp_dir, pattern = 'ibp*', full.names = TRUE)
+head(PC_middays_path2017)
+```
+We can demonstrate the seasonality of ibp observed from the camera. (Note
+this code may take a while to run through the loop).
+```{r plot-phenology, fig.height=6, fig.width=8, message=FALSE, eval=TRUE}
+n <- length(PC_middays_path2017)
+par(mar= c(0,0,0,0), mfrow=c(10,9), oma=c(0,0,3,0))
+for(i in 1:n){
+  img <- readJPEG(PC_middays_path2017[i])
+  plot(0:1,0:1, type='n', axes= FALSE, xlab= '', ylab = '')
+  rasterImage(img, 0, 0, 1, 1)
+  #mtext(month.name[i], line = -2)
+}
+mtext('Interannual variation in peak greenness at ibp - Bimodal 2017', font = 2, outer = TRUE)
 ```

@@ -22,6 +22,8 @@ phenos=list_rois()
 #and let's check the column names:
 colnames(phenos)
 
+full_list=get_rois()
+
 ```
 
 Now let's filter for NEON sites:
@@ -30,6 +32,10 @@ site_names=c('ibp', 'jernort', 'jerbajada', 'jergrassland', 'jernovel', 'jernwer
 jer=phenos%>%
 filter(is.element(phenos$site,site_names))
 head(jer)
+
+jer_full_list= full_list%>%
+  filter(is.element(full_list$site,site_names))
+head(jer_full_list)
 ```
 
 ```{r}
