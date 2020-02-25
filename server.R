@@ -1152,8 +1152,8 @@ server = function(input, output, session) {
       data$gcc_p = gcc_p
       # Show and switch to plotpanel
       if (length(selected_data) == 1){
-        shiny::showTab('navbar','PlotPanel')
-        updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+        # shiny::showTab('navbar','PlotPanel')
+        # updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
       }
       }) #END WITH PROGRESS BAR
     } #END GCC PLOT
@@ -1242,6 +1242,20 @@ server = function(input, output, session) {
                                           ndvi_raw = as.vector(ndvi_aqua), 
                                           ndvi_qc = as.vector(ndvi_qc_aqua),
                                           type    = 'AQUA')
+          
+          # Add Filtered Data Column to TERA
+          qc_tera_df = subset(qc_df_tera, qc_df_tera$MODLAND == 'VI produced with good quality' & qc_df_tera$VI.Usefulness == 'Decreasing quality' | 
+              qc_df_tera$VI.Usefulness == 'Highest quality' & qc_df_tera$MODLAND == 'VI produced with good quality')
+          qa_tera_v  = qc_tera_df$Value
+          ndvi_brick_df_tera$ndvi_filtered = ifelse(ndvi_brick_df_tera$ndvi_qc %in% qa_tera_v ,ndvi_brick_df_tera$ndvi_raw, NA)
+          
+          # Add Filtered Data Column to AQUA
+          qc_aqua_df = subset(qc_df_aqua, qc_df_aqua$MODLAND == 'VI produced with good quality' & qc_df_aqua$VI.Usefulness == 'Decreasing quality' | 
+              qc_df_aqua$VI.Usefulness == 'Highest quality' & qc_df_aqua$MODLAND == 'VI produced with good quality')
+          qa_aqua_v  = qc_aqua_df$Value
+          ndvi_brick_df_aqua$ndvi_filtered = ifelse(ndvi_brick_df_aqua$ndvi_qc %in% qa_aqua_v ,ndvi_brick_df_aqua$ndvi_raw, NA)
+          
+          # Combine aqua and tera for this pixel
           ndvi_brick_df = rbind(ndvi_brick_df_tera, ndvi_brick_df_aqua)
           
           # Add ndvi_brick_df data (one pixel worth) to a larger df with all pixels and ndvi
@@ -1250,12 +1264,6 @@ server = function(input, output, session) {
           }else {
             ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
           }}
-        
-        qa_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
-        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc %in% qa_values ,ndvi_pixel_data_df$ndvi_raw, NA)
-        
-        # ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
-        #                                           ndvi_pixel_data_df$ndvi_raw, NA)
         
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
@@ -1304,6 +1312,20 @@ server = function(input, output, session) {
                                           evi_raw = evi_aqua, 
                                           evi_qc = evi_qc_aqua,
                                           type    = 'AQUA')
+          
+          # Add Filtered Data Column to TERA
+          qc_tera_df = subset(qc_df_tera, qc_df_tera$MODLAND == 'VI produced with good quality' & qc_df_tera$VI.Usefulness == 'Decreasing quality' | 
+              qc_df_tera$VI.Usefulness == 'Highest quality' & qc_df_tera$MODLAND == 'VI produced with good quality')
+          qa_tera_v  = qc_tera_df$Value
+          evi_brick_df_tera$evi_filtered = ifelse(evi_brick_df_tera$evi_qc %in% qa_tera_v ,evi_brick_df_tera$evi_raw, NA)
+          
+          # Add Filtered Data Column to AQUA
+          qc_aqua_df = subset(qc_df_aqua, qc_df_aqua$MODLAND == 'VI produced with good quality' & qc_df_aqua$VI.Usefulness == 'Decreasing quality' | 
+              qc_df_aqua$VI.Usefulness == 'Highest quality' & qc_df_aqua$MODLAND == 'VI produced with good quality')
+          qa_aqua_v  = qc_aqua_df$Value
+          evi_brick_df_aqua$evi_filtered = ifelse(evi_brick_df_aqua$evi_qc %in% qa_aqua_v ,evi_brick_df_aqua$evi_raw, NA)
+          
+          # Combine aqua and tera for this pixel
           evi_brick_df = rbind(evi_brick_df_tera, evi_brick_df_aqua)
           
           # Add evi_brick_df data (one pixel worth) to a larger df with all pixels and evi
@@ -1313,9 +1335,7 @@ server = function(input, output, session) {
             evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
           }
             } #END 250M LOOP
-        
-          qa_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
-          evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc %in% qa_values ,evi_pixel_data_df$evi_raw, NA)
+
           
           # evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
           #                                         evi_pixel_data_df$evi_raw, NA)
@@ -1822,9 +1842,8 @@ server = function(input, output, session) {
     vector_length = length(plot_list)
     length_ = 250 * vector_length
 
-    
     p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE)
-    p  %>% config(displaylogo = FALSE,
+    p  %>% plotly::config(displaylogo = FALSE,
                   modeBarButtonsToRemove = list(
                     'sendDataToCloud',
                     'autoScale2d',

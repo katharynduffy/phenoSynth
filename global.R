@@ -100,6 +100,9 @@ appeears_tasks_evi_aqua  = readRDS(file = './www/cache_df_evi_aqua.df')
 appeears_tasks_tds       = readRDS(file = './www/cache_df_tds.df')
 appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
 
+# QC values for MODIS data
+qc_df_tera = read.csv('./www/MOD13Q1-006-250m-16-days-VI-Quality-lookup.csv',stringsAsFactors = FALSE)
+qc_df_aqua = read.csv('./www/MYD13Q1-006-250m-16-days-VI-Quality-lookup.csv',stringsAsFactors = FALSE)
 
 
 # Allow for email mode (depreciated but still useful)

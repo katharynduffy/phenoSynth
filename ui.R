@@ -41,7 +41,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                    size = "medium",
                    fileInput('shpFileName', 'Select shapefile', multiple = TRUE, accept = c('.shp','.dbf','.sbn','.sbx','.shx','.prj'))
                  ),
-                 bsModalNoClose("getDataPopup",
+                 bsModal("getDataPopup",
                          "Get Data for Analysis", "getData",
                          size = "medium",
                          # selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
@@ -52,7 +52,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                                #getDataPopup .modal-header button{ display:none } 
                                                #getDataPopup {keyboard:false; backdrop: 'static';}"))
                  ),
-                 bsModalNoClose("plotDataPopup",
+                 bsModal("plotDataPopup",
                          "Select Plot Data", "plotRemoteData",
                          tags$head(tags$style("#window .modal{backdrop: 'static'}")),
                          size = "small",
