@@ -46,7 +46,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                          size = "medium",
                          # selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
                          selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI', 'Transition Dates'), c('GCC', 'NDVI', 'EVI', 'Transition Dates')),
-                         selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '3 day', c('1 day', '3 day')),
+                         # selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '3 day', c('1 day', '3 day')),
                          withBusyIndicatorUI(actionButton('getDataButton', 'Get Data', class='btn-primary')),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none } 
                                                #getDataPopup .modal-header button{ display:none } 
@@ -60,6 +60,7 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                          br(),
                          # selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
                          selectInput('dataTypes_plot', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI'), c('GCC', 'NDVI', 'EVI')),
+                         selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '3 day', c('1 day', '3 day')),
                          h4('Requires at least GCC, EVI, or NDVI'),
                          tags$head(tags$style("#plotDataPopup .modal-footer{ display:none } 
                                                #plotDataPopup .modal-header button{ display:none } 

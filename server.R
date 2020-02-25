@@ -2320,8 +2320,8 @@ server = function(input, output, session) {
             file.remove(these_gccs[dates_modified < (todays_date - refresh_at)])
             # Download phenocam 1_day, 3_day gcc and tds data
             site_pc_data = get_site_roi_csvs(name = site, 
-              roi_files_ = roi_files, 
-              metrics_ = pc_metrics)
+                                            roi_files_ = roi_files, 
+                                            metrics_ = pc_metrics)
             incProgress(amount = .2, detail = 'Downloading GCC data')
 
             # Subsetting data for 1 and 3 day at this pft
@@ -2393,11 +2393,11 @@ server = function(input, output, session) {
           
           # Save global variable for phenocam data
           phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
-            spring_1day = spring_1day,
-            fall_1day   = fall_1day,
-            gcc_3day    = gcc_3day,
-            spring_3day = spring_3day,
-            fall_3day   = fall_3day)
+                                          spring_1day = spring_1day,
+                                          fall_1day   = fall_1day,
+                                          gcc_3day    = gcc_3day,
+                                          spring_3day = spring_3day,
+                                          fall_3day   = fall_3day)
           
           # Write out the phenocam gcc data 
           write.csv(gcc_1day,    file = gcc_filepath_1day)
