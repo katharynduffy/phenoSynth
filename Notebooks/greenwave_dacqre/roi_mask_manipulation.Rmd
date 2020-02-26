@@ -1,0 +1,484 @@
+---
+title: "Animate PhenoCam"
+author: "K Duffy"
+date: "2/18/2020"
+output: html_document
+---
+
+First load the required R packages
+```{r}
+library(animation)
+library(phenocamapi)
+library(lubridate)
+library(jpeg)
+```
+
+If you don't have FFmpeg, you'll need to git clone it or install it here: http://ffmpeg.org/download.html
+
+Here I've started with ibp grass because we were wondering if that signal was 'real'.  You can sub any site/PFT combo.
+
+First I'll use the phenocamapi package to see which years are available:
+
+```{r}
+# cameras=get_phenos()
+cameras = cams_
+```
+
+```{r}
+site <-'ibp' # phenocam site name
+Years <- 2019 # vector of years to make the animation
+vegType <- 'GR' # vegetation type DB = deciduous broadloeaf
+roiID <- 1000  # ROI ID 
+```
+
+Then we create an empty directory same as the site name to later download the images into this directory.
+```{r}
+#create a new folder to download the midday images
+dir.create(site, showWarnings = FALSE)
+```
+
+Obtain the timeseries
+  - getting the timeseries from the phenocam server
+```{r}
+gcc_ts <- get_pheno_ts(site, 
+                       vegType = vegType, 
+                       roiID = roiID, 
+                       type = '1day')
+```
+
+```{r}
+#organizing columns
+gcc_ts[, month:=month(YYYYMMDD)] # extracting month from the date
+gcc_ts[, YYYYMMDD:=as.Date(YYYYMMDD)] # convert to the right format
+gcc_ts[,midday_url:=sprintf('https://phenocam.sr.unh.edu/data/archive/%s/%04d/%02d/%s', 
+                            site, year, month, midday_filename)] #making the URL of midday images
+
+```
+
+
+# organizing the data into a new data.table including the URL, date and GCC90 values
+```{r}
+gcc_file_tbl <- gcc_ts[year%in%(Years),.(midday_url, YYYYMMDD, gcc_90)] 
+```
+
+# creating the destination filename to download each midday image
+```{r}
+gcc_file_tbl[,midday_dest:=paste0(site, '/', basename(midday_url))] 
+gcc_file_tbl <- na.omit(gcc_file_tbl) # removing the NA values
+```
+
+
+
+```{r}
+library(magick)
+library(imager)
+test_midday_f = gcc_file_tbl$midday_dest[1]
+test_roi_f_png    = 'ibp/ibp_roi_mask_GR.png'
+
+mask_png = magick::image_read(test_roi_f_png)
+pc_img = magick::image_read(test_midday_f)
+class(pc_img)
+
+mask_png_line = mask_png %>%
+  image_edge(radius = 2) %>%
+  image_convert(type = 'grayscale') %>%
+  image_negate() 
+
+mask_jpg = image_convert(mask_png_line, 'jpeg')
+
+mask_final = mask_jpg %>%
+  image_quantize(max = 256,colorspace = "rgb") %>% image_background(color = 'none', flatten = TRUE)
+# mask_final = mask_jpg
+
+pc_img_final = pc_img %>% image_annotate("A", color = "black",strokecolor = 'white', size = 170, location =paste0("+",width_-200,"+50"))
+plot(pc_img_final)
+
+image_write(mask_final, path = 'mask.jpg', format = 'jpg')
+image_write(pc_img_final, path = 'img.jpg', format = 'jpg')
+
+plot(mask_final)
+
+?image_annotate
+
+```
+
+Create image with highlight of ROI on top of image
+```{r}
+# Read in the mask object
+jpg_mask  = imager::load.image('mask.jpg')
+# Read in the phenocam image
+jpg_img  = imager::load.image(gcc_file_tbl$midday_dest[1])
+
+plot(jpg_img)
+highlight(jpg_mask, col = 'blue', lwd=.4) 
+
+```
+
+Try to save out the highlighted image
+```{r}
+jpg_img = imager::load.image('img.jpg')
+grDevices::jpeg('tes1t.jpg', height =height(jpg_img), width = width(jpg_img))
+raster::plot(jpg_img, axes = FALSE, box = FALSE)
+imager::highlight(jpg_mask, col = 'blue', lwd=.4) 
+grDevices::dev.off()
+
+
+```
+
+
+Build the images and save them out into a new directory called pc_roi_imgs
+```{r}
+
+# Create directory to store the phenocam/roi images for each site
+dir.create('pc_roi_imgs', showWarnings = FALSE)
+dir.create('pc_roi_imgs/masks', showWarnings = FALSE)
+dir.create('pc_roi_imgs/final_masks', showWarnings = FALSE)
+dir.create('pc_roi_imgs/imgs', showWarnings = FALSE)
+dir.create('pc_roi_imgs/final_imgs', showWarnings = FALSE)
+# Get the sites for the paper
+sites_df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)[1:9,] # Removing one of the NEON.d14.JORN.DP1 sites
+site_labels = c('A','B','C','D','E','F','G','H','I')
+montage_name = 'Phenosynthesis'
+# Sites to add (use a total of 9 for 3x3 to work)
+jorn_sites = sort(sites_df$Name)
+# jorn_sites = sort(c('acadia','alleypond','arbutuslake','cafboydsouthltar01', 'twolcsh',
+#   'unca','bernatchez','bartlett','niwot5'))
+
+
+# Loop through all the sites to build out the images
+count = 1
+for (site_ in jorn_sites[1]){
+  print (site_)
+  roiID = 1000
+  label = site_labels[count]
+  print (label)
+  count = count + 1
+  doy_ = 200
+  
+  
+  site_cams_row = subset(cams_, cams_$site == site_)
+  site_rois_row = subset(roi_files, roi_files$site == site_)
+  pfts          = unique(site_rois_row$roitype)
+  
+  # Select 1 mid day image
+  gcc_ts = get_pheno_ts(site_, vegType = pfts[1], roiID = roiID, type = '3day')
+  gcc_ts[, month:=month(YYYYMMDD)] # extracting month from the date
+  gcc_ts[, YYYYMMDD:=as.Date(YYYYMMDD)] # convert to the right format
+  gcc_ts[,midday_url:=sprintf('https://phenocam.sr.unh.edu/data/archive/%s/%04d/%02d/%s', 
+                              site_, year, month, midday_filename)] #making the URL of midday images
+  gcc_ts = as.data.frame(gcc_ts, stringsAsFactors = FALSE)
+
+  years = rev(unique(gcc_ts$year))[1]
+  # If the year is 2020 or later change the year to 2019 (we aren't using 2020 data for this paper)
+  if (years > 2019){years = 2019}
+  
+  # Filter out rows with no image 
+  gcc_ts_clean = subset(gcc_ts, gcc_ts$image_count > 1 )
+  
+  doys_for_this_year = subset(gcc_ts_clean, gcc_ts_clean$year == years)$doy
+  closest_doy = doys_for_this_year[findInterval(doy_, doys_for_this_year)+1]
+  if (is.na(closest_doy)){closest_doy = doys_for_this_year[length(doys_for_this_year)]}
+  
+  this_midday_row = subset(gcc_ts_clean, gcc_ts_clean$year == years & gcc_ts_clean$doy == closest_doy)
+  img_download_url = this_midday_row$midday_url
+  fname = paste0('pc_roi_imgs/imgs/',this_midday_row$midday_filename)
+  print (fname)
+  download.file(img_download_url, fname)
+  
+  # Creating final directory to save out the final images
+  final_doy_dir = paste0('pc_roi_imgs/',montage_name,'_doy_',doy_, '/')
+  dir.create(final_doy_dir, showWarnings = FALSE)
+  
+  # Import img
+  pc_img   = magick::image_read(fname)
+  pc_img_final = pc_img %>% image_annotate(label, color = "black", size = 170, strokecolor = 'white', location =paste0("+",width_-200,"+10"))
+  final_img_f = paste0('pc_roi_imgs/final_imgs/', site_, '.jpg')
+  image_write(pc_img_final, path = final_img_f, format = 'jpg')
+  
+  # Create output directory for final masks per site
+  site_mask_dir = paste0('pc_roi_imgs/final_masks/',site_,'/')
+  dir.create(site_mask_dir, showWarnings = FALSE)
+  
+  # Load in final img 
+  final_img_jpg = imager::load.image(final_img_f)
+  grDevices::jpeg(paste0(final_doy_dir, site_,'_',years,'_',doy_,'_final.jpg'), height =height(final_img_jpg), width = width(final_img_jpg))
+  raster::plot(final_img_jpg, axes = FALSE, box = FALSE)
+  
+  # Download the masks for each site
+  for (roi_ in pfts){
+    overlay_roi = get_roi_url(name = site_, pft_abr = roi_)
+    mask_name = paste0('pc_roi_imgs/masks/', site_,'_',roi_,'.png')
+    print (mask_name)
+    mask_url = get_roi_url(name = site_, pft_abr = roi_)
+    print (mask_url)
+    download.file(mask_url, mask_name)
+    
+    # Read in the downloaded mask.png
+    mask_png = magick::image_read(mask_name)
+    
+    # Create the mask outline using image_edge
+    mask_png_line = mask_png %>%
+    image_edge(radius = 2) %>%
+    image_convert(type = 'grayscale') %>%
+    image_negate() 
+    
+    # Convert from png to jpeg
+    mask_jpg = image_convert(mask_png_line, 'jpeg')
+    
+    # Create a final mask
+    mask_final = mask_jpg %>%
+      image_quantize(max = 256,colorspace = "rgb") %>% image_background(color = 'none', flatten = TRUE)
+    
+    # Write out new mask jpg 
+    final_mask_f = paste0(site_mask_dir, site_,'_',roi_,'.jpg')
+    image_write(mask_final, path = final_mask_f, format = 'jpg')
+    
+    # Set roi color
+    if (roi_ == 'GR'){
+      color_ = '#CD6839'
+    }else if (roi_ == 'SH'){
+      color_ = '#20b2aa'
+    }else if (roi_ == 'NV'){
+      color_ = '#CDC9C9'
+    }else{
+      color_ = 'white'
+    }
+    
+    # Read in mask and highlight it
+    this_roi_mask = imager::load.image(mask_name)
+    imager::highlight(this_roi_mask, col = color_, lwd= 6)
+  }
+
+  grDevices::dev.off()
+}
+
+```
+
+Build grid and save out all images in a 3x3
+```{r}
+these_files = sort(list.files(final_doy_dir))
+plot1 = readJPEG(paste0(final_doy_dir, these_files[1]))
+plot2 = readJPEG(paste0(final_doy_dir, these_files[2]))
+plot3 = readJPEG(paste0(final_doy_dir, these_files[3]))
+plot4 = readJPEG(paste0(final_doy_dir, these_files[4]))
+plot5 = readJPEG(paste0(final_doy_dir, these_files[5]))
+plot6 = readJPEG(paste0(final_doy_dir, these_files[6]))
+plot7 = readJPEG(paste0(final_doy_dir, these_files[7]))
+plot8 = readJPEG(paste0(final_doy_dir, these_files[8]))
+plot9 = readJPEG(paste0(final_doy_dir, these_files[9]))
+
+library(grid)
+library(gridExtra)
+whole_p = grid.arrange(rasterGrob(plot1),rasterGrob(plot2),rasterGrob(plot3),
+  rasterGrob(plot4),rasterGrob(plot5),rasterGrob(plot6),
+  rasterGrob(plot7),rasterGrob(plot8),rasterGrob(plot9),ncol=3)
+
+grDevices::jpeg(paste0('pc_roi_imgs/', doy_, '_', montage_name,'.jpg'), height =height(final_img_jpg), width = width(final_img_jpg))
+raster::plot(whole_p, axes = FALSE, box = FALSE)
+grDevices::dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- add ROI mask (png) over a midday phenocam image (jpg) -->
+<!-- ```{r} -->
+<!-- test_midday_f = gcc_file_tbl$midday_dest[1] -->
+<!-- test_roi_f    = 'ibp/ibp_roi_mask_GR.png' -->
+<!-- test_roi_f_jpg = "ibp_roi_mask_GR.jpg" -->
+<!-- test_roi_f_tif = 'ibp_GR_1000_01.tif' -->
+
+
+
+
+<!-- overlay_roi = get_roi_url(name = 'ibp', pft_abr = 'GR') -->
+
+<!-- # Download overlay -->
+<!-- # download.file(overlay_roi, test_roi_f) -->
+
+<!-- library(png) -->
+<!-- img_mask = readPNG(test_roi_f) -->
+<!-- library(jpeg) -->
+<!-- writeJPEG(img_mask, target = test_roi_f_jpg, quality = 1) -->
+
+<!-- library(magick) -->
+<!-- mask = magick::image_read(test_roi_f_tif) -->
+<!-- pc_img = magick::image_read(test_midday_f) -->
+<!-- mask -->
+
+
+<!-- img = c(pc_img, mask) -->
+<!-- print (mask) -->
+<!-- magick::image_combine(img) -->
+<!-- ?image_combine -->
+
+
+
+<!-- library(imager) -->
+<!-- im      = load.image(test_midday_f) -->
+<!-- im_mask = load.image(test_roi_f_jpg) -->
+
+<!-- fg <- c(510,521,670,671 ) -->
+<!-- #Background -->
+<!-- bg <- c(791,   28, 1020,  194 ) -->
+<!-- #Corresponding pixel sets -->
+<!-- px.fg <- ((Xc(im) %inr% fg[c(1,3)]) & (Yc(im) %inr% fg[c(2,4)])) -->
+<!-- px.bg <- ((Xc(im) %inr% bg[c(1,3)]) & (Yc(im) %inr% bg[c(2,4)])) -->
+
+<!-- plot(im) -->
+<!-- plot(im_mask) -->
+
+<!-- highlight(im_mask, col = 'blue') -->
+<!-- highlight(px.fg) -->
+<!-- highlight(px.bg,col="blue") -->
+
+<!-- ??imager -->
+
+<!-- im -->
+<!-- im_mask -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- bitmap <- mask %>%  -->
+<!--   image_edge(radius = 1) %>% -->
+<!--   # image_channel(channel = 'lightness') %>% -->
+<!--   image_convert(type = 'grayscale') %>% -->
+<!--   image_quantize(2, colorspace = 'gray') %>% -->
+<!--   image_negate() %>% -->
+<!--   image_reducenoise(radius = 1) %>% -->
+<!--   image_data(channels = 'gray') -->
+
+<!-- ?image_quantize -->
+<!-- ?image_combine -->
+<!-- ?image_data -->
+
+<!-- print(bitmap) -->
+
+<!-- img = c(pc_img, bitmap) -->
+<!-- magick::image_combine(img) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- library(xROI) -->
+
+<!-- #read a mask file in TIFF format -->
+<!-- m <- tiff::readTIFF( test_roi_f_tif) -->
+<!-- str(m) -->
+
+<!-- #plot the mask in black color -->
+<!-- addMask(m, add = FALSE) -->
+
+<!-- #add the same mask in the red color to the existing plot -->
+<!-- plot(im) -->
+<!-- addMask(m, add = TRUE, col = 'red') -->
+
+
+<!-- mm = image_read(m) -->
+<!-- m %>% image_edge(radius = 1)  -->
+
+<!-- ``` -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
