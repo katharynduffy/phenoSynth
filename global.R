@@ -79,12 +79,12 @@ site_names = cams_$site
 orientation_key = list('N' = 0, 'NE' = 45, 'E' = 90, 'SE' = 135, 'S' = 180, 'SW' = 225, 'W' = 270, 'NW' = 315,
                        'ENE' = 67, 'ESE' = 112, 'NNE' = 22, 'NNW' = 338, 'SSE' = 158, 'SSW' = 202, 'UP' = 0,
                        'WNW' = 292, 'WSW' = 248)
-pft_key = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,254,255)
-pft_abbreviated = c('Water','EN','EB','DN','DB','MF','SH','SH','SV','SV','GR','WL','AG','UB','MX','TN','UN','NAN','NAN')
+pft_key = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,253,254,255)
+pft_abbreviated = c('Water','EN','EB','DN','DB','MF','SH','SH','SV','SV','GR','WL','AG','UB','MX','TN','UN','NV','NAN','NAN')
 pft_expanded = c('Water', 'Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 
                  'Deciduous Broadleaf Forest', 'Mixed Forest','Shrubland', 'Shrubland', 'Woody Savanna', 'Savanna',
-                 'Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'No Vegetation', 'Unclassified', 
-                 'Unclassified')
+                 'Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'No Vegetation',  'Landscape', 
+                 'Unclassified', 'Unclassified')
 pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded, stringsAsFactors=FALSE)
 
 # Insert LandSat classes here
