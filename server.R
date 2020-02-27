@@ -782,7 +782,10 @@ server = function(input, output, session) {
     variables$color_list = c()
     variables$color_list_reserve = rainbow(20)
     data$nlcd_breakdown_df = data.frame()
-
+    
+    # Setting raster grid FALSE since it doesn't exist yet
+    data$raster_grid = FALSE
+    
     # Set up directories to store data
     file_path     = paste0('./www/site_data/', site, '/data_layers/')
     main          = './www/site_data'
@@ -1007,10 +1010,24 @@ server = function(input, output, session) {
                            options = layersControlOptions(collapsed = FALSE))
         
         # If NLCD layer exists for site, add it to map
-        if (data$NLCD){
+        if (data$NLCD & data$raster_grid){
+          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
+            addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+              overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD', '250m MODIS Grid'),
+              position = c("topleft"), 
+              options = layersControlOptions(collapsed = FALSE)) %>% 
+            hideGroup("2016 NLCD")
+        }else if (data$NLCD){
           leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
             addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
               overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
+              position = c("topleft"), 
+              options = layersControlOptions(collapsed = FALSE)) %>% 
+            hideGroup("2016 NLCD")
+        }else if (data$raster_grid){
+          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
+            addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+              overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '250m MODIS Grid'),
               position = c("topleft"), 
               options = layersControlOptions(collapsed = FALSE)) %>% 
             hideGroup("2016 NLCD")
@@ -2129,7 +2146,9 @@ server = function(input, output, session) {
       data$r_ndvi_cropped = r_for_grid_cropped_merc
       
       incProgress(amount = .1)
+      
       grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
+      data$raster_grid = TRUE
       
       # ADD NLCD back in after building grid
       if (data$NLCD){
@@ -2223,6 +2242,7 @@ server = function(input, output, session) {
         
         incProgress(amount = .1)
         grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
+        data$raster_grid = TRUE
         
         # ADD NLCD back in after building grid
         if (data$NLCD){
