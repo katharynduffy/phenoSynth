@@ -147,7 +147,7 @@ jorn_sites = sort(sites_df$Name)
 
 # Loop through all the sites to build out the images
 count = 1
-for (site_ in jorn_sites[1]){
+for (site_ in jorn_sites){
   print (site_)
   roiID = 1000
   label = site_labels[count]
@@ -174,10 +174,16 @@ for (site_ in jorn_sites[1]){
   
   # Filter out rows with no image 
   gcc_ts_clean = subset(gcc_ts, gcc_ts$image_count > 1 )
-  
+    if (site_ == 'jerbajada'){
+      doy_ = 250
+      years = 2017
+      }
   doys_for_this_year = subset(gcc_ts_clean, gcc_ts_clean$year == years)$doy
   closest_doy = doys_for_this_year[findInterval(doy_, doys_for_this_year)+1]
   if (is.na(closest_doy)){closest_doy = doys_for_this_year[length(doys_for_this_year)]}
+  years = rev(unique(gcc_ts$year))[1]
+  if (years > 2019){years = 2019}
+  doy_ = 200
   
   this_midday_row = subset(gcc_ts_clean, gcc_ts_clean$year == years & gcc_ts_clean$doy == closest_doy)
   img_download_url = this_midday_row$midday_url
@@ -206,47 +212,51 @@ for (site_ in jorn_sites[1]){
   
   # Download the masks for each site
   for (roi_ in pfts){
-    overlay_roi = get_roi_url(name = site_, pft_abr = roi_)
-    mask_name = paste0('pc_roi_imgs/masks/', site_,'_',roi_,'.png')
-    print (mask_name)
-    mask_url = get_roi_url(name = site_, pft_abr = roi_)
-    print (mask_url)
-    download.file(mask_url, mask_name)
-    
-    # Read in the downloaded mask.png
-    mask_png = magick::image_read(mask_name)
-    
-    # Create the mask outline using image_edge
-    mask_png_line = mask_png %>%
-    image_edge(radius = 2) %>%
-    image_convert(type = 'grayscale') %>%
-    image_negate() 
-    
-    # Convert from png to jpeg
-    mask_jpg = image_convert(mask_png_line, 'jpeg')
-    
-    # Create a final mask
-    mask_final = mask_jpg %>%
-      image_quantize(max = 256,colorspace = "rgb") %>% image_background(color = 'none', flatten = TRUE)
-    
-    # Write out new mask jpg 
-    final_mask_f = paste0(site_mask_dir, site_,'_',roi_,'.jpg')
-    image_write(mask_final, path = final_mask_f, format = 'jpg')
-    
-    # Set roi color
-    if (roi_ == 'GR'){
-      color_ = '#CD6839'
-    }else if (roi_ == 'SH'){
-      color_ = '#20b2aa'
-    }else if (roi_ == 'NV'){
-      color_ = '#CDC9C9'
-    }else{
-      color_ = 'white'
-    }
-    
-    # Read in mask and highlight it
-    this_roi_mask = imager::load.image(mask_name)
-    imager::highlight(this_roi_mask, col = color_, lwd= 6)
+    if (roi_ == 'NV'){
+      print ('not adding nv mask')
+    }else {
+      overlay_roi = get_roi_url(name = site_, pft_abr = roi_)
+      mask_name = paste0('pc_roi_imgs/masks/', site_,'_',roi_,'.png')
+      print (mask_name)
+      mask_url = get_roi_url(name = site_, pft_abr = roi_)
+      print (mask_url)
+      download.file(mask_url, mask_name)
+      
+      # Read in the downloaded mask.png
+      mask_png = magick::image_read(mask_name)
+      
+      # Create the mask outline using image_edge
+      mask_png_line = mask_png %>%
+      image_edge(radius = 2) %>%
+      image_convert(type = 'grayscale') %>%
+      image_negate() 
+      
+      # Convert from png to jpeg
+      mask_jpg = image_convert(mask_png_line, 'jpeg')
+      
+      # Create a final mask
+      mask_final = mask_jpg %>%
+        image_quantize(max = 256,colorspace = "rgb") %>% image_background(color = 'none', flatten = TRUE)
+      
+      # Write out new mask jpg 
+      final_mask_f = paste0(site_mask_dir, site_,'_',roi_,'.jpg')
+      image_write(mask_final, path = final_mask_f, format = 'jpg')
+      
+      # Set roi color
+      if (roi_ == 'GR'){
+        color_ = 'gold'
+      }else if (roi_ == 'SH'){
+        color_ = 'deepskyblue'
+      }else if (roi_ == 'NV'){
+        color_ = '#CDC9C9'
+      }else{
+        color_ = 'white'
+      }
+      
+      # Read in mask and highlight it
+      this_roi_mask = imager::load.image(mask_name)
+      imager::highlight(this_roi_mask, col = color_, lwd= 10)
+      }
   }
 
   grDevices::dev.off()
