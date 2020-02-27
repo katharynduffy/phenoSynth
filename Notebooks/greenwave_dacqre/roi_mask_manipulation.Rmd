@@ -147,7 +147,7 @@ jorn_sites = sort(sites_df$Name)
 
 # Loop through all the sites to build out the images
 count = 1
-for (site_ in jorn_sites[2]){
+for (site_ in jorn_sites){
   print (site_)
   roiID = 1000
   label = site_labels[count]
