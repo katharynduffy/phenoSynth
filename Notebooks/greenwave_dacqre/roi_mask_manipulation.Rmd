@@ -147,7 +147,7 @@ jorn_sites = sort(sites_df$Name)
 
 # Loop through all the sites to build out the images
 count = 1
-for (site_ in jorn_sites){
+for (site_ in jorn_sites[2]){
   print (site_)
   roiID = 1000
   label = site_labels[count]
@@ -181,15 +181,16 @@ for (site_ in jorn_sites){
   doys_for_this_year = subset(gcc_ts_clean, gcc_ts_clean$year == years)$doy
   closest_doy = doys_for_this_year[findInterval(doy_, doys_for_this_year)+1]
   if (is.na(closest_doy)){closest_doy = doys_for_this_year[length(doys_for_this_year)]}
-  years = rev(unique(gcc_ts$year))[1]
-  if (years > 2019){years = 2019}
-  doy_ = 200
   
   this_midday_row = subset(gcc_ts_clean, gcc_ts_clean$year == years & gcc_ts_clean$doy == closest_doy)
   img_download_url = this_midday_row$midday_url
   fname = paste0('pc_roi_imgs/imgs/',this_midday_row$midday_filename)
   print (fname)
   download.file(img_download_url, fname)
+  
+  years = rev(unique(gcc_ts$year))[1]
+  if (years > 2019){years = 2019}
+  doy_ = 200
   
   # Creating final directory to save out the final images
   final_doy_dir = paste0('pc_roi_imgs/',montage_name,'_doy_',doy_, '/')
