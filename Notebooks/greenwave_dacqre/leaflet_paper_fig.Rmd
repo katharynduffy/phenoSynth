@@ -24,27 +24,28 @@ landsat_atts = NLCD_lc@data@attributes
 # raster::plot(NLCD_lc)
 ```
 
+Cropping the Location we want from the Landcover layer NLCD_lc imported above
 ```{r}
-width = 50000
-height = 50000
-
-e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons')
-
-crs(e) = alb_crs
-
-site_NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
-site_NLCD_lc_cropped_merc = projectRaster(site_NLCD_lc_cropped, crs=merc_crs, method='ngb')
-
-width = 25000
-height = 25000
-
-e2 = as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons')
-crs(e2) = merc_crs
-site_NLCD_lc_final_merc = raster::crop(site_NLCD_lc_cropped_merc, e2, snap='near')
+# width = 50000
+# height = 50000
+# e      = as(extent(site_lon_alb - width, site_lon_alb + width, site_lat_alb - height, site_lat_alb + height), 'SpatialPolygons')
+# 
+# crs(e) = alb_crs
+# 
+# site_NLCD_lc_cropped      = raster::crop(NLCD_lc, e, snap='near')
+# site_NLCD_lc_cropped_merc = projectRaster(site_NLCD_lc_cropped, crs=merc_crs, method='ngb')
+# 
+# width = 25000
+# height = 25000
+# 
+# e2 = as(extent(site_lon_merc - width, site_lon_merc + width, site_lat_merc - height, site_lat_merc + height), 'SpatialPolygons')
+# crs(e2) = merc_crs
+# site_NLCD_lc_final_merc = raster::crop(site_NLCD_lc_cropped_merc, e2, snap='near')
+# 
+# file_name  = 'paper_landsat_lc.tif'
+# raster::writeRaster(site_NLCD_lc_final_merc, file_name, format='GTiff', overwrite=TRUE)
 
 file_name  = 'paper_landsat_lc.tif'
-raster::writeRaster(site_NLCD_lc_final_merc, file_name, format='GTiff', overwrite=TRUE)
-
 test_merc = raster::raster(file_name)
 ```
 
@@ -80,7 +81,7 @@ rc_nlcd_c = build_pft_palette(rc_nlcd)
 
   
 # Only colors found in the Landsat nlcd Layer
-leaflet() %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
+leaflet(options = leafletOptions(zoomControl = FALSE)) %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
   addLegend(labels = rc_nlcd_c$names, colors = rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>%
   addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, label=c('A','B','C','D','E','F','G','H','I'),
   radius = 1, color = 'rgb(0,0,0,0)', weight=2, opacity = 1, labelOptions = labelOptions(noHide = T,textOnly = TRUE, 

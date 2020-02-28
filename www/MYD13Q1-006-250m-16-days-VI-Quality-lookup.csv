@@ -1,0 +1,716 @@
+Value,MODLAND,VI Usefulness,Aerosol Quantity,Adjacent cloud detected,Atmosphere BRDF Correction,Mixed Clouds,Land/Water Mask,Possible snow/ice,Possible shadow
+14,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,No
+17,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,No
+18,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,No
+21,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,No
+22,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,No
+63,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Shallow ocean,No,No
+68,VI produced with good quality,Lower quality,Low,No,No,No,Shallow ocean,No,No
+70,"Pixel produced, but most probably cloudy",Lower quality,Low,No,No,No,Shallow ocean,No,No
+72,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow ocean,No,No
+74,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Shallow ocean,No,No
+76,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow ocean,No,No
+78,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Shallow ocean,No,No
+127,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,No,Shallow ocean,No,No
+137,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow ocean,No,No
+138,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Shallow ocean,No,No
+141,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow ocean,No,No
+142,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Shallow ocean,No,No
+145,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow ocean,No,No
+146,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Shallow ocean,No,No
+191,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Shallow ocean,No,No
+209,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow ocean,No,No
+213,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow ocean,No,No
+214,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Shallow ocean,No,No
+217,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow ocean,No,No
+218,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Shallow ocean,No,No
+255,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,No,Shallow ocean,No,No
+273,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,No
+274,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,No
+277,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,No
+278,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,No
+281,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,No
+319,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Shallow ocean,No,No
+383,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,Yes,No,No,Shallow ocean,No,No
+397,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Shallow ocean,No,No
+401,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Shallow ocean,No,No
+405,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Shallow ocean,No,No
+447,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,Yes,No,No,Shallow ocean,No,No
+473,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Shallow ocean,No,No
+511,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,Yes,No,No,Shallow ocean,No,No
+1050,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow ocean,No,No
+1054,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow ocean,No,No
+1058,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow ocean,No,No
+1087,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,Yes,Shallow ocean,No,No
+1106,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow ocean,No,No
+1110,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow ocean,No,No
+1151,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,Yes,Shallow ocean,No,No
+1174,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow ocean,No,No
+1178,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow ocean,No,No
+1182,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow ocean,No,No
+1215,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,Yes,Shallow ocean,No,No
+1250,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow ocean,No,No
+1254,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow ocean,No,No
+1279,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,Yes,Shallow ocean,No,No
+1314,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow ocean,No,No
+1318,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow ocean,No,No
+1343,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,Yes,Shallow ocean,No,No
+2057,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,No
+2058,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,No
+2061,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,No
+2062,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,No
+2065,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,No
+2066,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,No
+2069,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,No
+2070,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,No
+2111,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Land (Nothing else but land),No,No
+2112,VI produced with good quality,Highest quality,Low,No,No,No,Land (Nothing else but land),No,No
+2116,VI produced with good quality,Lower quality,Low,No,No,No,Land (Nothing else but land),No,No
+2120,VI produced with good quality,Decreasing quality,Low,No,No,No,Land (Nothing else but land),No,No
+2122,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Land (Nothing else but land),No,No
+2124,VI produced with good quality,Decreasing quality,Low,No,No,No,Land (Nothing else but land),No,No
+2175,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,No,Land (Nothing else but land),No,No
+2181,"VI produced, but check other QA",Lower quality,Average,No,No,No,Land (Nothing else but land),No,No
+2182,"Pixel produced, but most probably cloudy",Lower quality,Average,No,No,No,Land (Nothing else but land),No,No
+2185,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,No
+2186,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,No
+2189,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,No
+2190,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,No
+2193,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,No
+2239,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Land (Nothing else but land),No,No
+2253,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,No
+2254,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,No
+2257,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,No
+2258,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,No
+2261,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,No
+2262,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,No
+2265,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,No
+2266,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,No
+2303,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,No,Land (Nothing else but land),No,No
+2317,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,No
+2318,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,No
+2321,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,No
+2322,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,No
+2325,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,No
+2326,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,No
+2329,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,No
+2330,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,No
+2372,VI produced with good quality,Lower quality,Low,Yes,No,No,Land (Nothing else but land),No,No
+2376,VI produced with good quality,Decreasing quality,Low,Yes,No,No,Land (Nothing else but land),No,No
+2378,"Pixel produced, but most probably cloudy",Decreasing quality,Low,Yes,No,No,Land (Nothing else but land),No,No
+2380,VI produced with good quality,Decreasing quality,Low,Yes,No,No,Land (Nothing else but land),No,No
+2384,VI produced with good quality,Decreasing quality,Low,Yes,No,No,Land (Nothing else but land),No,No
+2441,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,No
+2442,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,No
+2445,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,No
+2446,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,No
+2449,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,No
+2450,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,No
+2453,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,No
+2454,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,No
+2513,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,No
+2514,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,No
+2517,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,No
+2518,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,No
+2521,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,No
+2522,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,No
+2525,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,No
+2526,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,No
+3094,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Land (Nothing else but land),No,No
+3098,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Land (Nothing else but land),No,No
+3102,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Land (Nothing else but land),No,No
+3106,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Land (Nothing else but land),No,No
+3135,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,Yes,Land (Nothing else but land),No,No
+3150,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Land (Nothing else but land),No,No
+3154,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Land (Nothing else but land),No,No
+3158,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Land (Nothing else but land),No,No
+3162,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Land (Nothing else but land),No,No
+3218,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Land (Nothing else but land),No,No
+3222,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Land (Nothing else but land),No,No
+3226,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Land (Nothing else but land),No,No
+3230,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Land (Nothing else but land),No,No
+3290,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Land (Nothing else but land),No,No
+3294,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Land (Nothing else but land),No,No
+3298,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Land (Nothing else but land),No,No
+3302,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Land (Nothing else but land),No,No
+3354,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Land (Nothing else but land),No,No
+3358,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Land (Nothing else but land),No,No
+3362,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Land (Nothing else but land),No,No
+3366,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Land (Nothing else but land),No,No
+3410,"Pixel produced, but most probably cloudy",Decreasing quality,Low,Yes,No,Yes,Land (Nothing else but land),No,No
+3414,"Pixel produced, but most probably cloudy",Decreasing quality,Low,Yes,No,Yes,Land (Nothing else but land),No,No
+3418,"Pixel produced, but most probably cloudy",Decreasing quality,Low,Yes,No,Yes,Land (Nothing else but land),No,No
+3422,"Pixel produced, but most probably cloudy",Decreasing quality,Low,Yes,No,Yes,Land (Nothing else but land),No,No
+3478,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,Yes,Land (Nothing else but land),No,No
+3482,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,Yes,Land (Nothing else but land),No,No
+3486,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,Yes,Land (Nothing else but land),No,No
+3490,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,Yes,Land (Nothing else but land),No,No
+3550,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,Yes,Land (Nothing else but land),No,No
+3554,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,Yes,Land (Nothing else but land),No,No
+3558,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,Yes,Land (Nothing else but land),No,No
+3562,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,Yes,Land (Nothing else but land),No,No
+4105,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4106,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4107,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4109,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4110,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4111,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4113,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4114,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4115,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4117,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4118,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4159,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,No
+4160,VI produced with good quality,Highest quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4162,"Pixel produced, but most probably cloudy",Highest quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4163,Pixel not produced due to other reasons than clouds,Highest quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4164,VI produced with good quality,Lower quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4166,"Pixel produced, but most probably cloudy",Lower quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4167,Pixel not produced due to other reasons than clouds,Lower quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4168,VI produced with good quality,Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4170,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4171,Pixel not produced due to other reasons than clouds,Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4172,VI produced with good quality,Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4174,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4223,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,No,Ocean coastlines and lake shorelines,No,No
+4229,"VI produced, but check other QA",Lower quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4230,"Pixel produced, but most probably cloudy",Lower quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4231,Pixel not produced due to other reasons than clouds,Lower quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4233,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4234,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4235,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4237,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4238,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4239,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4241,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4242,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4287,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Ocean coastlines and lake shorelines,No,No
+4301,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4302,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4305,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4306,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4307,Pixel not produced due to other reasons than clouds,Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4309,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4310,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4311,Pixel not produced due to other reasons than clouds,Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4313,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4314,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4351,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,No,Ocean coastlines and lake shorelines,No,No
+4365,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4366,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4367,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4369,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4370,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4371,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4373,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4374,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4375,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4377,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4378,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+4415,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,No
+5142,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5143,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5146,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5147,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5150,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5151,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5154,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5183,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5198,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5199,Pixel not produced due to other reasons than clouds,Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5202,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5203,Pixel not produced due to other reasons than clouds,Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5206,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5207,Pixel not produced due to other reasons than clouds,Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5210,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5247,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5266,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5267,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5270,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5271,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5274,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5275,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5278,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5311,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5338,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5342,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5346,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5350,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5375,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,Yes,Ocean coastlines and lake shorelines,No,No
+5402,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,No
+5403,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,No
+5406,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,No
+5410,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,No
+5414,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,No
+5439,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,No
+6153,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6154,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6155,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6157,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6158,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6159,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6161,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6162,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6163,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6165,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6166,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,No
+6207,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Shallow inland water,No,No
+6208,VI produced with good quality,Highest quality,Low,No,No,No,Shallow inland water,No,No
+6211,Pixel not produced due to other reasons than clouds,Highest quality,Low,No,No,No,Shallow inland water,No,No
+6212,VI produced with good quality,Lower quality,Low,No,No,No,Shallow inland water,No,No
+6214,"Pixel produced, but most probably cloudy",Lower quality,Low,No,No,No,Shallow inland water,No,No
+6215,Pixel not produced due to other reasons than clouds,Lower quality,Low,No,No,No,Shallow inland water,No,No
+6216,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow inland water,No,No
+6218,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Shallow inland water,No,No
+6219,Pixel not produced due to other reasons than clouds,Decreasing quality,Low,No,No,No,Shallow inland water,No,No
+6220,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow inland water,No,No
+6271,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,No,Shallow inland water,No,No
+6277,"VI produced, but check other QA",Lower quality,Average,No,No,No,Shallow inland water,No,No
+6278,"Pixel produced, but most probably cloudy",Lower quality,Average,No,No,No,Shallow inland water,No,No
+6279,Pixel not produced due to other reasons than clouds,Lower quality,Average,No,No,No,Shallow inland water,No,No
+6281,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,No,No
+6282,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Shallow inland water,No,No
+6283,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,No,Shallow inland water,No,No
+6285,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,No,No
+6286,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Shallow inland water,No,No
+6287,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,No,Shallow inland water,No,No
+6289,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,No,No
+6335,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Shallow inland water,No,No
+6349,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,No,No
+6353,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,No,No
+6354,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Shallow inland water,No,No
+6357,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,No,No
+6358,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Shallow inland water,No,No
+6361,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,No,No
+6413,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6414,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6415,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6417,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6418,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6419,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6421,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6422,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6423,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6425,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6426,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,No
+6463,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Shallow inland water,No,No
+7190,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,No,No
+7191,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Shallow inland water,No,No
+7194,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,No,No
+7195,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Shallow inland water,No,No
+7198,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,No,No
+7199,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Shallow inland water,No,No
+7202,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,No,No
+7231,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,Yes,Shallow inland water,No,No
+7246,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow inland water,No,No
+7247,Pixel not produced due to other reasons than clouds,Decreasing quality,Low,No,No,Yes,Shallow inland water,No,No
+7250,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow inland water,No,No
+7251,Pixel not produced due to other reasons than clouds,Decreasing quality,Low,No,No,Yes,Shallow inland water,No,No
+7254,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow inland water,No,No
+7258,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow inland water,No,No
+7295,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,Yes,Shallow inland water,No,No
+7314,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow inland water,No,No
+7318,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow inland water,No,No
+7322,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow inland water,No,No
+7326,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow inland water,No,No
+7386,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow inland water,No,No
+7390,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow inland water,No,No
+7394,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow inland water,No,No
+7398,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow inland water,No,No
+7450,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,No
+7454,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,No
+7458,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,No
+7459,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,No
+7462,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,No
+7487,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,Yes,Shallow inland water,No,No
+16405,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow ocean,Yes,No
+16406,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow ocean,Yes,No
+16409,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow ocean,Yes,No
+16410,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow ocean,Yes,No
+16447,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Shallow ocean,Yes,No
+16533,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow ocean,Yes,No
+16605,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow ocean,Yes,No
+16665,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,Yes,No
+16669,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,Yes,No
+16703,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Shallow ocean,Yes,No
+18445,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,No
+18446,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,No
+18449,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,No
+18450,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,No
+18453,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,No
+18454,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,No
+18457,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,No
+18705,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),Yes,No
+18709,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),Yes,No
+18713,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),Yes,No
+18717,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),Yes,No
+20493,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20494,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20495,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20497,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20498,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20499,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20501,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20502,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20503,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20505,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20506,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20543,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20625,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20629,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20671,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20693,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20697,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20701,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,Yes,No
+20753,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,No
+20755,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,No
+20757,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,No
+20759,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,No
+20761,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,No
+20763,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,No
+20765,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,No
+20799,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,No
+21530,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21531,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21534,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21535,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21538,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21542,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21567,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21790,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21794,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+21798,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,Yes,No
+22541,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22542,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22543,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22545,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22546,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22547,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22549,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22550,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22551,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22553,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22554,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,No
+22591,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Shallow inland water,Yes,No
+22673,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,Yes,No
+22677,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,Yes,No
+22745,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,Yes,No
+22801,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,No
+22803,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,No
+22805,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,No
+22806,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,No
+22809,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,No
+22810,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,No
+22813,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,No
+22847,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Shallow inland water,Yes,No
+23578,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,No
+23579,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,No
+23582,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,No
+23583,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,No
+23586,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,No
+23590,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,No
+23615,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,Yes,Shallow inland water,Yes,No
+23710,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow inland water,Yes,No
+23838,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,No
+23839,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,No
+23842,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,No
+23843,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,No
+23846,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,No
+23850,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,No
+23871,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,Yes,Shallow inland water,Yes,No
+32789,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,Yes
+32793,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,Yes
+32794,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,Yes
+32798,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow ocean,No,Yes
+32848,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow ocean,No,Yes
+32850,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Shallow ocean,No,Yes
+32895,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,No,Shallow ocean,No,Yes
+32917,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow ocean,No,Yes
+32921,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow ocean,No,Yes
+32922,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Shallow ocean,No,Yes
+32959,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Shallow ocean,No,Yes
+32989,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow ocean,No,Yes
+32990,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Shallow ocean,No,Yes
+32993,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow ocean,No,Yes
+33023,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,No,Shallow ocean,No,Yes
+33049,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,Yes
+33050,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,Yes
+33053,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,Yes
+33054,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,Yes
+33057,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,Yes
+33058,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,No,Yes
+33087,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Shallow ocean,No,Yes
+33104,VI produced with good quality,Decreasing quality,Low,Yes,No,No,Shallow ocean,No,Yes
+33151,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,Yes,No,No,Shallow ocean,No,Yes
+33177,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Shallow ocean,No,Yes
+33181,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Shallow ocean,No,Yes
+33215,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,Yes,No,No,Shallow ocean,No,Yes
+33253,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Shallow ocean,No,Yes
+33886,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow ocean,No,Yes
+33954,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow ocean,No,Yes
+34026,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow ocean,No,Yes
+34086,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow ocean,No,Yes
+34090,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow ocean,No,Yes
+34094,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow ocean,No,Yes
+34111,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,Yes,Shallow ocean,No,Yes
+34286,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,Yes,Shallow ocean,No,Yes
+34833,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,Yes
+34834,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,Yes
+34837,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,Yes
+34838,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,Yes
+34841,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,Yes
+34842,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,Yes
+34845,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,Yes
+34846,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),No,Yes
+34888,VI produced with good quality,Decreasing quality,Low,No,No,No,Land (Nothing else but land),No,Yes
+34892,VI produced with good quality,Decreasing quality,Low,No,No,No,Land (Nothing else but land),No,Yes
+34896,VI produced with good quality,Decreasing quality,Low,No,No,No,Land (Nothing else but land),No,Yes
+34957,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,Yes
+34961,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,Yes
+34965,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,Yes
+34969,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Land (Nothing else but land),No,Yes
+35007,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Land (Nothing else but land),No,Yes
+35029,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,Yes
+35033,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,Yes
+35034,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,Yes
+35037,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,Yes
+35038,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Land (Nothing else but land),No,Yes
+35093,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,Yes
+35094,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,Yes
+35097,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,Yes
+35098,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,Yes
+35101,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,Yes
+35102,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,Yes
+35105,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,Yes
+35106,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),No,Yes
+35148,VI produced with good quality,Decreasing quality,Low,Yes,No,No,Land (Nothing else but land),No,Yes
+35152,VI produced with good quality,Decreasing quality,Low,Yes,No,No,Land (Nothing else but land),No,Yes
+35156,VI produced with good quality,Decreasing quality,Low,Yes,No,No,Land (Nothing else but land),No,Yes
+35160,VI produced with good quality,Decreasing quality,Low,Yes,No,No,Land (Nothing else but land),No,Yes
+35199,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,Yes,No,No,Land (Nothing else but land),No,Yes
+35217,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,Yes
+35218,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,Yes
+35221,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,Yes
+35222,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,Yes
+35225,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,Yes
+35226,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,Yes
+35229,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),No,Yes
+35289,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,Yes
+35290,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,Yes
+35293,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,Yes
+35294,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,Yes
+35297,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,Yes
+35298,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,Yes
+35301,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,Yes
+35302,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),No,Yes
+35870,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Land (Nothing else but land),No,Yes
+35874,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Land (Nothing else but land),No,Yes
+35878,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Land (Nothing else but land),No,Yes
+35882,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Land (Nothing else but land),No,Yes
+35930,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Land (Nothing else but land),No,Yes
+35934,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Land (Nothing else but land),No,Yes
+35998,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Land (Nothing else but land),No,Yes
+36002,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Land (Nothing else but land),No,Yes
+36070,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Land (Nothing else but land),No,Yes
+36074,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Land (Nothing else but land),No,Yes
+36078,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Land (Nothing else but land),No,Yes
+36130,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36134,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36138,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36142,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36186,"Pixel produced, but most probably cloudy",Decreasing quality,Low,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36190,"Pixel produced, but most probably cloudy",Decreasing quality,Low,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36194,"Pixel produced, but most probably cloudy",Decreasing quality,Low,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36254,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36258,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36262,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36326,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36330,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36334,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36351,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,Yes,No,Yes,Land (Nothing else but land),No,Yes
+36881,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36882,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36885,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36886,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36889,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36890,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36893,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36894,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36927,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36936,VI produced with good quality,Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36940,VI produced with good quality,Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36943,Pixel not produced due to other reasons than clouds,Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36944,VI produced with good quality,Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36946,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36948,VI produced with good quality,Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36950,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+36991,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37005,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37007,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37009,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37011,Pixel not produced due to other reasons than clouds,Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37013,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37014,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37017,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37018,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37055,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37077,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37081,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37085,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37086,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37089,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37090,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37119,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,No,Ocean coastlines and lake shorelines,No,Yes
+37141,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37142,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37143,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37145,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37146,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37147,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37149,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37150,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37151,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37153,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37154,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37183,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,No,Yes
+37918,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+37922,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+37926,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+37930,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+37974,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+37978,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+37982,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+37986,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38015,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38042,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38046,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38050,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38079,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38114,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38118,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38122,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38126,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38143,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38178,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38182,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38183,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38186,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38190,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38207,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,No,Yes
+38929,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,Yes
+38933,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,Yes
+38934,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,Yes
+38937,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,Yes
+38938,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,Yes
+38939,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Shallow inland water,No,Yes
+38941,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,No,Yes
+38975,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Shallow inland water,No,Yes
+38984,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow inland water,No,Yes
+38988,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow inland water,No,Yes
+38992,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow inland water,No,Yes
+38996,VI produced with good quality,Decreasing quality,Low,No,No,No,Shallow inland water,No,Yes
+39039,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,No,Shallow inland water,No,Yes
+39053,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,No,Yes
+39057,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,No,Yes
+39061,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,No,Yes
+39065,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Shallow inland water,No,Yes
+39066,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,No,Shallow inland water,No,Yes
+39103,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Average,No,No,No,Shallow inland water,No,Yes
+39125,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,No,Yes
+39129,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,No,Yes
+39133,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,No,Yes
+39134,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,No,Shallow inland water,No,Yes
+39137,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow inland water,No,Yes
+39189,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39190,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39193,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39194,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39195,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39197,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39198,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39201,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39202,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39231,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Shallow inland water,No,Yes
+39317,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Shallow inland water,No,Yes
+39390,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Shallow inland water,No,Yes
+39394,"Pixel produced, but most probably cloudy",Decreasing quality,High,Yes,No,No,Shallow inland water,No,Yes
+39970,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,No,Yes
+40022,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow inland water,No,Yes
+40026,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow inland water,No,Yes
+40030,"Pixel produced, but most probably cloudy",Decreasing quality,Low,No,No,Yes,Shallow inland water,No,Yes
+40063,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Low,No,No,Yes,Shallow inland water,No,Yes
+40090,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow inland water,No,Yes
+40098,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow inland water,No,Yes
+40102,"Pixel produced, but most probably cloudy",Decreasing quality,Average,No,No,Yes,Shallow inland water,No,Yes
+40166,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow inland water,No,Yes
+40170,"Pixel produced, but most probably cloudy",Decreasing quality,High,No,No,Yes,Shallow inland water,No,Yes
+40226,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,Yes
+40227,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,Yes
+40230,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,Yes
+40231,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,Yes
+40234,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,Yes
+40238,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,No,Yes
+40255,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,Yes,Shallow inland water,No,Yes
+40354,"Pixel produced, but most probably cloudy",Decreasing quality,Average,Yes,No,Yes,Shallow inland water,No,Yes
+49377,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow ocean,Yes,Yes
+49381,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Shallow ocean,Yes,Yes
+49407,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,No,No,No,Shallow ocean,Yes,Yes
+49441,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,Yes,Yes
+49445,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow ocean,Yes,Yes
+49471,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Shallow ocean,Yes,Yes
+50478,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow ocean,Yes,Yes
+51199,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,High,Yes,Yes,Yes,Shallow ocean,Yes,Yes
+51221,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,Yes
+51225,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,Yes
+51229,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Land (Nothing else but land),Yes,Yes
+51421,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Land (Nothing else but land),Yes,Yes
+51481,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),Yes,Yes
+51485,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),Yes,Yes
+51489,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Land (Nothing else but land),Yes,Yes
+51613,"VI produced, but check other QA",Decreasing quality,Average,Yes,No,No,Land (Nothing else but land),Yes,Yes
+51681,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),Yes,Yes
+51685,"VI produced, but check other QA",Decreasing quality,High,Yes,No,No,Land (Nothing else but land),Yes,Yes
+53269,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53273,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53275,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53277,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53281,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53311,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,No,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53397,"VI produced, but check other QA",Decreasing quality,Average,No,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53473,"VI produced, but check other QA",Decreasing quality,High,No,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53529,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53530,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53531,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53533,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53534,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53535,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53537,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53538,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53541,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+53567,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Ocean coastlines and lake shorelines,Yes,Yes
+54566,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,Yes,Yes
+54570,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,Yes,Yes
+54574,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Ocean coastlines and lake shorelines,Yes,Yes
+55317,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,Yes
+55321,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,Yes
+55323,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,Yes
+55325,"VI produced, but check other QA",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,Yes
+55326,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,No,Shallow inland water,Yes,Yes
+55577,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55578,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55579,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55581,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55582,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55583,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55585,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55586,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55589,"VI produced, but check other QA",Decreasing quality,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+55615,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,No,Shallow inland water,Yes,Yes
+56358,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,Yes
+56359,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,Yes
+56362,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,No,No,Yes,Shallow inland water,Yes,Yes
+56614,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,Yes
+56618,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,Yes
+56619,Pixel not produced due to other reasons than clouds,Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,Yes
+56622,"Pixel produced, but most probably cloudy",Decreasing quality,Climatology,Yes,No,Yes,Shallow inland water,Yes,Yes
+56639,Pixel not produced due to other reasons than clouds,Not useful for any other reason/not processed,Climatology,Yes,No,Yes,Shallow inland water,Yes,Yes

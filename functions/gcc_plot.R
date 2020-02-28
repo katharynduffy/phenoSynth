@@ -11,7 +11,7 @@ gcc_plot = function(gcc, spring, fall){
   unix = "1970-01-01"
   
   spring_data = TRUE
-  if(is.na(spring$transition_10)){
+  if(dim(spring)[1] == 0){
     print ('No fall transition dates available')
     spring_data = FALSE
   } else{
@@ -22,7 +22,7 @@ gcc_plot = function(gcc, spring, fall){
   
   fall_data = TRUE
   # If there is no Fall data, don't add it to plot
-  if(is.na(fall$transition_10)){
+  if(dim(fall)[1] == 0){
     print ('No fall transition dates available')
     fall_data = FALSE
   } else{

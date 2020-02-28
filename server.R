@@ -782,7 +782,10 @@ server = function(input, output, session) {
     variables$color_list = c()
     variables$color_list_reserve = rainbow(20)
     data$nlcd_breakdown_df = data.frame()
-
+    
+    # Setting raster grid FALSE since it doesn't exist yet
+    data$raster_grid = FALSE
+    
     # Set up directories to store data
     file_path     = paste0('./www/site_data/', site, '/data_layers/')
     main          = './www/site_data'
@@ -1007,10 +1010,24 @@ server = function(input, output, session) {
                            options = layersControlOptions(collapsed = FALSE))
         
         # If NLCD layer exists for site, add it to map
-        if (data$NLCD){
+        if (data$NLCD & data$raster_grid){
+          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
+            addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+              overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD', '250m MODIS Grid'),
+              position = c("topleft"), 
+              options = layersControlOptions(collapsed = FALSE)) %>% 
+            hideGroup("2016 NLCD")
+        }else if (data$NLCD){
           leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
             addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
               overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD'),
+              position = c("topleft"), 
+              options = layersControlOptions(collapsed = FALSE)) %>% 
+            hideGroup("2016 NLCD")
+        }else if (data$raster_grid){
+          leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
+            addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
+              overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '250m MODIS Grid'),
               position = c("topleft"), 
               options = layersControlOptions(collapsed = FALSE)) %>% 
             hideGroup("2016 NLCD")
@@ -1152,8 +1169,8 @@ server = function(input, output, session) {
       data$gcc_p = gcc_p
       # Show and switch to plotpanel
       if (length(selected_data) == 1){
-        shiny::showTab('navbar','PlotPanel')
-        updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
+        # shiny::showTab('navbar','PlotPanel')
+        # updateTabsetPanel(session, 'navbar', selected = 'PlotPanel')
       }
       }) #END WITH PROGRESS BAR
     } #END GCC PLOT
@@ -1242,6 +1259,20 @@ server = function(input, output, session) {
                                           ndvi_raw = as.vector(ndvi_aqua), 
                                           ndvi_qc = as.vector(ndvi_qc_aqua),
                                           type    = 'AQUA')
+          
+          # Add Filtered Data Column to TERA
+          qc_tera_df = subset(qc_df_tera, qc_df_tera$MODLAND == 'VI produced with good quality' & qc_df_tera$VI.Usefulness == 'Decreasing quality' | 
+              qc_df_tera$VI.Usefulness == 'Highest quality' & qc_df_tera$MODLAND == 'VI produced with good quality')
+          qa_tera_v  = qc_tera_df$Value
+          ndvi_brick_df_tera$ndvi_filtered = ifelse(ndvi_brick_df_tera$ndvi_qc %in% qa_tera_v ,ndvi_brick_df_tera$ndvi_raw, NA)
+          
+          # Add Filtered Data Column to AQUA
+          qc_aqua_df = subset(qc_df_aqua, qc_df_aqua$MODLAND == 'VI produced with good quality' & qc_df_aqua$VI.Usefulness == 'Decreasing quality' | 
+              qc_df_aqua$VI.Usefulness == 'Highest quality' & qc_df_aqua$MODLAND == 'VI produced with good quality')
+          qa_aqua_v  = qc_aqua_df$Value
+          ndvi_brick_df_aqua$ndvi_filtered = ifelse(ndvi_brick_df_aqua$ndvi_qc %in% qa_aqua_v ,ndvi_brick_df_aqua$ndvi_raw, NA)
+          
+          # Combine aqua and tera for this pixel
           ndvi_brick_df = rbind(ndvi_brick_df_tera, ndvi_brick_df_aqua)
           
           # Add ndvi_brick_df data (one pixel worth) to a larger df with all pixels and ndvi
@@ -1250,12 +1281,6 @@ server = function(input, output, session) {
           }else {
             ndvi_pixel_data_df = rbind(ndvi_pixel_data_df, ndvi_brick_df)
           }}
-        
-        qa_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
-        ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc %in% qa_values ,ndvi_pixel_data_df$ndvi_raw, NA)
-        
-        # ndvi_pixel_data_df$ndvi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
-        #                                           ndvi_pixel_data_df$ndvi_raw, NA)
         
         data$ndvi_pixels = ndvi_pixel_data_df
         print (as_tibble(data$ndvi_pixels))
@@ -1304,6 +1329,20 @@ server = function(input, output, session) {
                                           evi_raw = evi_aqua, 
                                           evi_qc = evi_qc_aqua,
                                           type    = 'AQUA')
+          
+          # Add Filtered Data Column to TERA
+          qc_tera_df = subset(qc_df_tera, qc_df_tera$MODLAND == 'VI produced with good quality' & qc_df_tera$VI.Usefulness == 'Decreasing quality' | 
+              qc_df_tera$VI.Usefulness == 'Highest quality' & qc_df_tera$MODLAND == 'VI produced with good quality')
+          qa_tera_v  = qc_tera_df$Value
+          evi_brick_df_tera$evi_filtered = ifelse(evi_brick_df_tera$evi_qc %in% qa_tera_v ,evi_brick_df_tera$evi_raw, NA)
+          
+          # Add Filtered Data Column to AQUA
+          qc_aqua_df = subset(qc_df_aqua, qc_df_aqua$MODLAND == 'VI produced with good quality' & qc_df_aqua$VI.Usefulness == 'Decreasing quality' | 
+              qc_df_aqua$VI.Usefulness == 'Highest quality' & qc_df_aqua$MODLAND == 'VI produced with good quality')
+          qa_aqua_v  = qc_aqua_df$Value
+          evi_brick_df_aqua$evi_filtered = ifelse(evi_brick_df_aqua$evi_qc %in% qa_aqua_v ,evi_brick_df_aqua$evi_raw, NA)
+          
+          # Combine aqua and tera for this pixel
           evi_brick_df = rbind(evi_brick_df_tera, evi_brick_df_aqua)
           
           # Add evi_brick_df data (one pixel worth) to a larger df with all pixels and evi
@@ -1313,9 +1352,7 @@ server = function(input, output, session) {
             evi_pixel_data_df = rbind(evi_pixel_data_df, evi_brick_df)
           }
             } #END 250M LOOP
-        
-          qa_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
-          evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc %in% qa_values ,evi_pixel_data_df$evi_raw, NA)
+
           
           # evi_pixel_data_df$evi_filtered = ifelse(ndvi_pixel_data_df$ndvi_qc == 2112 | ndvi_pixel_data_df$ndvi_qc == 4160 | ndvi_pixel_data_df$ndvi_qc == 4163 | ndvi_pixel_data_df$ndvi_qc == 6208 | ndvi_pixel_data_df$ndvi_qc == 6211,
           #                                         evi_pixel_data_df$evi_raw, NA)
@@ -1822,9 +1859,8 @@ server = function(input, output, session) {
     vector_length = length(plot_list)
     length_ = 250 * vector_length
 
-    
     p = subplot(plot_list, nrows = length(plot_list), shareX = TRUE)
-    p  %>% config(displaylogo = FALSE,
+    p  %>% plotly::config(displaylogo = FALSE,
                   modeBarButtonsToRemove = list(
                     'sendDataToCloud',
                     'autoScale2d',
@@ -1900,17 +1936,38 @@ server = function(input, output, session) {
     shinyjs::hide(id = 'clearPixels')
   })
 
+  # Checkbox for deleting data
+  observe({
+    delete_data = input$boolDeleteData
+    if (delete_data){
+      shinyjs::show(id = 'removeCachedData')
+    } else{
+      shinyjs::hide(id = 'removeCachedData')
+    }
+  })
 
+  # Refresh data
+  observeEvent(input$removeCachedData,{
+    site           = input$site
+    # Remove the site directory recursively
+    dir_to_remove          = paste0('./www/site_data/', site)
+    print (paste0('Removing this directory: ', dir_to_remove))
+    unlink(dir_to_remove, recursive=TRUE)
+    shinyBS::toggleModal(session, 'removeCachedDataModal', toggle = 'close')
+    updateCheckboxInput(session, 'boolDeleteData', value = FALSE)
+  })
+  
+  
   # Download/get data for desired phenocam/satellite products
   observeEvent(input$getDataButton, {
-    
+
     withBusyIndicatorServer("getDataButton", {
-      
+
     site           = input$site
     site_data      = get_site_info(site)
     selected_data  = input$dataTypes_get
     data_options   = c('NDVI', 'EVI', 'GCC', 'Transition Dates', 'NPN')
-    
+
     file_path          = paste0('./www/site_data/', site, '/data_layers/')
     ndvi_filepath      = paste0(file_path,'ndvi/')
     ndvi_tera_filepath = paste0(ndvi_filepath, 'tera/')
@@ -1920,12 +1977,12 @@ server = function(input, output, session) {
     evi_aqua_filepath  = paste0(evi_filepath, 'aqua/')
     tds_filepath       = paste0(file_path,'tds/')
     gcc_filepath       = paste0(file_path,'gcc/')
-    
+
     freq           = as.numeric(substring(input$phenocamFrequency, 1, 1))
-    percentile_gcc = 90 
-    
-    shinyjs::hide(id = 'getData')
-    
+    percentile_gcc = 90
+
+    # shinyjs::hide(id = 'getData')
+
     # shinyBS::toggleModal(session, 'getDataPopup', toggle = 'close')
 
     print ('Importing data for:')
@@ -1971,11 +2028,11 @@ server = function(input, output, session) {
     if (!file.exists(gcc_filepath) & 'GCC' %in% selected_data){
       dir.create(file.path(gcc_filepath))
     }
-    
+
       # Import [NPN]
     if ('NPN' %in% selected_data){
       withProgress(message = 'Importing NPN', value = .1, {
-        
+
       npn_file_name = paste0(npn_grid_dir, '/average_leaf_prism_brick.nc')
       if (length(list.files(npn_grid_dir))==0){
         incProgress(amount = .3, detail = 'Downloading NPN')
@@ -1988,15 +2045,15 @@ server = function(input, output, session) {
       }
       }) #END WITH PROGRESS BAR
     } #END IMPORT NPN
-    
-    
+
+
     # Import [Transition Dates] netcdfs
     # ------------------------------------------------------------------------
     if ('Transition Dates' %in% selected_data){
       withProgress(message = 'Importing Transition Dates', value = .1, {
         print ('Importing Transition Dates')
         appeears$tds  = get_appeears_task(site, type = 'tds')
-        
+
         if (length(list.files(tds_filepath))==0){
           tds_bundle_df = download_bundle_file(appeears$tds$task_id, tds_filepath)
           tds_name = subset(tds_bundle_df, file_type == 'nc')$file_name
@@ -2014,13 +2071,13 @@ server = function(input, output, session) {
         nlon = length(lon_td)
         lat_td = ncvar_get(data$tds_nc, "ydim")
         nlat = length(lat_td)
-        
+
         incProgress(amount = .1)
         xmin = lon_td[1]
         xmax = lon_td[length(lon_td)]
         ymin = lat_td[length(lat_td)]
         ymax = lat_td[1]
-        
+
         incProgress(amount = .1)
         td_v6_names = c('Dormancy', 'Greenup', 'Maturity', 'MidGreendown', 'MidGreenup', 'Peak', 'Senescence','QA_Overall', 'QA_Detailed')
         td_v6_ncs   = list()
@@ -2030,7 +2087,7 @@ server = function(input, output, session) {
           this_layer_1 = setExtent(this_layer, extent(xmin,xmax,ymin,ymax))
           dim(this_layer_1) = c(dim(array)[3],dim(array)[2],dim(array)[4])
           crs(this_layer_1) = sinu_crs
-          this_layer_2 = setValues(this_layer_1, values = array[1,,,]) 
+          this_layer_2 = setValues(this_layer_1, values = array[1,,,])
           td_v6_ncs[name] = this_layer_2
         }
         incProgress(amount = .2)
@@ -2040,20 +2097,20 @@ server = function(input, output, session) {
     } #END IMPORT TRANSITION DATES
 
 
-      # Import [NDVI] 
+      # Import [NDVI]
       #------------------------------------------------------------------------
     if ('NDVI' %in% selected_data){
       withProgress(message = 'Importing NDVI', value = .2, {
-        
+
       print ('Importing NDVI')
       # Bring in tera and aqua data
       appeears$ndvi_aqua = get_appeears_task(site, type = 'ndvi_aqua')
       appeears$ndvi_tera = get_appeears_task(site, type = 'ndvi_tera')
       # appeears$ndvi  = get_appeears_task(site, type = 'ndvi')
-      
+
       print (appeears$ndvi_aqua)
       print (appeears$ndvi_tera)
-      
+
       if (length(list.files(ndvi_tera_filepath))==0){
         incProgress(amount = .1, detail = 'Downloading NDVI TERA')
         ndvi_bundle_df_tera = download_bundle_file(appeears$ndvi_tera$task_id, ndvi_tera_filepath)
@@ -2066,7 +2123,7 @@ server = function(input, output, session) {
         ndvi_tera_name  = ndvi_files_t[grepl('MOD13Q1.006_250m_aid0001.nc', ndvi_files_t)]
         ndvi_qc_tera_name = ndvi_files_t[grepl('Quality-lookup.csv', ndvi_files_t)]
       }
-      
+
       if (length(list.files(ndvi_aqua_filepath))==0){
         incProgress(amount = .1, detail = 'Downloading NDVI AQUA')
         ndvi_bundle_df_aqua = download_bundle_file(appeears$ndvi_aqua$task_id, ndvi_aqua_filepath)
@@ -2079,7 +2136,7 @@ server = function(input, output, session) {
         ndvi_aqua_name  = ndvi_files_a[grepl('MYD13Q1.006_250m_aid0001.nc', ndvi_files_a)]
         ndvi_qc_aqua_name = ndvi_files_a[grepl('Quality-lookup.csv', ndvi_files_a)]
       }
-      
+
       incProgress(amount = .1, detail = 'Processing NDVI')
       # TERA data (ndvi)
       # ndvi_tera_name     = subset(ndvi_bundle_df_tera, file_type == 'nc')$file_name
@@ -2090,7 +2147,7 @@ server = function(input, output, session) {
       data$ndvi_tera_brick    = raster::brick(ndvi_tera_path, varname='_250m_16_days_NDVI',  crs = sinu_crs)
       data$ndvi_qc_tera_brick = raster::brick(ndvi_tera_path, varname='_250m_16_days_VI_Quality',  crs = sinu_crs)
       data$ndvi_qc_csv_tera   = read.csv(ndvi_qc_tera_path)
-      
+
       incProgress(amount = .1)
       # AQUA data (ndvi)
       # ndvi_aqua_name     = subset(ndvi_bundle_df_aqua, file_type == 'nc')$file_name
@@ -2108,22 +2165,24 @@ server = function(input, output, session) {
       r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
       r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
       data$r_ndvi_cropped = r_for_grid_cropped_merc
-      
+
       incProgress(amount = .1)
+
       grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
-      
+      data$raster_grid = TRUE
+
       # ADD NLCD back in after building grid
       if (data$NLCD){
         leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
           addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
             overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD', '250m MODIS Grid'),
-            position = c("topleft"), 
+            position = c("topleft"),
             options = layersControlOptions(collapsed = FALSE))
       }
-      
+
       shinyjs::show(id = 'highlightPixelModeNDVI')
       updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
-      
+
       }) #END WITH PROGRESS BAR
     } #END IMPORT NDVI
 
@@ -2133,14 +2192,14 @@ server = function(input, output, session) {
     if ('EVI' %in% selected_data){
       withProgress(message = 'Importing EVI', value = .2, {
       print ('Importing EVI')
-        
+
       appeears$evi_aqua = get_appeears_task(site, type = 'evi_aqua')
       appeears$evi_tera = get_appeears_task(site, type = 'evi_tera')
       # appeears$evi  = get_appeears_task(site, type = 'evi')
-      
+
       print (as_tibble(appeears$evi_aqua))
       print (as_tibble(appeears$evi_tera))
-      
+
       if (length(list.files(evi_tera_filepath))==0){
         incProgress(amount = .2, detail = 'Downloading EVI TERA')
         evi_bundle_df_tera = download_bundle_file(appeears$evi_tera$task_id, evi_tera_filepath)
@@ -2153,7 +2212,7 @@ server = function(input, output, session) {
         evi_tera_name  = evi_files_t[grepl('MOD13Q1.006_250m_aid0001.nc', evi_files_t)]
         evi_qc_tera_name = evi_files_t[grepl('Quality-lookup.csv', evi_files_t)]
       }
-      
+
       if (length(list.files(evi_aqua_filepath))==0){
         incProgress(amount = .2, detail = 'Downloading EVI AQUA')
         evi_bundle_df_aqua = download_bundle_file(appeears$evi_aqua$task_id, evi_aqua_filepath)
@@ -2166,10 +2225,10 @@ server = function(input, output, session) {
         evi_aqua_name  = evi_files_a[grepl('MYD13Q1.006_250m_aid0001.nc', evi_files_a)]
         evi_qc_aqua_name = evi_files_a[grepl('Quality-lookup.csv', evi_files_a)]
       }
-   
+
       # print (as_tibble(evi_bundle_df_tera))
       # print (as_tibble(evi_bundle_df_aqua))
-      
+
       incProgress(amount = .1, detail = 'Processing EVI')
       # TERA data (evi)
       # evi_tera_name     = subset(evi_bundle_df_tera, file_type == 'nc')$file_name
@@ -2180,7 +2239,7 @@ server = function(input, output, session) {
       data$evi_tera_brick    = raster::brick(evi_tera_path, varname='_250m_16_days_EVI', crs = sinu_crs)
       data$evi_qc_tera_brick = raster::brick(evi_tera_path, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
       data$evi_qc_csv_tera   = read.csv(evi_qc_tera_path)
-      
+
       incProgress(amount = .1)
       # AQUA data (evi)
       # evi_aqua_name     = subset(evi_bundle_df_aqua, file_type == 'nc')$file_name
@@ -2191,7 +2250,7 @@ server = function(input, output, session) {
       data$evi_aqua_brick    = raster::brick(evi_aqua_path, varname='_250m_16_days_EVI', crs = sinu_crs)
       data$evi_qc_aqua_brick = raster::brick(evi_aqua_path, varname='_250m_16_days_VI_Quality', crs = sinu_crs)
       data$evi_qc_csv_aqua   = read.csv(evi_qc_aqua_path)
-      
+
       incProgress(amount = .1)
       # Builds the Grid for EVI when NDVI is not imported
       if ('NDVI' %!in% selected_data){
@@ -2201,25 +2260,26 @@ server = function(input, output, session) {
         r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
         r_for_grid_cropped_merc = crop_raster(data$lat_merc, data$lng_merc, r_for_grid_merc, height = 10000, width = 10000, crs_str = merc_crs)
         data$r_evi_cropped = r_for_grid_cropped_merc
-        
+
         incProgress(amount = .1)
         grid = build_raster_grid(r_for_grid_cropped_merc, map = 'map', crs='merc')
-        
+        data$raster_grid = TRUE
+
         # ADD NLCD back in after building grid
         if (data$NLCD){
           leafletProxy('map') %>% addRasterImage(data$rc_nlcd, colors = data$rc_nlcd_c$palette, opacity = .7, group = '2016 NLCD') %>%
             addLayersControl(baseGroups = c("World Imagery", "Open Topo Map"),
               overlayGroups = c('MODIS Land Cover 2016', 'Vegetation Cover Agreement', '2016 NLCD', '250m MODIS Grid'),
-              position = c("topleft"), 
+              position = c("topleft"),
               options = layersControlOptions(collapsed = FALSE))
         }
-        
+
         shinyjs::show(id = 'highlightPixelModeNDVI')
         updateCheckboxInput(session, 'highlightPixelModeNDVI', value = TRUE)
       }
       }) #END WITH PROGRESS BAR
     } #END IMPORT EVI
-    
+
 
     # Import [GCC] splined Data from phenocam (csv)
     #------------------------------------------------------------------------
@@ -2229,26 +2289,26 @@ server = function(input, output, session) {
       file_path = gcc_filepath
       pc_metrics = 'gcc_90'
       frequency = 3
-      
+
       pft_abbr = data$pft_abbr
       # How many days old the GCC must be to refresh (re-download) it from phenocam
       refresh_at = 7
       todays_date = Sys.Date()
-      
+
       # Grab all pfts at this site
       pft_abbrs = as.character(subset(pft_df, pft_df$pft_expanded %in% data$veg_types)$pft_abbreviated)
-      
+
       # Loop through pfts to save out the data
       for (pft_ in pft_abbrs){
-        
+
         gcc_filepath_1day    = paste0(file_path, 'gcc_',pft_, '_1_day', '.csv')
         spring_filepath_1day = paste0(file_path, 'gcc_',pft_, '_1_day_spring_tds', '.csv')
         fall_filepath_1day   = paste0(file_path, 'gcc_',pft_, '_1_day_fall_tds', '.csv')
-  
+
         gcc_filepath_3day    = paste0(file_path, 'gcc_',pft_, '_3_day', '.csv')
         spring_filepath_3day = paste0(file_path, 'gcc_',pft_, '_3_day_spring_tds', '.csv')
         fall_filepath_3day   = paste0(file_path, 'gcc_',pft_, '_3_day_fall_tds', '.csv')
-        
+
         # Add ping phenocam api to make sure it's up?
         # Catch data that is older than the Refresh rate, Delete it if it is and re-download it
         if (file.exists(gcc_filepath)){
@@ -2256,16 +2316,16 @@ server = function(input, output, session) {
           these_gccs = c(gcc_filepath_1day, spring_filepath_1day, fall_filepath_1day,
             gcc_filepath_3day, spring_filepath_3day, fall_filepath_3day)
           dates_modified = as.Date(file.info(these_gccs)$mtime)
-          # If one of the dates is out of sink, rm all 3 and redownload      
+          # If one of the dates is out of sink, rm all 3 and redownload
           if (length(unique(dates_modified)) > 1){
             print ('Will Download GCC from Phenocam API.')
             file.remove(these_gccs)
             # Download gcc back
             incProgress(amount = .2, detail = 'Downloading GCC data')
-            
+
             # Download phenocam 1_day, 3_day gcc and tds data
-            site_pc_data = get_site_roi_csvs(name = site, 
-              roi_files_ = roi_files, 
+            site_pc_data = get_site_roi_csvs(name = site,
+              roi_files_ = roi_files,
               metrics_ = pc_metrics)
 
             # Subsetting data for 1 and 3 day at this pft
@@ -2273,12 +2333,12 @@ server = function(input, output, session) {
             tds_1day = site_pc_data[paste0(pft_, '_tds_1day')][[1]]
             spring_1day = subset(tds_1day, tds_1day$direction == 'rising')
             fall_1day   = subset(tds_1day, tds_1day$direction == 'falling')
-            
+
             gcc_3day  = site_pc_data[paste0(pft_, '_gcc_3day')][[1]]
             tds_3day = site_pc_data[paste0(pft_, '_tds_3day')][[1]]
             spring_3day = subset(tds_3day, tds_3day$direction == 'rising')
             fall_3day   = subset(tds_3day, tds_3day$direction == 'falling')
-            
+
             # Save global variable for phenocam data
             phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
                                             spring_1day = spring_1day,
@@ -2286,23 +2346,23 @@ server = function(input, output, session) {
                                             gcc_3day    = gcc_3day,
                                             spring_3day = spring_3day,
                                             fall_3day   = fall_3day)
-            
-            # Write out the phenocam gcc data 
+
+            # Write out the phenocam gcc data
             write.csv(gcc_1day,    file = gcc_filepath_1day)
             write.csv(spring_1day, file = spring_filepath_1day)
             write.csv(fall_1day,   file = fall_filepath_1day)
             write.csv(gcc_3day,    file = gcc_filepath_3day)
             write.csv(spring_3day, file = spring_filepath_3day)
             write.csv(fall_3day,   file = fall_filepath_3day)
-            
+
           # Remove files if they are older than the refresh_at value (7 days) and redownload
           }else if(length(these_gccs[dates_modified < (todays_date - refresh_at)]) > 0){
             print ('Will Download GCC from Phenocam API.')
             file.remove(these_gccs[dates_modified < (todays_date - refresh_at)])
             # Download phenocam 1_day, 3_day gcc and tds data
-            site_pc_data = get_site_roi_csvs(name = site, 
-              roi_files_ = roi_files, 
-              metrics_ = pc_metrics)
+            site_pc_data = get_site_roi_csvs(name = site,
+                                            roi_files_ = roi_files,
+                                            metrics_ = pc_metrics)
             incProgress(amount = .2, detail = 'Downloading GCC data')
 
             # Subsetting data for 1 and 3 day at this pft
@@ -2310,12 +2370,12 @@ server = function(input, output, session) {
             tds_1day = site_pc_data[paste0(pft_, '_tds_1day')][[1]]
             spring_1day = subset(tds_1day, tds_1day$direction == 'rising')
             fall_1day   = subset(tds_1day, tds_1day$direction == 'falling')
-            
+
             gcc_3day  = site_pc_data[paste0(pft_, '_gcc_3day')][[1]]
             tds_3day = site_pc_data[paste0(pft_, '_tds_3day')][[1]]
             spring_3day = subset(tds_3day, tds_3day$direction == 'rising')
             fall_3day   = subset(tds_3day, tds_3day$direction == 'falling')
-            
+
             # Save global variable for phenocam data
             phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
               spring_1day = spring_1day,
@@ -2323,27 +2383,27 @@ server = function(input, output, session) {
               gcc_3day    = gcc_3day,
               spring_3day = spring_3day,
               fall_3day   = fall_3day)
-            
-            # Write out the phenocam gcc data 
+
+            # Write out the phenocam gcc data
             write.csv(gcc_1day,    file = gcc_filepath_1day)
             write.csv(spring_1day, file = spring_filepath_1day)
             write.csv(fall_1day,   file = fall_filepath_1day)
             write.csv(gcc_3day,    file = gcc_filepath_3day)
             write.csv(spring_3day, file = spring_filepath_3day)
             write.csv(fall_3day,   file = fall_filepath_3day)
-            
+
             # If dates are current, just use local gcc files
           }else {
             print (paste0('Will import GCC from local file. Current within ', refresh_at, ' days.'))
             incProgress(amount = .2, detail = 'Importing GCC CSV')
-            
+
             gcc_1day = read.csv(gcc_filepath_1day, stringsAsFactors = FALSE)
             spring_1day = read.csv(spring_filepath_1day, stringsAsFactors = FALSE)
             fall_1day = read.csv(fall_filepath_1day, stringsAsFactors = FALSE)
             gcc_3day = read.csv(gcc_filepath_3day, stringsAsFactors = FALSE)
             spring_3day = read.csv(spring_filepath_3day, stringsAsFactors = FALSE)
             fall_3day = read.csv(fall_filepath_3day, stringsAsFactors = FALSE)
-            
+
             phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
                                             spring_1day = spring_1day,
                                             fall_1day   = fall_1day,
@@ -2351,36 +2411,36 @@ server = function(input, output, session) {
                                             spring_3day = spring_3day,
                                             fall_3day   = fall_3day)
           }
-          
-          # Download gcc data if it doesn't exist at all     
+
+          # Download gcc data if it doesn't exist at all
         }else{
           incProgress(amount = .2, detail = 'Downloading GCC data')
           print ('Will Download GCC from Phenocam API.')
-          
+
           # Download phenocam 1_day, 3_day gcc and tds data
-          site_pc_data = get_site_roi_csvs(name = site, 
-            roi_files_ = roi_files, 
+          site_pc_data = get_site_roi_csvs(name = site,
+            roi_files_ = roi_files,
             metrics_ = pc_metrics)
           # Subsetting data for 1 and 3 day at this pft
           gcc_1day  = site_pc_data[paste0(pft_, '_gcc_1day')][[1]]
           tds_1day = site_pc_data[paste0(pft_, '_tds_1day')][[1]]
           spring_1day = subset(tds_1day, tds_1day$direction == 'rising')
           fall_1day   = subset(tds_1day, tds_1day$direction == 'falling')
-          
+
           gcc_3day  = site_pc_data[paste0(pft_, '_gcc_3day')][[1]]
           tds_3day = site_pc_data[paste0(pft_, '_tds_3day')][[1]]
           spring_3day = subset(tds_3day, tds_3day$direction == 'rising')
           fall_3day   = subset(tds_3day, tds_3day$direction == 'falling')
-          
+
           # Save global variable for phenocam data
           phenocam$gcc_all[[pft_]] = list(gcc_1day    = gcc_1day,
-            spring_1day = spring_1day,
-            fall_1day   = fall_1day,
-            gcc_3day    = gcc_3day,
-            spring_3day = spring_3day,
-            fall_3day   = fall_3day)
-          
-          # Write out the phenocam gcc data 
+                                          spring_1day = spring_1day,
+                                          fall_1day   = fall_1day,
+                                          gcc_3day    = gcc_3day,
+                                          spring_3day = spring_3day,
+                                          fall_3day   = fall_3day)
+
+          # Write out the phenocam gcc data
           write.csv(gcc_1day,    file = gcc_filepath_1day)
           write.csv(spring_1day, file = spring_filepath_1day)
           write.csv(fall_1day,   file = fall_filepath_1day)
@@ -2391,10 +2451,10 @@ server = function(input, output, session) {
       } # PFT loop
       # Show frequency selection
       shinyjs::show(id = 'phenocamFrequency')
-      
+
       }) #END WITH PROGRESS BAR
     } #END IMPORT GCC
-    
+
     # Update plot data input to only include data that has been imported for this site
     updateSelectInput(session, 'dataTypes_plot', choices = selected_data, selected = selected_data)
     # Toggle get data popup off
@@ -2404,7 +2464,7 @@ server = function(input, output, session) {
       shinyjs::show(id = 'plotRemoteData')
     }
     print (selected_data)
-    
+
     }) #END BUSY INDICATOR
   }) #END GET DATA OBSERVER
   
@@ -2602,8 +2662,13 @@ server = function(input, output, session) {
              variables$color = 'black'
            }
            
+           # Create Label
+           pixel_label = paste0('Pixel Id: ', id_)
+           
+           # Add polygon to leaflet map
            leafletProxy("map") %>%
-             addPolygons(datalon_wgs, datalat_wgs, layerId = id_, weight = 4,  opacity = .95, color = variables$color, group = '250m Highlighted Pixels', fillOpacity = .1)
+             addPolygons(datalon_wgs, datalat_wgs, layerId = id_, weight = 4,  opacity = .95, color = variables$color, 
+               group = '250m Highlighted Pixels', fillOpacity = .1, label = pixel_label)
          }
 
          ps = paste0('--Cell Id: ', id_, ' --Cell # in Landcover: ', cell,

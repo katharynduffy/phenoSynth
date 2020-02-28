@@ -9,23 +9,11 @@ New version of best pixel_match notebook to use the sinusoidal data from AppEEAR
 
 Get token from appeears
 ```{r}
-library(jsonlite)
-library(appeears)
-library(httr)
-username = 'username'
-password = .rs.askForPassword('Password')
-token_response = appeears::appeears_start_session(username,password)
-token         = paste("Bearer", token_response$token)
-token
-rm(password)
+####################################################################################
+# GO RUN global.R for variables and libraries required in this RMD file
+####################################################################################
 ```
 
-```{r}
-response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = token))
-task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
-tasks = jsonlite::fromJSON(txt=task_response)
-tasks
-```
 color palette
 ```{r}
 library(plotly)
@@ -37,37 +25,22 @@ a = rep(1, n)
 b = seq(1, n)
 # plot_ly(x = b, y = a, color = b, colors = colors_, type = 'bar')
 ```
-
-reading in data
-```{r}
-#------------------------------------------------------------------------------------------
-# Add your file path to phenosynth here:
-# '/path/to/folder/with/app/phenosynth'
-file_root = '/path/to/folder/with/app/phenosynth'
-#------------------------------------------------------------------------------------------
-
-test_download_dir = paste0(file_root, '/www/downloads_test')
-if (!file.exists(test_download_dir)){
-  dir.create(file.path(test_download_dir))
-}
-# Load in dataframe with cached AppEEARS tasks
-appeears_tasks_ndvi_t     = readRDS(file = paste0(file_root,'/www/cache_df_ndvi_tera.df'))
-appeears_tasks_ndvi_a     = readRDS(file = paste0(file_root,'/www/cache_df_ndvi_aqua.df'))
-# Load in df with cached AppEEARS Transition Dates (dts)
-appeears_tasks_tds        = readRDS(file = paste0(file_root,'/www/cache_df_tds.df'))
-# Load in df with cached AppEEARS EVI data
-appeears_tasks_evi_t      = readRDS(file = paste0(file_root,'/www/cache_df_evi_tera.df'))
-appeears_tasks_evi_a      = readRDS(file = paste0(file_root,'/www/cache_df_evi_aqua.df'))
-```
+``
 
 grab acadia data
 ```{r}
+test_download_dir = '../www/downloads_test'
+if (!file.exists(test_download_dir)){
+  dir.create(file.path(test_download_dir))
+}
+site_ = 'acadia'
 # Grab acadia tasks for ndvi/evi/tds from cached AppEEARS dataframes
-ndvi_task_t = appeears_tasks_ndvi_t[grep('acadia' ,appeears_tasks_ndvi_t$task_name),]
-ndvi_task_a = appeears_tasks_ndvi_a[grep('acadia' ,appeears_tasks_ndvi_a$task_name),]
-tds_task  = appeears_tasks_tds[grep('acadia' ,appeears_tasks_tds$task_name),]
-evi_task_t  = appeears_tasks_evi_t[grep('acadia' ,appeears_tasks_evi_t$task_name),]
-evi_task_a  = appeears_tasks_evi_a[grep('acadia' ,appeears_tasks_evi_a$task_name),]
+ndvi_task_t = appeears_tasks_ndvi_tera[grep(site_ ,appeears_tasks_ndvi_tera$task_name),]
+ndvi_task_a = appeears_tasks_ndvi_aqua[grep(site_ ,appeears_tasks_ndvi_aqua$task_name),]
+tds_task  = appeears_tasks_tds[grep(site_ ,appeears_tasks_tds$task_name),]
+evi_task_t  = appeears_tasks_evi_tera[grep(site_ ,appeears_tasks_evi_tera$task_name),]
+evi_task_a  = appeears_tasks_evi_aqua[grep(site_ ,appeears_tasks_evi_aqua$task_name),]
+lc_task     = appeears_tasks_lc[grep(site_, appeears_tasks_lc$task_name),]
 ```
 
 get task id for acadia datasets
@@ -78,10 +51,7 @@ ndvi_task_id_a = ndvi_task_a$task_id
 tds_task_id  = tds_task$task_id
 evi_task_id_t  = evi_task_t$task_id
 evi_task_id_a  = evi_task_a$task_id
-lc_task_id_nc   = '3b788e45-6ed4-4d66-9dbe-38f5fea98f08'
-lc_task_id_tiff = '519fc322-a80c-4373-a036-b7aa6223892c'
-
-ndvi_task_id_a
+lc_task_id_nc  = lc_task$task_id
 ```
 
 download data
@@ -366,17 +336,17 @@ bottom = 4925000
 ndvi_raster_merc  = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t))
 ndvi_62           = projectRaster(from = ndvi_raster_t, crs = merc_crs, res = res(ndvi_raster_t)/4, method = 'ngb')
 
-lc_raster_merc_62   = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)/4)
-lc_raster_merc_125  = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)/2)
+# lc_raster_merc_62   = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)/4)
+# lc_raster_merc_125  = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)/2)
 lc_raster_merc_250  = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t))
-lc_raster_merc_500  = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)*2)
+# lc_raster_merc_500  = projectRaster(from = lc_raster_, crs = merc_crs, method='ngb', res = res(ndvi_raster_t)*2)
 
 # # Display Re-projected mercator ndvi and landcover 
-# leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc, opacity = 1, colors = colors_) %>% addRasterImage(ndvi_raster_merc, opacity = .2)
+# leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_250, opacity = 1, colors = colors_) %>% addRasterImage(ndvi_raster_merc, opacity = .2)
 
 # Crop the Re-projected mercator ndvi and landcover to 20000 m from center
 r_250_m_cropped_merc_20 = crop_raster(lat_merc, lng_merc, ndvi_raster_merc, height = 20000, width = 20000, crs_str = merc_crs)
-r_500_m_cropped_merc_20 = crop_raster(lat_merc, lng_merc, lc_raster_merc, height = 20000, width = 20000, crs_str = merc_crs)
+r_500_m_cropped_merc_20 = crop_raster(lat_merc, lng_merc, lc_raster_merc_250, height = 20000, width = 20000, crs_str = merc_crs)
 
 # # Display Cropped, Re-projected mercator ndvi and landcover
 # leaflet() %>% addTiles() %>% addRasterImage(r_500_m_cropped_merc_20, opacity = 1, colors = colors_) %>% addRasterImage(r_250_m_cropped_merc_20, opacity = .2)
@@ -385,12 +355,12 @@ r_500_m_cropped_merc_20 = crop_raster(lat_merc, lng_merc, lc_raster_merc, height
 grid_250 = build_raster_grid(r_250_m_cropped_merc_20, crs='merc')
 grid_500 = build_raster_grid(r_500_m_cropped_merc_20, crs='merc')
 
-leaflet() %>% addTiles() %>% addRasterImage(ndvi_62, opacity = 1, colors = colors_) %>%
-  addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
+# leaflet() %>% addTiles() %>% addRasterImage(ndvi_62, opacity = 1, colors = colors_) %>%
+#   addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
 
 
-leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_62, opacity = 1, colors = colors_) %>%
-  addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
+# leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_62, opacity = 1, colors = colors_) %>%
+#   addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
 # 
 # leaflet() %>% addTiles() %>% addRasterImage(lc_raster_merc_125, opacity = 1, colors = colors_) %>% 
 #   addPolygons(data = grid_250, weight = .8, color = 'orange') %>% setView(lng = lng_wgs, lat = lat_wgs,zoom = 12)
@@ -518,10 +488,54 @@ subset(qc_df, qc_df$VI.Usefulness == 'Highest quality')
 ```
 ```{r}
 subset(qc_df, qc_df$VI.Usefulness == 'Decreasing quality')
+app_qc_values = c(68, 2112, 2116, 2181, 2372, 4160, 4164, 4229, 6208, 6212, 6277)
+
+subset(qc_df, qc_df$Value %in% app_qc_values)
+
+unique(qc_df$MODLAND)
 ```
 
+NDVI qc filters with the qc lookup table
 ```{r}
-names(qc_df)
+tera_qc = read.csv('../www/site_data/acadia/data_layers/ndvi/tera/MOD13Q1-006-250m-16-days-VI-Quality-lookup.csv', stringsAsFactors = FALSE) 
+aqua_qc = read.csv('../www/site_data/acadia/data_layers/ndvi/aqua/MYD13Q1-006-250m-16-days-VI-Quality-lookup.csv', stringsAsFactors = FALSE)
+
+t_app_qc_values_df = subset(tera_qc, tera_qc$MODLAND == 'VI produced with good quality' & tera_qc$VI.Usefulness == 'Decreasing quality' | 
+    tera_qc$VI.Usefulness == 'Highest quality' & tera_qc$MODLAND == 'VI produced with good quality')
+t_qc_values = t_app_qc_values_df$Value
+t_qc_values
+
+a_app_qc_values_df = subset(aqua_qc, aqua_qc$MODLAND == 'VI produced with good quality' & aqua_qc$VI.Usefulness == 'Decreasing quality' | 
+    aqua_qc$VI.Usefulness == 'Highest quality' & aqua_qc$MODLAND == 'VI produced with good quality')
+a_qc_values = a_app_qc_values_df$Value
+a_qc_values
+
+```
+
+NDVI qc filters with the qc lookup table
+```{r}
+tera_qc_evi = read.csv('../www/site_data/acadia/data_layers/evi/tera/MOD13Q1-006-250m-16-days-VI-Quality-lookup.csv', stringsAsFactors = FALSE) 
+aqua_qc_evi = read.csv('../www/site_data/acadia/data_layers/evi/aqua/MYD13Q1-006-250m-16-days-VI-Quality-lookup.csv', stringsAsFactors = FALSE)
+
+t_app_qc_values_df_evi = subset(tera_qc_evi, tera_qc_evi$MODLAND == 'VI produced with good quality' & tera_qc_evi$VI.Usefulness == 'Decreasing quality' | 
+    tera_qc_evi$VI.Usefulness == 'Highest quality' & tera_qc_evi$MODLAND == 'VI produced with good quality')
+t_qc_values_evi = t_app_qc_values_df_evi$Value
+t_qc_values_evi
+
+a_app_qc_values_df_evi = subset(aqua_qc_evi, aqua_qc_evi$MODLAND == 'VI produced with good quality' & aqua_qc_evi$VI.Usefulness == 'Decreasing quality' | 
+    aqua_qc_evi$VI.Usefulness == 'Highest quality' & aqua_qc_evi$MODLAND == 'VI produced with good quality')
+a_qc_values_evi = a_app_qc_values_df_evi$Value
+a_qc_values_evi
+
+```
+
+
+
+```{r}
+app_qc_values_df = subset(qc_df, qc_df$MODLAND == 'VI produced with good quality' & qc_df$VI.Usefulness == 'Decreasing quality' | 
+    qc_df$VI.Usefulness == 'Highest quality' & qc_df$MODLAND == 'VI produced with good quality')
+app_qc_values = app_qc_values_df$Value
+app_qc_values_df
 ```
 
 
