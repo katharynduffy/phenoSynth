@@ -1,0 +1,238 @@
+---
+title: "sink_appeears_scripts.Rmd"
+author: "K. Enns"
+date: "2/28/2020"
+output: html_document
+---
+
+Sandbox for appeears Functions to be used for Cronjob (in theory)
+
+
+
+Get a token for appeears
+```{r}
+appeears_get_token = function(username, password){
+  secret = jsonlite::base64_enc(paste(username, password, sep = ":"))
+  response = httr::POST(paste0("https://lpdaacsvc.cr.usgs.gov/appeears/api", "/login"),
+                   httr::add_headers("Authorization" = paste("Basic", gsub("\n", "", secret)),
+                               "Content-Type" = "application/x-www-form-urlencoded;charset=UTF-8"),
+                   body = "grant_type=client_credentials")
+  token_response = httr::content(response)
+
+  token_response
+}
+
+username_ = 'username'
+my_token_response = appeears_get_token(username = username_, password = .rs.askForPassword('Password'))
+my_token_response
+```
+
+get tasks for this user from appeears
+```{r}
+appeears_get_tasks = function(token_response){
+  bearer_token         = paste("Bearer", token_response$token)
+  response      = GET("https://lpdaacsvc.cr.usgs.gov/appeears/api/task", add_headers(Authorization = bearer_token))
+  task_response = prettify(jsonlite::toJSON(content(response), auto_unbox = TRUE))
+  tasks = jsonlite::fromJSON(txt=task_response)
+  return(tasks)
+}
+
+my_appeears_tasks = appeears_get_tasks(my_token_response)
+my_appeears_tasks
+```
+
+
+Convert the my_appeears_tasks dataframe into a easier to manipulate one that has a field for phenocam names
+```{r}
+get_appeears_clean_tasks = function(my_appeears_tasks){
+  # These strings are used in the tasks names in Appeears
+  task_strs    = c('_EVI_v6_tera_sinu', '_EVI_v6_aqua_sinu', '_NDVI_v6_tera_sinu',  '_NDVI_v6_aqua_sinu', '_TDs_v6', '_LC_sinu_v6')
+  # These strings are what we name the tasks in the submit tasks function for Appeears
+  task_str_ids = c('evi_tera', 'evi_aqua','ndvi_tera', 'ndvi_aqua', 'tds', 'lc_v6')
+  
+  # walk between the two lists with this dataframe
+  str_lookup_df = data.frame(task_str_id = task_str_ids, 
+                             task_str    = task_strs, stringsAsFactors = FALSE)
+  
+  final_df = data.frame()
+  # loop through types and check tasks at this site
+  for (t_type in task_str_ids){
+    t_str    = subset(str_lookup_df, str_lookup_df$task_str_id == t_type)$task_str
+    tasks_df = my_appeears_tasks[grep(c(t_str), my_appeears_tasks$task_name),]
+    cache_df = tasks_df %>% select('task_id', 'task_name', 'created')
+    cache_df_names = as.character(strsplit(cache_df$task_name, t_str))
+    cache_df$created = as.Date(cache_df$created)
+    cache_df$site_name = cache_df_names 
+    cache_df$data_type = t_type
+    
+    if (dim(final_df)[1]==0){
+      final_df = cache_df
+    }else{
+      final_df = rbind(final_df, cache_df)
+    }
+  }
+  return(final_df)
+}
+clean_tasks = get_appeears_clean_tasks(my_appeears_tasks)
+clean_tasks
+```
+
+
+check to see how many remaining tasks you have available
+```{r}
+appeears_get_remaining_tasks = function(appeears_tasks){
+  # Get current time in POSIXct
+  now = Sys.time()
+  appeears_tasks$created = as.POSIXct(appeears_tasks$created,format="%Y-%m-%dT%H:%M", tz = 'UTC')
+  attributes(appeears_tasks$created)$tzone = 'MST'
+  
+  # Grab tasks created in the last 24 hours
+  last_24h_tasks     = subset(appeears_tasks, appeears_tasks$created > (now - (60*60*24*1)))
+  over_24h_ago_tasks = subset(appeears_tasks, appeears_tasks$created < (now - (60*60*24*1)))
+  if (dim(over_24h_ago_tasks)[1] > 0){
+    pending_tasks = subset(over_24h_ago_tasks, over_24h_ago_tasks$status == 'pending') 
+  }else{
+    pending_tasks = data.frame()
+  }
+  
+  # Number of submitions remaining for the last 24hours
+  n_tasks_24h = dim(last_24h_tasks)[1]
+  n_pending_tasks = dim(pending_tasks)[1]
+  submitions_remaining = 100 - n_tasks_24h - n_pending_tasks
+}
+
+my_remaining_tasks = appeears_get_remaining_tasks(my_appeears_tasks)
+my_remaining_tasks
+```
+
+Get all of the phenocam sites with ROIs to use to download data from appeears with
+```{r}
+source('../../functions/phenocam_api.R')
+# dir argument is just saying that the main director for phenosynth is up 2 directories (../..)
+pc_data   = cache_phenocam_data(dir = '../..')
+cams_     = pc_data$cams
+cams_
+```
+
+Put together some test sites to use
+```{r}
+phenocam_sites = cams_$site
+test_sites = phenocam_sites[16:25]
+test_sites
+```
+
+
+Take stock of phenocam sites -
+  - do they have all their appeears tasks?
+  - are all of the tasks recent (last 3 months)
+  - do they have a nlcd layer if it exists?
+  - are they in the cams_ list?
+```{r}
+# Returns a dataframe 
+appeears_stock_df = function(sites_phenocam, clean_task_df){
+  task_str_ids = c('evi_tera', 'evi_aqua','ndvi_tera', 'ndvi_aqua', 'tds', 'lc_v6')
+  clean_task_df$complete_appeears = FALSE
+  
+  for (site_ in sites_phenocam){
+    # Tasks for this site
+    these_tasks = subset(clean_task_df, clean_task_df$site_name %in% site_)
+    
+    # Get the length of the site's tasks (should be 6 for all data)
+    site_task_length = length(unique(these_tasks$task_name))
+    # Set whether this site has all the tasks it needs
+    if (site_task_length == 6){
+      clean_task_df$complete_appeears[clean_task_df$site_name == site_] = TRUE
+    }
+  }
+  return (clean_task_df)
+}
+
+appeears_stocked_df = appeears_stock_df(phenocam_sites, clean_tasks)
+```
+
+Check phenocam site has all tasks (complete?)
+```{r}
+appeears_check_site = function(this_site){
+  site_status_row = subset(appeears_stocked_df, appeears_stocked_df$site_name  == this_site) %>% 
+    dplyr::select(site_name, complete_appeears) %>% 
+    distinct()
+  site_status = site_status_row$complete_appeears
+}
+# FALSE = not complete, TRUE = complete aka has the 6 tasks
+site_status_ = appeears_check_site('harvardfarmnorth')
+```
+
+Check phenocam missing tasks if not all tasks exist (missing tasks for 1 site)
+```{r}
+
+
+```
+
+
+Check phenocam site age (check the age of site tasks)
+```{r}
+
+
+```
+
+
+Submit tasks that are missing, or old.
+```{r}
+
+
+```
+
+Check completion of phenocam site tasks (are they done or pending)
+```{r}
+
+
+```
+
+
+```
+
+```
+
+Clean up duplicates (remove old tasks if 2 exist)
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
