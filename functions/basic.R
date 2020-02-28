@@ -24,6 +24,7 @@ switch_to_explorer_panel = function(map_ = 'map'){
   shinyjs::hide(id = 'clearPixels')
   shinyjs::hide(id = 'uploadShp')
   shinyjs::hide(id = 'nlcdOpacity')
+  shinyjs::hide(id = 'openDeleteDataModal')
   # Ids to show:
   shinyjs::show(id = 'controls')
   shinyjs::show(id = 'explorerTitle')
@@ -36,6 +37,7 @@ switch_to_explorer_panel = function(map_ = 'map'){
   shinyjs::show(id = 'drawImageROI')
   shinyjs::show(id = 'analyzerMode')
   shinyjs::show(id = 'mouse')
+  
   # Create leaflet map for explorer mode
   leafletProxy(map_) %>%
     clearControls() %>%
@@ -64,6 +66,7 @@ switch_to_analyzer_panel = function(){
   shinyjs::show(id = 'pftSelection')
   shinyjs::show(id = 'getData')
   shinyjs::show(id = 'uploadShp')
+  shinyjs::show(id = 'openDeleteDataModal')
   # Ids to hide:
   shinyjs::hide(id = 'explorerTitle')
   shinyjs::hide(id = 'usZoom')

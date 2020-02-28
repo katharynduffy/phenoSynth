@@ -89,8 +89,6 @@ get_appeears_task = function(name, type){
 
 #' get_submitions_remaining
 #'
-#' @param name - site name
-#' @param type - site type
 #'
 #' @return Returns the number of submitions remaining for AppEEARS tasks
 #' 

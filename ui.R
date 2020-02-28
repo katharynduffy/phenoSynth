@@ -46,8 +46,8 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                          size = "medium",
                          # selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI','Transition Dates', 'NPN'), c('GCC', 'NDVI', 'EVI', 'Transition Dates', 'NPN')),
                          selectInput('dataTypes_get', 'Data Types', multiple = TRUE, selected = c('GCC', 'NDVI', 'EVI', 'Transition Dates'), c('GCC', 'NDVI', 'EVI', 'Transition Dates')),
-                         # selectInput('phenocamFrequency', 'GCC Frequency', multiple = FALSE, selected = '3 day', c('1 day', '3 day')),
                          withBusyIndicatorUI(actionButton('getDataButton', 'Get Data', class='btn-primary')),
+                         br(),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none } 
                                                #getDataPopup .modal-header button{ display:none } 
                                                #getDataPopup {keyboard:false; backdrop: 'static';}"))
@@ -75,6 +75,15 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                            c('EVI', 'NDVI', 'GCC Data', 'GCC Spring Transition Dates', 'GCC Fall Transition Dates', 'MODIS Transition Dates', 'Selected Pixel CSV')),
                          downloadButton('downloadDataButton', 'Download'),
                          tags$head(tags$style("#getDataPopup .modal-footer{ display:none}"))
+                 ),
+                 bsModal("removeCachedDataModal",
+                   "Removing locally cached data", "openDeleteDataModal",
+                   h4('Are you sure you want to remove all downloaded data for this site?'),
+                   checkboxInput('boolDeleteData', 'Select checkbox and then press button that appears'),
+                   withBusyIndicatorUI(actionButton('removeCachedData', 'Remove Data', class='btn-primary')),
+                   tags$head(tags$style("#plotDataPopup .modal-footer{ display:none } 
+                                               #plotDataPopup .modal-header button{ display:none } 
+                                               #plotDataPopup {keyboard:false; backdrop: 'static';}"))
                  ),
                  
                  navbarPage("PhenoSynth-v1 Release", id="navbar",
@@ -108,9 +117,10 @@ ui = fluidPage(shinyjs::useShinyjs(), useShinyalert(), includeCSS("./Aesthetics/
                                       selectInput('pftSelection', 'PhenoCam ROI Vegetation', ''),
                                       checkboxInput("highlightPixelModeNDVI", "Select MODIS Pixels (250m resolution)", value = FALSE),
                                       actionButton('getData', 'Import Data'),
-                                      actionButton('plotRemoteData', 'Plot Data'),
+                                      actionButton('openDeleteDataModal', 'Remove Data'),
                                       actionButton('uploadShp', 'Upload Shapefile'),
-                                      actionButton('clearPixels', 'Clear Pixels')
+                                      actionButton('clearPixels', 'Clear Pixels'),
+                                      withBusyIndicatorUI(actionButton('plotRemoteData', 'Plot Data', class='btn-primary'))
                                       # sliderInput('nlcdOpacity', 'NLCD Opacity', min = .1, max = 1, value =.7, step = .1)
                         )),
                                      
