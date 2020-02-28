@@ -1,0 +1,92 @@
+---
+title: "PhenoCam_APIS_Viz"
+author: "K Duffy"
+date: "2/28/2020"
+output: html_document
+---
+
+```{r}
+df_SH <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/SH/ibp_SH_1000_3day.csv', header = TRUE, sep = ",")
+td_Sh <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/Transition Dates/ibp_SH_1000_3day_transition_dates.csv', header = TRUE, sep = ",")
+df_GR1 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/GR/ibp_GR_1000_3day.csv', header = TRUE, sep = ",")
+td_GR1 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/Transition Dates/ibp_GR_1000_3day_transition_dates.csv', header = TRUE, sep = ",")
+td_GR2 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/Transition Dates/NEON.D14.JORN.DP1.00042_GR_1000_3day_transition_dates.csv', header = TRUE, sep = ",")
+df_GR2 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/GR/NEON.D14.JORN.DP1.00042_GR_1000_3day.csv', header = TRUE, sep = ",")
+```
+
+```{r}
+x <- list(
+  title = "Date")
+y <- list(
+  title = "PhenoCam GCC")
+p = plot_ly(
+    data = df_SH,
+    x = ~ date,
+    y = ~ gcc_90, #-.336,
+    showlegend = FALSE,
+    type = 'scatter',
+    mode = 'markers', 
+     opacity = 0.7,
+    name='PhenoCam Shrubs',
+    marker=list(color="royalblue")
+  ) %>%
+  add_trace(
+    x=~df_GR1$date,
+    y=~df_GR1$gcc_90, #-.31,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='PhenoCam Grass: ibp',
+    marker = list(color="goldenrod")
+
+  )%>%
+    add_trace(
+      y = ~ smooth_gcc_90,
+      mode = "lines",
+      line = list(width = 2, color = "rgb(120,120,120)"),
+      opacity=.2,
+      name = "GCC Shrubs",
+      showlegend = TRUE
+  )%>%
+  add_trace(
+      y = ~ df_GR1$smooth_gcc_90,
+      x=~date,
+      mode = "lines",
+      marker=list(color="rgb(218,165,32)"),
+      line = list(width=2, color = "rgb(218,165,32)"),#, line=list(color='rgb(218,165,32)')),
+      opacity=.2,
+      name = "GCC Grass",
+      showlegend = TRUE
+  )%>%
+  # add_trace(
+  #     y = ~ df_GR2$smooth_gcc_90,
+  #     #mode = "lines",
+  #     line = list(width = 2, color = "rgb(120,120,120)"),
+  #     opacity=.2,
+  #     name = "Gcc loess fit",
+  #     showlegend = TRUE
+  # )%>%
+  add_trace(
+    x=~df_GR2$date,
+    y=~df_GR2$gcc_90, #-.34,
+    mode = "markers",
+    type = "scatter",
+     opacity = .6,
+    name='PhenoCam Grass: JORN.00042',
+    marker = list(color="darkgoldenrod")
+
+  )
+
+p <- p %>%
+  layout(
+    #title = "Time Series of ibp & JORN.00042",
+    xaxis = list(
+        type = 'date',
+        tickformat = " %B<br>%Y"),
+        xaxis = list(title='Date'),
+        yaxis = list(title = 'PhenoCam GCC')
+  )
+
+p
+
+```
