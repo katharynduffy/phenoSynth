@@ -1,0 +1,115 @@
+---
+title: "APIS_insitu_paper_figs"
+author: "K Duffy"
+date: "3/3/2020"
+output: html_document
+---
+```{r}
+library(dplyr)
+library(lubridate)
+```
+
+```{r}
+npn_jer_SH=data.frame(date=seq(as.Date('2014-01-01'),to=as.Date('2019-12-30'),by='1 day'))
+
+```
+```{r}
+df <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/npn_data/Jornada_StatusandIntensity_leaves.csv', header = TRUE, sep = ",", stringsAsFactors = FALSE)
+df=df%>%
+  filter(df$Intensity_Value!=-9999)
+df=df%>%
+  filter(df$Phenophase_Description==c('Leaves', 'Leaves (grasses)'))
+df$Observation_Date=as.Date(df$Observation_Date, format="%m/%d/%Y")
+xscale=data.frame(unique(df$Intensity_Value))
+```
+```{r}
+
+npn_SH=df%>%
+  filter(Functional.Type=='shrub')%>%
+  arrange(Observation_Date)%>%
+  rename(date=Observation_Date)
+```
+# ```{r}
+# 
+# npn_jer_SH=npn_jer_SH%>%
+#               dplyr::inner_join(npn_SH, npn_jer_SH, by="date")
+# ```
+
+```{r}
+npn_GR=df%>%
+  filter(Functional.Type=='grass')%>%
+  arrange(Observation_Date)%>%
+  rename(date=Observation_Date)
+```
+
+```{r}
+
+library(plotly)
+p2 = plot_ly(
+    data = npn_GR,
+    x = ~ as.factor(npn_GR$date),
+    y = ~ as.factor(npn_GR$Intensity_Value),
+    showlegend = TRUE,
+    type = 'bar',
+     opacity = .8,
+    name='Jornada NPN Grass', 
+    #text=unique(df$Intensity_Value),
+    marker=list(color="goldenrod", size=3)
+   ) %>%
+   add_trace(
+      x=~as.factor(npn_SH$date),
+     y=~as.factor(npn_SH$Intensity_Value),
+     type = "bar",
+      opacity = .5,
+     name='Jornada NPN Shrubs',
+     marker = list(color="royalblue", size=3)
+  )
+p2
+```
+
+```{r}
+p2 <- p2 %>%
+  layout(
+    #title = "Time Series of ibp & JORN.00042",
+   # xaxis = list(title='Date'),
+    xaxis = list(
+        type = 'date',
+        tickformat = " %B<br>%Y", 
+        title='Date'),
+        
+        yaxis = list(
+          title = 'USA-NPN Status Intensity',
+          typeformat='%', 
+          nticks=6,
+          tick0=0,
+          dtick=25,
+          ticktext=xscale
+          # tick0=5,
+          # dtick=25, 
+          # tick
+          #range=c(0,100))
+        # yaxis = list(
+        # range=c(0,100))
+  ))
+
+p2
+
+# a <- list(
+#   autotick = FALSE,
+#   ticks = "outside",
+#   tick0 = 0,
+#   dtick = 25,
+#   ticklen = 5,
+#   tickwidth = 2
+# )
+# s <- seq(1, 4, by = 0.25)
+# fig <- plot_ly(x = ~s, y = ~s)
+# fig <- fig %>% layout(xaxis = a, yaxis = a)
+# 
+# fig
+```
+
+```{r}
+p3=subplot(p2, p, nrows=2)
+p3
+```
