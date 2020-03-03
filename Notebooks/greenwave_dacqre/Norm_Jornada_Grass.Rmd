@@ -1,0 +1,70 @@
+---
+title: "Norm_Jorn Grass"
+author: "K Duffy"
+date: "2/27/2020"
+output: html_document
+---
+
+```{r}
+GR_files=list.files('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/GR')
+n_GR=length(GR_files)
+```
+
+```{r}
+jer_GR=data.frame(date=seq(as.Date('2014-01-01'),to=as.Date('2019-12-30'),by='1 day'))
+jer_GR=jer_GR%>%
+  dplyr::mutate(
+    date=as.factor(date)
+    )
+```
+```{r}
+setwd('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/GR')
+for(i in seq(1, n_GR, by = 1)){
+  print(GR_files[i])
+          df <- read.table(GR_files[i], header = TRUE, sep = ",")
+          df_time=df%>%
+            select(date, year, doy)
+          df=normalize_ts(df, 90)
+          df=cbind(df, df_time)
+          
+
+            jer_GR=jer_GR%>%
+              dplyr::left_join(df, jer_GR, by='date')
+}
+
+
+#
+```
+```{r}
+# jer_smoothed=jer_GR%>%
+#   select(date, starts_with('smooth'))
+jer_GR=jer_GR%>%
+  select(date,starts_with('smooth'))
+colnames(jer_GR)=c('date', 'ibp', 'jergrassland', 'JORN_canopy', 'JORN_understory')
+
+meltedGR=melt(jer_GR)
+```
+
+```{r}
+p = plot_ly(
+    data = meltedGR,
+    x = ~ date,
+    y = ~ value,
+    showlegend = TRUE,
+    type = 'scatter',
+    mode = 'markers', 
+     opacity = .8,
+    name='Jornada PhenoCam Grass',
+    marker=list(color="goldenrod", size=3)
+  ) %>%
+  add_trace(
+     x=~meltedSH$date,
+    y=~meltedSH$value,
+    mode = "markers",
+    type = "scatter",
+     opacity = .5,
+    name='Jornada PhenoCam Shrubs',
+    marker = list(color="royalblue", size=3)
+  )
+p
+```

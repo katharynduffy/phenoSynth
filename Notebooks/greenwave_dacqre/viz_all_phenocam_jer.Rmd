@@ -1,0 +1,278 @@
+---
+title: "Viz_PhenoCam_Paper"
+author: "K Duffy"
+date: "2/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Pull in all gcc90 data by PFT
+
+
+
+```{r}
+#df <- read.table("butte_GR_1000_3day.csv", header = TRUE, sep = ",")
+GR_files=list.files('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/GR')
+n_gr=length(GR_files)
+```
+
+# ```{r}
+# #jer_GR=data.frame(nrow=2555, ncol=50)
+# #jer_GR$Year=rep(2014, 365)
+# rep.row<-function(x,n){
+#    matrix(rep(x,each=n),nrow=n)
+# }
+# ```
+# 
+# ```{r}
+# y2=rep.row(2014, 365)
+# for(i in seq(2, length(yrs), by = 1)){
+#     y=rep.row(yrs[i], 365)
+#     y2=rbind(y2, y)
+# }
+# 
+# ```
+# ```{r}
+# jer_GR=data.frame(doy=1:365)
+# j=data.frame(doy=1:365)
+# for(i in seq(2, length(yrs), by = 1)){
+# jer_GR=rbind(jer_GR, j)
+# }
+# ```
+# 
+# ```{r}
+# jer_GR$year=y2
+# ```
+
+```{r}
+jer_GR=data.frame(date=seq(as.Date('2014-01-01'),to=as.Date('2019-12-30'),by='1 day'))
+jer_GR=jer_GR%>%
+  dplyr::mutate(
+    date=as.factor(date)
+    )
+
+  #mutate(datetime=as.POSIXct(date,  origin = "1970-01-01"))
+#jer_GR$date=date
+```
+
+# ```{r}
+# setwd('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/GR')
+# for(i in seq(1, n_gr, by = 1)){
+#           df <- read.table(GR_files[i], header = TRUE, sep = ",")
+#           df=df%>%
+#             dplyr::select(date, year, doy, gcc_90, smooth_gcc_90)%>%
+#             mutate(datetime=as.POSIXct(date, origin = "1970-01-01"))
+#           
+#           jer_GR%>%
+#             dplyr::left_join(jer_GR, df)
+#           
+#           }
+# ```
+
+```{r}
+setwd('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/GR')
+for(i in seq(1, n_gr, by = 1)){
+  print(GR_files[i])
+          df <- read.table(GR_files[i], header = TRUE, sep = ",")
+          df=df%>%
+            dplyr::select(date, year, doy, gcc_90, smooth_gcc_90)
+
+            jer_GR=jer_GR%>%
+              dplyr::left_join(df, jer_GR, by="date")
+}
+jer_GR=jer_GR%>%
+  as.factor(jer_GR$date)
+```
+
+```{r}
+# library(readr)
+# #setwd('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data')
+# ibp_GR_1000_3day_transition_dates <- read_csv("/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/Transition Dates/ibp_GR_1000_3day_transition_dates.csv", col_names = TRUE, skip=16)
+# minIBP=min(ibp_GR_1000_3day_transition_dates$min_gcc)
+```
+
+
+
+```{r}
+# jer_smoothed=jer_GR%>%
+#   select(date, starts_with('smooth'))
+jer_GR=jer_GR%>%
+  select(date, starts_with('gcc'))
+colnames(jer_GR)=c('date', 'ibp','JORN_understory') # 'jergrassland', 'JORN_canopy', 
+```
+
+```{r}
+p = plot_ly(
+    data = jer_GR,
+    x = ~ date,
+    y = ~ ibp, #-.336,
+    showlegend = TRUE,
+    type = 'scatter',
+    mode = 'markers', 
+     opacity = 0.8,
+    name='ibp',
+    marker=list(color="goldenrod")
+  ) %>%
+  # add_trace(
+  #   x=~date,
+  #   y=~jergrassland, #-.31,
+  #   mode = "markers",
+  #   type = "scatter",
+  #    opacity = 0.8,
+  #   name='jergrassland',
+  #   marker = list(color="goldenrod")
+  # 
+  # )%>%
+  # add_trace(
+  #   x=~date,
+  #   y=~JORN_canopy, #-.32,
+  #   mode = "markers",
+  #   type = "scatter",
+  #    opacity = 0.8,
+  #   name='JORN Canopy',
+  #   marker = list(color="goldenrod")
+  #   
+  # )%>%
+  add_trace(
+    x=~date,
+    y=~JORN_understory, #-.34,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='JORN understory',
+    marker = list(color="goldenrod")
+
+  )
+p
+```
+
+```{r}
+p = plot_ly(
+    data = jer_GR,
+    x = ~ date,
+    y = ~ ibp-0.33616,
+    #showlegend = FALSE,
+    type = 'scatter',
+    mode = 'markers', 
+     opacity = 0.8,
+    name='ibp',
+    marker=list(color="goldenrod")
+  ) %>%
+  add_trace(
+    x=~date,
+    y=~jergrassland-0.31359,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='Jornada PhenoCam Grass',
+    #showlegend=TRUE,
+    marker = list(color="goldenrod")
+
+  )%>%
+  add_trace(
+    x=~date,
+    y=~JORN_canopy-0.32231,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='JORN Canopy',
+    marker = list(color="goldenrod")
+    
+  )%>%
+  add_trace(
+    x=~date,
+    y=~JORN_understory-0.33867,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='JORN understory',
+    marker = list(color="goldenrod")
+
+  )
+p
+```
+
+```{r}
+library(reshape2)
+meltedGR=melt(jer_GR)
+```
+
+```{r}
+df <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/SH/ibp_SH_1000_3day.csv', header = TRUE, sep = ",")
+```
+
+```{r}
+x <- list(
+  title = "Date")
+y <- list(
+  title = "PhenoCam GCC")
+p = plot_ly(
+    data = df,
+    x = ~ date,
+    y = ~ gcc_90, #-.336,
+    showlegend = FALSE,
+    type = 'scatter',
+    mode = 'markers', 
+     opacity = 0.7,
+    name='PhenoCam Shrubs',
+    marker=list(color="royalblue")
+  ) %>%
+  add_trace(
+    x=~jer_GR$date,
+    y=~jer_GR$ibp, #-.31,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='PhenoCam Grass: ibp',
+    marker = list(color="goldenrod")
+
+  )%>%
+    add_trace(
+      y = ~ smooth_gcc_90,
+      #mode = "lines",
+      line = list(width = 2, color = "rgb(120,120,120)"),
+      opacity=.2,
+      name = "Gcc loess fit",
+      showlegend = TRUE
+  )%>%
+  add_trace(
+    x=~jer_GR$date,
+    y=~jer_GR$JORN_understory, #-.34,
+    mode = "markers",
+    type = "scatter",
+     opacity = .6,
+    name='PhenoCam Grass: JORN.00042',
+    marker = list(color="darkgoldenrod")
+
+  )
+
+p <- p %>%
+  layout(
+    #title = "Time Series of ibp & JORN.00042",
+    xaxis = list(
+        type = 'date',
+        tickformat = " %B<br>%Y"),
+        xaxis = list(title='Date'),
+        yaxis = list(title = 'PhenoCam GCC')
+  )
+
+p
+
+```
+```{r}
+p = plot_ly(
+    data = test,
+    x = ~ date,
+    y = ~ value,
+    showlegend = TRUE,
+    type = 'scatter',
+    mode = 'markers', 
+     opacity = .8,
+    name='Jornada PhenoCam Grass',
+    marker=list(color="goldenrod")
+  ) 
+p
+```
