@@ -26,8 +26,13 @@ xscale=data.frame(unique(df$Intensity_Value))
 
 npn_SH=df%>%
   filter(Functional.Type=='shrub')%>%
-  arrange(Observation_Date)%>%
-  rename(date=Observation_Date)
+  arrange(Observation_Date) %>%
+  rename(date=Observation_Date) %>% rowwise() %>% dplyr::mutate(percent_int_value = strsplit(Intensity_Value, '-')[[1]][2]) %>%
+  dplyr::mutate(percent_int_value = substr(percent_int_value,1,nchar(percent_int_value)-1))%>%
+  dplyr::mutate(percent_int_value = as.integer(percent_int_value)) %>% ungroup() %>%
+  dplyr::group_by(date) %>% dplyr::mutate(mean_status_int = mean(percent_int_value)) %>% 
+  dplyr::select(mean_status_int, date, Functional.Type) %>% dplyr::distinct()
+npn_SH
 ```
 # ```{r}
 # 
@@ -38,8 +43,14 @@ npn_SH=df%>%
 ```{r}
 npn_GR=df%>%
   filter(Functional.Type=='grass')%>%
-  arrange(Observation_Date)%>%
-  rename(date=Observation_Date)
+  arrange(Observation_Date) %>%
+  rename(date=Observation_Date) %>% rowwise() %>% dplyr::mutate(percent_int_value = strsplit(Intensity_Value, '-')[[1]][2]) %>%
+  dplyr::mutate(percent_int_value = substr(percent_int_value,1,nchar(percent_int_value)-1)) %>%
+  dplyr::mutate(percent_int_value = as.integer(percent_int_value)) %>% ungroup() %>%
+  dplyr::group_by(date) %>% dplyr::mutate(mean_status_int = mean(percent_int_value)) %>% 
+  dplyr::select(mean_status_int, date, Functional.Type) %>% dplyr::distinct()
+  
+npn_GR
 ```
 
 ```{r}
