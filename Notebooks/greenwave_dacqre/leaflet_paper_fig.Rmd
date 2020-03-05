@@ -20,8 +20,8 @@ Crop nlcd to the sites
 ```{r}
 # Download the NLCD 2016 CON"US landcover layers from online"
 library(raster)
-NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
-landsat_atts = NLCD_lc@data@attributes
+# NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+# landsat_atts = NLCD_lc@data@attributes
 # raster::plot(NLCD_lc)
 ```
 
@@ -56,13 +56,13 @@ test_merc = raster::raster(file_name)
 test_raster = test_merc
 
 landsat_lc = Landsat_Landcover %>% 
-  mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 3, NA)) %>%
-  mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 2, NA)) %>% 
-  mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 7, NA))
+  dplyr::mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 3, NA)) %>%
+  dplyr::mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 2, NA)) %>% 
+  dplyr::mutate(Landsat.Class = replace(Landsat.Class, MODIS.Class == 7, NA))
 # create a landsat to modis lookup (so that no landsat values are left out)
 landsat_lc_lookup = read.csv('../../www/landsat_lc/nlcd_key.csv') %>% 
   dplyr::select(ID,NLCD.Land.Cover.Class) %>% left_join(landsat_lc, by = c('ID' = 'Landsat.Class')) %>%
-  mutate(MODIS.Class = replace(MODIS.Class, ID == 12, NA)) %>%
+  dplyr::mutate(MODIS.Class = replace(MODIS.Class, ID == 12, NA)) %>%
   left_join(pft_df, by = c('MODIS.Class' = 'pft_key'))
         
 
