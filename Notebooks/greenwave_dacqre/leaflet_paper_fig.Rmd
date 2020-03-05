@@ -11,7 +11,8 @@ Extract the sites
 ####################################################################################
 # GO RUN global.R for variables and libraries required in this RMD file
 ####################################################################################
-sites_df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)[1:9,] # Removing one of the NEON.d14.JORN.DP1 sites
+df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)
+sites_df = subset(df, df$Name %in% c("ibp", "NEON.D14.JORN.DP1.00042"))
 paper_sites = sites_df$Name
 ```
 
@@ -83,7 +84,7 @@ rc_nlcd_c = build_pft_palette(rc_nlcd)
 # Only colors found in the Landsat nlcd Layer
 leaflet(options = leafletOptions(zoomControl = FALSE)) %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
   addLegend(labels = rc_nlcd_c$names, colors = rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>%
-  addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, label=c('A','B','C','D','E','F','G','H','I'),
+  addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, label=c('A','B','C','D','E','F','G','H','I')[1:length(sites_df$Lon)],
   radius = 1, color = 'rgb(0,0,0,0)', weight=2, opacity = 1, labelOptions = labelOptions(noHide = T,textOnly = TRUE, 
     direction = 'bottom',
     style = list(
