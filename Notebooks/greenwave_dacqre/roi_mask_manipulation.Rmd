@@ -5,6 +5,187 @@ date: "2/18/2020"
 output: html_document
 ---
 
+
+
+Build the images and save them out into a new directory called pc_roi_imgs
+```{r}
+library(magick)
+library(imager)
+# Create directory to store the phenocam/roi images for each site
+dir.create('pc_roi_imgs', showWarnings = FALSE)
+dir.create('pc_roi_imgs/masks', showWarnings = FALSE)
+dir.create('pc_roi_imgs/final_masks', showWarnings = FALSE)
+dir.create('pc_roi_imgs/imgs', showWarnings = FALSE)
+dir.create('pc_roi_imgs/final_imgs', showWarnings = FALSE)
+# Get the sites for the paper
+sites_df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)[1:9,] # Removing one of the NEON.d14.JORN.DP1 sites
+site_labels = c('A','B','C','D','E','F','G','H','I')
+montage_name = 'Phenosynthesis_2'
+# Sites to add (use a total of 9 for 3x3 to work)
+jorn_sites = sort(sites_df$Name)
+# jorn_sites = sort(c('acadia','alleypond','arbutuslake','cafboydsouthltar01', 'twolcsh',
+#   'unca','bernatchez','bartlett','niwot5'))
+jorn_sites = c("ibp", "NEON.D14.JORN.DP1.00042")
+
+
+# Loop through all the sites to build out the images
+count = 1
+for (site_ in jorn_sites){
+  print (site_)
+  roiID = 1000
+  label = site_labels[count]
+  print (label)
+  count = count + 1
+  doy_ = 200
+  
+  
+  site_cams_row = subset(cams_, cams_$site == site_)
+  site_rois_row = subset(roi_files, roi_files$site == site_)
+  pfts          = unique(site_rois_row$roitype)
+  
+  # Select 1 mid day image
+  gcc_ts = get_pheno_ts(site_, vegType = pfts[1], roiID = roiID, type = '3day')
+  gcc_ts[, month:=month(YYYYMMDD)] # extracting month from the date
+  gcc_ts[, YYYYMMDD:=as.Date(YYYYMMDD)] # convert to the right format
+  gcc_ts[,midday_url:=sprintf('https://phenocam.sr.unh.edu/data/archive/%s/%04d/%02d/%s', 
+                              site_, year, month, midday_filename)] #making the URL of midday images
+  gcc_ts = as.data.frame(gcc_ts, stringsAsFactors = FALSE)
+
+  years = rev(unique(gcc_ts$year))[1]
+  # If the year is 2020 or later change the year to 2019 (we aren't using 2020 data for this paper)
+  if (years > 2019){years = 2019}
+  
+  # Filter out rows with no image 
+  gcc_ts_clean = subset(gcc_ts, gcc_ts$image_count > 1 )
+    if (site_ == 'jerbajada'){
+      doy_ = 250
+      years = 2017
+      }
+  doys_for_this_year = subset(gcc_ts_clean, gcc_ts_clean$year == years)$doy
+  closest_doy = doys_for_this_year[findInterval(doy_, doys_for_this_year)+1]
+  if (is.na(closest_doy)){closest_doy = doys_for_this_year[length(doys_for_this_year)]}
+  
+  this_midday_row = subset(gcc_ts_clean, gcc_ts_clean$year == years & gcc_ts_clean$doy == closest_doy)
+  img_download_url = this_midday_row$midday_url
+  fname = paste0('pc_roi_imgs/imgs/',this_midday_row$midday_filename)
+  print (fname)
+  download.file(img_download_url, fname)
+  
+  years = rev(unique(gcc_ts$year))[1]
+  if (years > 2019){years = 2019}
+  doy_ = 200
+  
+  # Creating final directory to save out the final images
+  final_doy_dir = paste0('pc_roi_imgs/',montage_name,'_doy_',doy_, '/')
+  dir.create(final_doy_dir, showWarnings = FALSE)
+  
+  # Import img
+  pc_img   = magick::image_read(fname)
+  pc_img_final = pc_img %>% image_annotate(label, color = "black", size = 170, strokecolor = 'white', location =paste0("+",width_-200,"+10"))
+  final_img_f = paste0('pc_roi_imgs/final_imgs/', site_, '.jpg')
+  image_write(pc_img_final, path = final_img_f, format = 'jpg')
+  
+  # Create output directory for final masks per site
+  site_mask_dir = paste0('pc_roi_imgs/final_masks/',site_,'/')
+  dir.create(site_mask_dir, showWarnings = FALSE)
+  
+  # Load in final img 
+  final_img_jpg = imager::load.image(final_img_f)
+  grDevices::jpeg(paste0(final_doy_dir, site_,'_',years,'_',doy_,'_final.jpg'), height =dim(final_img_jpg)[2], width = dim(final_img_jpg)[1])
+  raster::plot(final_img_jpg, axes = FALSE, box = FALSE)
+  
+  # Download the masks for each site
+  for (roi_ in pfts){
+    if (roi_ == 'NV'){
+      print ('not adding nv mask')
+    }else {
+      overlay_roi = get_roi_url(name = site_, pft_abr = roi_)
+      mask_name = paste0('pc_roi_imgs/masks/', site_,'_',roi_,'.png')
+      print (mask_name)
+      mask_url = get_roi_url(name = site_, pft_abr = roi_)
+      print (mask_url)
+      download.file(mask_url, mask_name)
+      
+      # Read in the downloaded mask.png
+      mask_png = magick::image_read(mask_name)
+      
+      # Create the mask outline using image_edge
+      mask_png_line = mask_png %>%
+      image_edge(radius = 2) %>%
+      image_convert(type = 'grayscale') %>%
+      image_negate() 
+      
+      # Convert from png to jpeg
+      mask_jpg = image_convert(mask_png_line, 'jpeg')
+      
+      # Create a final mask
+      mask_final = mask_jpg %>%
+        image_quantize(max = 256,colorspace = "rgb") %>% image_background(color = 'none', flatten = TRUE)
+      
+      # Write out new mask jpg 
+      final_mask_f = paste0(site_mask_dir, site_,'_',roi_,'.jpg')
+      image_write(mask_final, path = final_mask_f, format = 'jpg')
+      
+      # Set roi color
+      if (roi_ == 'GR'){
+        color_ = 'goldenrod'
+      }else if (roi_ == 'SH'){
+        color_ = 'royalblue'
+      }else if (roi_ == 'NV'){
+        color_ = '#CDC9C9'
+      }else{
+        color_ = 'white'
+      }
+      
+      # Read in mask and highlight it
+      this_roi_mask = imager::load.image(mask_name)
+      imager::highlight(this_roi_mask, col = color_, lwd= 10)
+      }
+  }
+
+  grDevices::dev.off()
+}
+# plot (final_img_jpg)
+```
+
+Build grid and save out all images in a 3x3
+```{r}
+these_files = sort(list.files(final_doy_dir))
+plot1 = readJPEG(paste0(final_doy_dir, these_files[1]))
+plot2 = readJPEG(paste0(final_doy_dir, these_files[2]))
+plot3 = readJPEG(paste0(final_doy_dir, these_files[3]))
+plot4 = readJPEG(paste0(final_doy_dir, these_files[4]))
+plot5 = readJPEG(paste0(final_doy_dir, these_files[5]))
+plot6 = readJPEG(paste0(final_doy_dir, these_files[6]))
+plot7 = readJPEG(paste0(final_doy_dir, these_files[7]))
+plot8 = readJPEG(paste0(final_doy_dir, these_files[8]))
+plot9 = readJPEG(paste0(final_doy_dir, these_files[9]))
+
+library(grid)
+library(gridExtra)
+whole_p = grid.arrange(rasterGrob(plot1),rasterGrob(plot2),rasterGrob(plot3),
+  rasterGrob(plot4),rasterGrob(plot5),rasterGrob(plot6),
+  rasterGrob(plot7),rasterGrob(plot8),rasterGrob(plot9),ncol=3)
+
+grDevices::jpeg(paste0('pc_roi_imgs/', doy_, '_', montage_name,'.jpg'), height =height(final_img_jpg), width = width(final_img_jpg))
+raster::plot(whole_p, axes = FALSE, box = FALSE)
+grDevices::dev.off()
+```
+
+
+##################################################################################################################################################################################################################
+##################################################################################################################################################################################################################
+##################################################################################################################################################################################################################
+
+
+How we got to the above code (See below)    :downarrow:
+
+
+##################################################################################################################################################################################################################
+##################################################################################################################################################################################################################
+##################################################################################################################################################################################################################
+
+
 First load the required R packages
 ```{r}
 library(animation)
@@ -128,7 +309,8 @@ grDevices::dev.off()
 
 Build the images and save them out into a new directory called pc_roi_imgs
 ```{r}
-
+library(magick)
+library(imager)
 # Create directory to store the phenocam/roi images for each site
 dir.create('pc_roi_imgs', showWarnings = FALSE)
 dir.create('pc_roi_imgs/masks', showWarnings = FALSE)
@@ -138,11 +320,12 @@ dir.create('pc_roi_imgs/final_imgs', showWarnings = FALSE)
 # Get the sites for the paper
 sites_df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)[1:9,] # Removing one of the NEON.d14.JORN.DP1 sites
 site_labels = c('A','B','C','D','E','F','G','H','I')
-montage_name = 'Phenosynthesis'
+montage_name = 'Phenosynthesis_2'
 # Sites to add (use a total of 9 for 3x3 to work)
 jorn_sites = sort(sites_df$Name)
 # jorn_sites = sort(c('acadia','alleypond','arbutuslake','cafboydsouthltar01', 'twolcsh',
 #   'unca','bernatchez','bartlett','niwot5'))
+jorn_sites = c("ibp", "NEON.D14.JORN.DP1.00042")
 
 
 # Loop through all the sites to build out the images
@@ -208,7 +391,7 @@ for (site_ in jorn_sites){
   
   # Load in final img 
   final_img_jpg = imager::load.image(final_img_f)
-  grDevices::jpeg(paste0(final_doy_dir, site_,'_',years,'_',doy_,'_final.jpg'), height =height(final_img_jpg), width = width(final_img_jpg))
+  grDevices::jpeg(paste0(final_doy_dir, site_,'_',years,'_',doy_,'_final.jpg'), height =dim(final_img_jpg)[2], width = dim(final_img_jpg)[1])
   raster::plot(final_img_jpg, axes = FALSE, box = FALSE)
   
   # Download the masks for each site
@@ -245,9 +428,9 @@ for (site_ in jorn_sites){
       
       # Set roi color
       if (roi_ == 'GR'){
-        color_ = 'gold'
+        color_ = 'goldenrod'
       }else if (roi_ == 'SH'){
-        color_ = 'deepskyblue'
+        color_ = 'royalblue'
       }else if (roi_ == 'NV'){
         color_ = '#CDC9C9'
       }else{
@@ -262,7 +445,7 @@ for (site_ in jorn_sites){
 
   grDevices::dev.off()
 }
-
+# plot (final_img_jpg)
 ```
 
 Build grid and save out all images in a 3x3
