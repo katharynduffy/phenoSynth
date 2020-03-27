@@ -82,7 +82,7 @@ rc_nlcd_c = build_pft_palette(rc_nlcd)
 
   
 # Only colors found in the Landsat nlcd Layer
-leaflet(options = leafletOptions(zoomControl = FALSE)) %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
+map1 = leaflet(options = leafletOptions(zoomControl = FALSE)) %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
   addLegend(labels = rc_nlcd_c$names, colors = rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>%
   addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, label=c('A','B','C','D','E','F','G','H','I')[1:length(sites_df$Lon)],
   radius = 1, color = 'rgb(0,0,0,0)', weight=2, opacity = 1, labelOptions = labelOptions(noHide = T,textOnly = TRUE, 
@@ -99,8 +99,75 @@ leaflet(options = leafletOptions(zoomControl = FALSE)) %>% addTiles() %>% addRas
              toggleDisplay = F,
              zoomLevelFixed = 5,
               minimized = FALSE, width = 200, height = 200)
-#test
 ```
+
+Add the Modis 250 pixels and FOV
+```{r}
+sites_ = sites_df$Name 
+cams_site_df = subset(cams_, cams_$site %in% sites_)
+map2 = map1
+for (site_ in sites_){
+  print (paste0('Adding this site FOV: ', site_))
+  site_data_ = subset(cams_, cams_$site == site_)
+  cam_orientation = as.character(site_data$camera_orientation)
+  azm_         = as.numeric(orientation_key[cam_orientation])
+  los = .01
+  lat =  site_data_$lat
+  lon =  site_data_$lon
+  dst = sqrt(los**2 + los**2)
+  c   = rotate_pt(lon, lat, (azm_-25), dst)
+  
+  b   = rotate_pt(lon, lat, (azm_+25), dst)
+  
+  cx  = c[[1]]
+  cy  = c[[2]]
+  bx  = b[[1]]
+  by  = b[[2]]
+  
+  datalon = c(lon,cx,bx,lon)
+  datalat = c(lat,cy,by,lat)
+  camera  = site_data_$site
+  id_     = paste('fov',camera, sep='')
+  map2 = map2 %>% addPolylines( datalon,
+                  datalat,
+                  opacity = .45,
+                  color   = 'red')
+}
+
+
+```
+
+
+Add modis grid
+```{r}
+modis_ndvi = '../../www/site_data/ibp/data_layers/ndvi/tera/MOD13Q1.006_250m_aid0001.nc'
+site_data_ = subset(cams_, cams_$site == 'ibp')
+lat_wgs = site_data_$lat
+lng_wgs = site_data_$lon
+# from wgs to sinusoidal
+pt_sinu = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = sinu_crs)
+lat_sin = pt_sinu@coords[2]
+lng_sin = pt_sinu@coords[1]
+# from wgs to web mercator
+pt_merc = from_crs1_to_crs2_lon_lat(lon_ = lng_wgs, lat_ = lat_wgs, from_crs = wgs_crs, to_crs = merc_crs)
+lat_merc = pt_merc@coords[2]
+lng_merc = pt_merc@coords[1]
+
+
+r_for_grid = raster::raster(modis_ndvi,  crs = sinu_crs)
+r_for_grid_merc = projectRaster(from = r_for_grid, crs = merc_crs, res = 231.6563582638875)
+r_for_grid_cropped_merc = crop_raster(lat_merc, lng_merc, r_for_grid_merc, height = 20000, width = 20000, crs_str = merc_crs)
+
+grid = build_raster_grid(r_for_grid_cropped_merc, crs='merc')
+
+map3 = map2 %>% addPolygons(data = grid, color = 'grey', weight = 1, opacity = .8)
+map3
+```
+
+
+
+
+
 
 
 # Leaflet map we won't be using but nice to have
