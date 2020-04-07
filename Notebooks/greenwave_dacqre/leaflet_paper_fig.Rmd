@@ -20,9 +20,9 @@ Crop nlcd to the sites
 ```{r}
 # Download the NLCD 2016 CON"US landcover layers from online"
 library(raster)
-# NLCD_lc = raster::raster('/Users/kenns/Downloads/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
-# landsat_atts = NLCD_lc@data@attributes
-# raster::plot(NLCD_lc)
+NLCD_lc = raster::raster('/Users/kdw223/Research/PostDoc/phenoSynth/LandSatLandcover/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.img')
+landsat_atts = NLCD_lc@data@attributes
+raster::plot(NLCD_lc)
 ```
 
 Cropping the Location we want from the Landcover layer NLCD_lc imported above
@@ -53,6 +53,7 @@ test_merc = raster::raster(file_name)
 
 # The leaflet map we will be using for the figure
 ```{r}
+library(leaflet)
 test_raster = test_merc
 
 landsat_lc = Landsat_Landcover %>% 
@@ -80,8 +81,10 @@ rc_nlcd = reclassify(test_raster, m)
 # Color palette for both nlcd and modis landcover
 rc_nlcd_c = build_pft_palette(rc_nlcd)
 
-  
+```
+```{r}
 # Only colors found in the Landsat nlcd Layer
+library(dplyr)
 map1 = leaflet(options = leafletOptions(zoomControl = FALSE)) %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
   addLegend(labels = rc_nlcd_c$names, colors = rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>%
   addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, label=c('A','B','C','D','E','F','G','H','I')[1:length(sites_df$Lon)],
@@ -109,7 +112,7 @@ map2 = map1
 for (site_ in sites_){
   print (paste0('Adding this site FOV: ', site_))
   site_data_ = subset(cams_, cams_$site == site_)
-  cam_orientation = as.character(site_data$camera_orientation)
+  cam_orientation = as.character(site_data_$camera_orientation)
   azm_         = as.numeric(orientation_key[cam_orientation])
   los = .01
   lat =  site_data_$lat
