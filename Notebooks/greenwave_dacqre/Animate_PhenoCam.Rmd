@@ -23,15 +23,15 @@ First I'll use the phenocamapi package to see which years are available:
 cameras=get_phenos()
 ```
 ```{r}
-site <-'ibp' # phenocam site name
-Years <- 2017 # vector of years to make the animation
-vegType <- 'GR' # vegetation type DB = deciduous broadloeaf
+site <-'worcester' # phenocam site name
+Years <- 2019 # vector of years to make the animation
+vegType <- 'DB' # vegetation type DB = deciduous broadloeaf
 roiID <- 1000  # ROI ID 
 ```
 Then we create an empty directory same as the site name to later download the images into this directory.
 ```{r}
 #create a new folder to download the midday images
-dir.create(site, showWarnings = FALSE)
+dir.create('worc19', showWarnings = FALSE)
 ```
 Obtain the timeseries
 #getting the timeseries from the phenocam server
@@ -39,7 +39,7 @@ Obtain the timeseries
 gcc_ts <- get_pheno_ts(site, 
                        vegType = vegType, 
                        roiID = roiID, 
-                       type = '1day')
+                       type = '3day')
 ```
 
 ```{r}

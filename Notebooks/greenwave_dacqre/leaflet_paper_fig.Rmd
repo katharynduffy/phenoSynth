@@ -54,6 +54,7 @@ test_merc = raster::raster(file_name)
 # The leaflet map we will be using for the figure
 ```{r}
 library(leaflet)
+library(dplyr)
 test_raster = test_merc
 
 landsat_lc = Landsat_Landcover %>% 
@@ -85,8 +86,8 @@ rc_nlcd_c = build_pft_palette(rc_nlcd)
 ```{r}
 # Only colors found in the Landsat nlcd Layer
 library(dplyr)
-map1 = leaflet(options = leafletOptions(zoomControl = FALSE)) %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>%
-  addLegend(labels = rc_nlcd_c$names, colors = rc_nlcd_c$colors, position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>%
+map1 = leaflet() %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>% 
+  addLegend(labels = rc_nlcd_c$names[2:3], colors = rc_nlcd_c$colors[2:3], position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>% 
   # addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, label=c('A','B','C','D','E','F','G','H','I')[1:length(sites_df$Lon)],
   # radius = 1, color = 'rgb(0,0,0,0)', weight=2, opacity = 1, labelOptions = labelOptions(noHide = T,textOnly = TRUE, 
   #   direction = 'bottom',
@@ -100,8 +101,14 @@ map1 = leaflet(options = leafletOptions(zoomControl = FALSE)) %>% addTiles() %>%
   addScaleBar() %>% 
             addMiniMap(tiles = 'Esri',
              toggleDisplay = F,
-             zoomLevelFixed = 5,
+             zoomLevelFixed = 7,
               minimized = FALSE, width = 200, height = 200)
+map1
+```
+```{r}
+# map1%>%
+#   setView(0, 0, zoom=100)
+# map1
 ```
 
 Add the Modis 250 pixels and FOV
@@ -143,7 +150,7 @@ for (site_ in sites_){
 
 Add modis grid
 ```{r}
-modis_ndvi = '../../www/site_data/ibp/data_layers/ndvi/tera/MOD13Q1.006_250m_aid0001.nc'
+modis_ndvi = '/Users/kdw223/Research/PostDoc/phenoSynth/www/site_data/ibp/data_layers/ndvi/tera/MOD13Q1.006_250m_aid0001.nc'
 site_data_ = subset(cams_, cams_$site == 'ibp')
 lat_wgs = site_data_$lat
 lng_wgs = site_data_$lon

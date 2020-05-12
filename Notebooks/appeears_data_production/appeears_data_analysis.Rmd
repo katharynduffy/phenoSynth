@@ -18,7 +18,7 @@ library(leaflet)
 
 ### Grab bundle from task id
 ```{r}
-site_task_id = 'e106f82f-7191-4050-a8af-f142e2f981d3'
+site_task_id = 'c54a23ca-fed5-45b9-aca0-a1db9857517a'
 response = GET(paste("https://lpdaacsvc.cr.usgs.gov/appeears/api/bundle/", site_task_id, sep = ""))
 
 if (response$status_code == 500){
@@ -51,7 +51,8 @@ netcdf
 ```{r}
 get_download_folder = function(){
   if (Sys.info()['sysname'] == 'Darwin'){
-    folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
+    #folder = paste('/Users/', Sys.getenv('LOGNAME'),'/Downloads/', sep = '')
+    folder='/Users/kdw223/Research/PostDoc/phenoSynth/www/site_data/ibp/'
   }else if (Sys.info()['sysname'] == 'Windows'){
     folder = paste('C:/Downloads/', sep = '')
   }else{

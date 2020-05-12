@@ -15,6 +15,7 @@ df_GR2 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenw
 ```
 
 ```{r}
+
 x <- list(
   title = "Date")
 y <- list(
@@ -81,12 +82,9 @@ p <- p %>%
   layout(
     #title = "Time Series of ibp & JORN.00042",
     xaxis = list(
-        type = 'date',
+        type = 'D ate',
         tickformat = " %B<br>%Y"),
         xaxis = list(title='Date'),
-        yaxis = list(title = 'PhenoCam GCC')
-  )
-
-p
-
+        yaxis = list(title = 'PhenoCam GCC'))
+orca(p, 'phenocam_plot_v2.png', height = 8 * 96, width = 11 * 96)
 ```

@@ -72,7 +72,7 @@ pc_data   = cache_phenocam_data()
 cams_     = pc_data$cams
 roi_files = pc_data$rois
 # Removes old cached phenocam data older than 30 days
-remove_old_cached_phenocam_data(days_back = 30)
+#remove_old_cached_phenocam_data(days_back = 30)
 
 # Build crosswalk b
 site_names = cams_$site
@@ -103,9 +103,9 @@ appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
 # QC values for MODIS data
 qc_df_tera = read.csv('./www/MOD13Q1-006-250m-16-days-VI-Quality-lookup.csv',stringsAsFactors = FALSE)
 qc_df_aqua = read.csv('./www/MYD13Q1-006-250m-16-days-VI-Quality-lookup.csv',stringsAsFactors = FALSE)
+qc_vals=read.csv('./www/qc_vals.csv', stringsAsFactors = FALSE)
 
-
-# Allow for email mode (depreciated but still useful)
+#Allow for email mode (depreciated but still useful)
 EMAIL_MODE = FALSE
 if (file.exists('./config.R')){
   source('./config.R')

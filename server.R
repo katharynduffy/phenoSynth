@@ -1261,14 +1261,12 @@ server = function(input, output, session) {
                                           type    = 'AQUA')
           
           # Add Filtered Data Column to TERA
-          qc_tera_df = subset(qc_df_tera, qc_df_tera$MODLAND == 'VI produced with good quality' & qc_df_tera$VI.Usefulness == 'Decreasing quality' | 
-              qc_df_tera$VI.Usefulness == 'Highest quality' & qc_df_tera$MODLAND == 'VI produced with good quality')
+          qc_tera_df = qc_vals
           qa_tera_v  = qc_tera_df$Value
           ndvi_brick_df_tera$ndvi_filtered = ifelse(ndvi_brick_df_tera$ndvi_qc %in% qa_tera_v ,ndvi_brick_df_tera$ndvi_raw, NA)
           
           # Add Filtered Data Column to AQUA
-          qc_aqua_df = subset(qc_df_aqua, qc_df_aqua$MODLAND == 'VI produced with good quality' & qc_df_aqua$VI.Usefulness == 'Decreasing quality' | 
-              qc_df_aqua$VI.Usefulness == 'Highest quality' & qc_df_aqua$MODLAND == 'VI produced with good quality')
+          qc_aqua_df = qc_vals
           qa_aqua_v  = qc_aqua_df$Value
           ndvi_brick_df_aqua$ndvi_filtered = ifelse(ndvi_brick_df_aqua$ndvi_qc %in% qa_aqua_v ,ndvi_brick_df_aqua$ndvi_raw, NA)
           
@@ -1331,14 +1329,16 @@ server = function(input, output, session) {
                                           type    = 'AQUA')
           
           # Add Filtered Data Column to TERA
-          qc_tera_df = subset(qc_df_tera, qc_df_tera$MODLAND == 'VI produced with good quality' & qc_df_tera$VI.Usefulness == 'Decreasing quality' | 
-              qc_df_tera$VI.Usefulness == 'Highest quality' & qc_df_tera$MODLAND == 'VI produced with good quality')
+          # qc_tera_df = subset(qc_df_tera, qc_df_tera$MODLAND == 'VI produced with good quality' & qc_df_tera$VI.Usefulness == 'Decreasing quality' | 
+          #     qc_df_tera$VI.Usefulness == 'Highest quality' & qc_df_tera$MODLAND == 'VI produced with good quality')
+          # qa_tera_v  = qc_tera_df$Value
+          # evi_brick_df_tera$evi_filtered = ifelse(evi_brick_df_tera$evi_qc %in% qa_tera_v ,evi_brick_df_tera$evi_raw, NA)
+          qc_tera_df = qc_vals
           qa_tera_v  = qc_tera_df$Value
           evi_brick_df_tera$evi_filtered = ifelse(evi_brick_df_tera$evi_qc %in% qa_tera_v ,evi_brick_df_tera$evi_raw, NA)
           
           # Add Filtered Data Column to AQUA
-          qc_aqua_df = subset(qc_df_aqua, qc_df_aqua$MODLAND == 'VI produced with good quality' & qc_df_aqua$VI.Usefulness == 'Decreasing quality' | 
-              qc_df_aqua$VI.Usefulness == 'Highest quality' & qc_df_aqua$MODLAND == 'VI produced with good quality')
+          qc_aqua_df = qc_vals
           qa_aqua_v  = qc_aqua_df$Value
           evi_brick_df_aqua$evi_filtered = ifelse(evi_brick_df_aqua$evi_qc %in% qa_aqua_v ,evi_brick_df_aqua$evi_raw, NA)
           

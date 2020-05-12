@@ -10,16 +10,13 @@ library(lubridate)
 ```
 
 ```{r}
-npn_jer_SH=data.frame(date=seq(as.Date('2014-01-01'),to=as.Date('2019-12-30'),by='1 day'))
-
-```
-```{r}
 df <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/npn_data/Jornada_StatusandIntensity_leaves.csv', header = TRUE, sep = ",", stringsAsFactors = FALSE)
 df=df%>%
   filter(df$Intensity_Value!=-9999)
 df=df%>%
   filter(df$Phenophase_Description==c('Leaves', 'Leaves (grasses)'))
-df$Observation_Date=as.Date(df$Observation_Date, format="%m/%d/%Y")
+#df$Observation_Date=as.Date(df$Observation_Date, format="%m/%d/%Y")
+df$Observation_Date=mdy(df$Observation_Date)
 xscale=data.frame(unique(df$Intensity_Value))
 ```
 ```{r}
@@ -59,20 +56,24 @@ library(plotly)
 p2 = plot_ly(
     data = npn_GR,
     x = ~ as.factor(npn_GR$date),
-    y = ~ as.factor(npn_GR$Intensity_Value),
+    y = ~ as.factor(npn_GR$mean_status_int),
     showlegend = TRUE,
-    type = 'bar',
-     opacity = .8,
+    type = 'scatter',
+    mode='lines',
+    opacity = 1,
     name='Jornada NPN Grass', 
+    yaxis='y',
     #text=unique(df$Intensity_Value),
     marker=list(color="goldenrod", size=3)
    ) %>%
    add_trace(
       x=~as.factor(npn_SH$date),
-     y=~as.factor(npn_SH$Intensity_Value),
-     type = "bar",
-      opacity = .5,
+     y=~as.factor(npn_SH$mean_status_int),
+     type = "scatter",
+     mode='lines', 
+    opacity = 1,
      name='Jornada NPN Shrubs',
+     yaxis='y',
      marker = list(color="royalblue", size=3)
   )
 p2
@@ -121,6 +122,15 @@ p2
 ```
 
 ```{r}
-p3=subplot(p2, p, nrows=2)
+p3=subplot(p2, p, nrows=2, shareX = TRUE, titleY = TRUE)
+p3
+orca(p3, 'npn-phenocam_plot_v2.png', height = 8 * 96, width = 11 * 96)
+# p3=subplot(p2, p,fig,fig_landsat,fig_clim, fig_clim2,  nrows=6, shareX=TRUE, titleY = TRUE) #fig_clim,
+# p3
+#orca(p3, 'panels1-3v2.png')
+```
+
+```{r}
+p3=subplot(p2, fig_clim,  nrows=2) #fig_clim,
 p3
 ```
