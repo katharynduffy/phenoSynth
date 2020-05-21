@@ -1335,12 +1335,12 @@ server = function(input, output, session) {
           # evi_brick_df_tera$evi_filtered = ifelse(evi_brick_df_tera$evi_qc %in% qa_tera_v ,evi_brick_df_tera$evi_raw, NA)
           qc_tera_df = qc_vals
           qa_tera_v  = qc_tera_df$Value
-          evi_brick_df_tera$evi_filtered = ifelse(evi_brick_df_tera$evi_qc %in% qa_tera_df$Value ,evi_brick_df_tera$evi_raw, NA)
+          evi_brick_df_tera$evi_filtered = ifelse(evi_brick_df_tera$evi_qc %in% qc_tera_df$Value ,evi_brick_df_tera$evi_raw, NA)
           
           # Add Filtered Data Column to AQUA
           qc_aqua_df = qc_vals
           qa_aqua_v  = qc_aqua_df$Value
-          evi_brick_df_aqua$evi_filtered = ifelse(evi_brick_df_aqua$evi_qc %in% qa_aqua_df$Value ,evi_brick_df_aqua$evi_raw, NA)
+          evi_brick_df_aqua$evi_filtered = ifelse(evi_brick_df_aqua$evi_qc %in% qc_aqua_df$Value ,evi_brick_df_aqua$evi_raw, NA)
           
           # Combine aqua and tera for this pixel
           evi_brick_df = rbind(evi_brick_df_tera, evi_brick_df_aqua)

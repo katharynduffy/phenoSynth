@@ -104,6 +104,8 @@ appeears_tasks_lc        = readRDS(file = './www/cache_df_lc.df')
 qc_df_tera = read.csv('./www/MOD13Q1-006-250m-16-days-VI-Quality-lookup.csv',stringsAsFactors = FALSE)
 qc_df_aqua = read.csv('./www/MYD13Q1-006-250m-16-days-VI-Quality-lookup.csv',stringsAsFactors = FALSE)
 qc_vals=read.csv('./www/qc_vals.csv', stringsAsFactors = FALSE)
+names(qc_vals)[1]='Value'
+
 
 #Allow for email mode (depreciated but still useful)
 EMAIL_MODE = FALSE
