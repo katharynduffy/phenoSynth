@@ -86,8 +86,10 @@ rc_nlcd_c = build_pft_palette(rc_nlcd)
 ```{r}
 # Only colors found in the Landsat nlcd Layer
 library(dplyr)
-map1 = leaflet() %>% addTiles() %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = 1, layerId = 'NLCD Landcover') %>% 
-  addLegend(labels = rc_nlcd_c$names[2:3], colors = rc_nlcd_c$colors[2:3], position = "bottomleft", opacity = .95, title = 'NLCD Landcover') %>% 
+map1 = leaflet(options = leafletOptions(
+            attributionControl=FALSE))  %>% addTiles() %>% addProviderTiles('Esri.WorldImagery') %>% addRasterImage(rc_nlcd, colors = rc_nlcd_c$palette, opacity = .7, layerId = 'NLCD Landcover') %>% 
+  addLegend(labels = rc_nlcd_c$names[2:3], colors = rc_nlcd_c$colors[2:3], position = "bottomleft", opacity = .7, title = 'NLCD Landcover') %>%
+ 
   # addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, label=c('A','B','C','D','E','F','G','H','I')[1:length(sites_df$Lon)],
   # radius = 1, color = 'rgb(0,0,0,0)', weight=2, opacity = 1, labelOptions = labelOptions(noHide = T,textOnly = TRUE, 
   #   direction = 'bottom',
@@ -171,7 +173,7 @@ r_for_grid_cropped_merc = crop_raster(lat_merc, lng_merc, r_for_grid_merc, heigh
 grid = build_raster_grid(r_for_grid_cropped_merc, crs='merc')
 
 map3 = map2 %>% addPolygons(data = grid, color = 'grey', weight = 1, opacity = .8) %>% 
-  addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, color = 'black', radius = 1, weight = 7, opacity = 1)
+  addCircleMarkers(lat=sites_df$Lat, lng = sites_df$Lon, color = 'black', radius = 1, weight = 7, opacity = 1) 
 map3
 ```
 

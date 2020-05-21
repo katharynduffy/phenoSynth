@@ -12,6 +12,10 @@ df_GR1 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenw
 td_GR1 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/Transition Dates/ibp_GR_1000_3day_transition_dates.csv', header = TRUE, sep = ",")
 td_GR2 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/Transition Dates/NEON.D14.JORN.DP1.00042_GR_1000_3day_transition_dates.csv', header = TRUE, sep = ",")
 df_GR2 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/GR/NEON.D14.JORN.DP1.00042_GR_1000_3day.csv', header = TRUE, sep = ",")
+
+df_SH2 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/jernort_SH_1000_3day.csv', header = TRUE, sep = ",")
+
+df_SH3 <- read.table('/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data/jernort_SH_2000_3day.csv', header = TRUE, sep = ",")
 ```
 
 ```{r}
@@ -39,6 +43,26 @@ p = plot_ly(
      opacity = 0.8,
     name='PhenoCam Grass: ibp',
     marker = list(color="goldenrod")
+
+  )%>%
+    add_trace(
+    x=~df_SH2$date,
+    y=~df_SH2$gcc_90, #-.31,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='PhenoCam Shrubs: jernort',
+    marker = list(color="royalblue")
+
+  )%>%
+      add_trace(
+    x=~df_SH3$date,
+    y=~df_SH3$gcc_90, #-.31,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='PhenoCam Shrubs: jernort',
+    marker = list(color="royalblue")
 
   )%>%
     add_trace(
@@ -82,9 +106,10 @@ p <- p %>%
   layout(
     #title = "Time Series of ibp & JORN.00042",
     xaxis = list(
-        type = 'D ate',
+        type = 'Date',
         tickformat = " %B<br>%Y"),
         xaxis = list(title='Date'),
         yaxis = list(title = 'PhenoCam GCC'))
-orca(p, 'phenocam_plot_v2.png', height = 8 * 96, width = 11 * 96)
+orca(p, 'phenocam_plot_v3.png', height = 8 * 96, width = 11 * 96)
+p
 ```
