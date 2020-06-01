@@ -38,6 +38,7 @@ Notebooks/sink.R
 Notebooks/sink.Rmd
 *.mp4
 Unimodal_ibp/
+phenocam_data/
 npn_data/
 APISOverviewPaper/
 Notebooks/greenwave_dacqre/
