@@ -1160,6 +1160,7 @@ server = function(input, output, session) {
       # Get current pft from pftSelection observer
       pft_abbr = data$pft_abbr
       freq_ = as.numeric(substring(input$phenocamFrequency, 1, 1))
+      data$freq = freq_
 
       # Input into plotting gcc function
       gcc_p = gcc_plot(phenocam$gcc_all[[pft_abbr]][[paste0('gcc_', freq_,'day')]], 
@@ -2533,11 +2534,11 @@ server = function(input, output, session) {
       } else if (input$dataTypes_download == 'EVI'){
         data = data$evi_pixels
       }else if (input$dataTypes_download == 'GCC Data'){
-        data = phenocam$gcc_all[[data$pft_abbr]]$gcc
+        data = as.data.frame(phenocam$gcc_all[[data$pft_abbr]][paste0('gcc_',data$freq,'day')], stringsAsFactors= FALSE)
       }else if (input$dataTypes_download == 'GCC Spring Transition Dates'){
-        data = phenocam$gcc_all[[data$pft_abbr]]$spring
+        data = as.data.frame(phenocam$gcc_all[[data$pft_abbr]][paste0('spring_',data$freq,'day')], stringsAsFactors= FALSE)
       }else if (input$dataTypes_download == 'GCC Fall Transition Dates'){
-        data = phenocam$gcc_all[[data$pft_abbr]]$fall
+        data = as.data.frame(phenocam$gcc_all[[data$pft_abbr]][paste0('fall_',data$freq,'day')], stringsAsFactors= FALSE)
       }else if (input$dataTypes_download == 'MODIS Transition Dates'){
         data = data$pixel_df_all_tds
       }else if (input$dataTypes_download == 'Selected Pixel CSV'){
