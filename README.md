@@ -32,3 +32,8 @@ Please hang in there with us while we get these off the ground and let us know i
 The R shiny app has been developed and maintained by [Katharyn Duffy and Kyle Enns for APIS Case 2](https://esto.nasa.gov/files/solicitations/AIST_16/ROSES2016_AIST_A41_awards.html#Jeffrey) since June, 2018.
 
 Most recent release is available from: https://github.com/katharynduffy/phenoSynth
+
+## Acknowledgements
+This code was developed, in part, as part of the integrated [Pheno-Synthesis Software Suite (PS3).](https://git.earthdata.nasa.gov/projects/APIS/repos/pheno-synthesis-software-suite/browse)
+
+The authors acknowledge funding for this work through NASA’s AIST program (80NSSC17K0582, 80NSSC17K0435, 80NSSC17K0538, and 80GSFC18T0003). The University of Arizona and the USA National Phenology Network’s efforts with this package are supported in part by US Geological Survey (G14AC00405, G18AC00135) and the US Fish and Wildlife Service (F16AC01075 and F19AC00168). The development of the PhenoCam network was supported by the Northeastern States Research Cooperative, the NSF Macrosystems Biology program (EF-1065029 and EF-1702697), the Department of Energy Regional and Global Climate Modeling program (DE-SC0016011), the US National Park Service Inventory and Monitoring Program and the US Geological Survey (G10AP00129, G16AC00224).
