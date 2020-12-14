@@ -10,7 +10,7 @@ With over a decade of National Phenology Network and PhenoCam near-surface image
 PhenoSynth is an open-repository Shiny(R) interface that addresses these factors and allows users to visualize and interact with phenological data across multiple sources including MODIS and eventually LandSat. This tool provides an interface to investigate ‘apples-to-apples’ overlap in vegetation classification, and evaluate agreement in phenological indices and time series across observational datasets, facilitating the scaling of phenological data to regional and continental levels.
 
 
-### Easiest way to directly interact with R code is via runGitHub
+### The easiest way to directly interact with the app is via runGitHub
 The following command will check for all the required R packages, install them if needed and run the PhenoSynth app directly from GitHub. However, the latest version of RStudio should be already installed. The app requires pre-installed GDAL and basic image rendering libraries (png, jpeg, tif, etc.) on the operating system.
 
 ```{r, echo=TRUE}
@@ -21,19 +21,10 @@ runGitHub("phenoSynth", "katharynduffy")
 
 ```
 
-###  Notes to current users:
-We are currently in the process of
-1) Integrating NPN data
-2) Building a cached data archive for users
-
-Please hang in there with us while we get these off the ground and let us know if you have any requests or feedback.
-
-
-The R shiny app has been developed and maintained by [Katharyn Duffy and Kyle Enns for APIS Case 2](https://esto.nasa.gov/files/solicitations/AIST_16/ROSES2016_AIST_A41_awards.html#Jeffrey) since June, 2018.
 
 Most recent release is available from: https://github.com/katharynduffy/phenoSynth
 
 ## Acknowledgements
-This code was developed, in part, as part of the integrated [Pheno-Synthesis Software Suite (PS3).](https://git.earthdata.nasa.gov/projects/APIS/repos/pheno-synthesis-software-suite/browse)
+The R shiny app has been developed and maintained by [Katharyn Duffy](https://nau.edu/school-of-informatics-computing-and-cyber-systems/faculty/#) and [Kyle Enns](https://www.usgs.gov/staff-profiles/kyle-enns) since June, 2018.  This code was developed as part of the integrated [Pheno-Synthesis Software Suite (PS3).](https://git.earthdata.nasa.gov/projects/APIS/repos/pheno-synthesis-software-suite/browse)
 
 The authors acknowledge funding for this work through NASA’s AIST program (80NSSC17K0582, 80NSSC17K0435, 80NSSC17K0538, and 80GSFC18T0003). The University of Arizona and the USA National Phenology Network’s efforts with this package are supported in part by US Geological Survey (G14AC00405, G18AC00135) and the US Fish and Wildlife Service (F16AC01075 and F19AC00168). The development of the PhenoCam network was supported by the Northeastern States Research Cooperative, the NSF Macrosystems Biology program (EF-1065029 and EF-1702697), the Department of Energy Regional and Global Climate Modeling program (DE-SC0016011), the US National Park Service Inventory and Monitoring Program and the US Geological Survey (G10AP00129, G16AC00224).
