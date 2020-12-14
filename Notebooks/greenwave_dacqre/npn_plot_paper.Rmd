@@ -2,7 +2,9 @@
 title: "APIS_insitu_paper_figs"
 author: "K Duffy"
 date: "3/3/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 ```{r}
 library(dplyr)
@@ -29,13 +31,8 @@ npn_SH=df%>%
   dplyr::mutate(percent_int_value = as.integer(percent_int_value)) %>% ungroup() %>%
   dplyr::group_by(date) %>% dplyr::mutate(mean_status_int = mean(percent_int_value)) %>% 
   dplyr::select(mean_status_int, date, Functional.Type) %>% dplyr::distinct()
-npn_SH
+head(npn_SH)
 ```
-# ```{r}
-# 
-# npn_jer_SH=npn_jer_SH%>%
-#               dplyr::inner_join(npn_SH, npn_jer_SH, by="date")
-# ```
 
 ```{r}
 npn_GR=df%>%
@@ -47,36 +44,72 @@ npn_GR=df%>%
   dplyr::group_by(date) %>% dplyr::mutate(mean_status_int = mean(percent_int_value)) %>% 
   dplyr::select(mean_status_int, date, Functional.Type) %>% dplyr::distinct()
   
-npn_GR
+head(npn_GR)
 ```
 
 ```{r}
 
 library(plotly)
 p2 = plot_ly(
+  
+)%>%
+   add_trace(
+      x=~as.factor(npn_SH$date),
+     y=~as.factor(npn_SH$mean_status_int),
+     type = "bar",
+     #mode='lines', 
+    opacity = 1,
+     name='USA-NPN Shrubs',
+     yaxis='y',
+     marker = list(color="royalblue", width=4)
+  )%>%
+add_trace(
     data = npn_GR,
     x = ~ as.factor(npn_GR$date),
     y = ~ as.factor(npn_GR$mean_status_int),
     showlegend = TRUE,
-    type = 'scatter',
-    mode='lines',
+    type = 'bar',
+    #mode='lines',
     opacity = 1,
-    name='Jornada NPN Grass', 
+    name='USA-NPN Grass', 
     yaxis='y',
     #text=unique(df$Intensity_Value),
-    marker=list(color="goldenrod", size=3)
-   ) %>%
-   add_trace(
-      x=~as.factor(npn_SH$date),
-     y=~as.factor(npn_SH$mean_status_int),
-     type = "scatter",
-     mode='lines', 
-    opacity = 1,
-     name='Jornada NPN Shrubs',
-     yaxis='y',
-     marker = list(color="royalblue", size=3)
-  )
+    marker=list(color="goldenrod", width=4)
+   ) 
+
+```
+
+```{r}
+p2 <- p2 %>%
+  layout(
+    #title = "Time Series of ibp & JORN.00042",
+   # xaxis = list(title='Date'),
+    xaxis = list(
+        type = 'date',
+        tickformat = " %B<br>%Y", 
+        title='Date', 
+        zeroline=FALSE),
+        
+        yaxis = list(
+          title = 'USA-NPN <br> Status Intensity',
+          typeformat='%', 
+          nticks=6,
+          tick0=0,
+          dtick=25,
+          ticktext=xscale, 
+          barmode = 'group', 
+          zeroline=FALSE
+          # tick0=5,
+          # dtick=25, 
+          # tick
+          #range=c(0,100))
+        # yaxis = list(
+        # range=c(0,100))
+  ))
+#orca(p2, 'npn_plot_v3.png', height = 8 * 96, width = 11 * 96)
 p2
+
+
 ```
 
 ```{r}
@@ -122,15 +155,15 @@ p2
 ```
 
 ```{r}
-p3=subplot(p2, p, nrows=2, shareX = TRUE, titleY = TRUE)
-p3
-orca(p3, 'npn-phenocam_plot_v2.png', height = 8 * 96, width = 11 * 96)
+# p3=subplot(p2, p, nrows=2, shareX = TRUE, titleY = TRUE)
+# p3
+# orca(p3, 'npn-phenocam_plot_v2.png', height = 8 * 96, width = 11 * 96)
 # p3=subplot(p2, p,fig,fig_landsat,fig_clim, fig_clim2,  nrows=6, shareX=TRUE, titleY = TRUE) #fig_clim,
 # p3
 #orca(p3, 'panels1-3v2.png')
 ```
 
 ```{r}
-p3=subplot(p2, fig_clim,  nrows=2) #fig_clim,
-p3
+# p3=subplot(p2, fig_clim,  nrows=2) #fig_clim,
+# p3
 ```

@@ -32,7 +32,7 @@ p = plot_ly(
     type = 'scatter',
     mode = 'markers', 
      opacity = 0.7,
-    name='PhenoCam Shrubs',
+    name='Shrubs: PhenoCam',
     marker=list(color="royalblue")
   ) %>%
   add_trace(
@@ -70,7 +70,7 @@ p = plot_ly(
       mode = "lines",
       line = list(width = 2, color = "rgb(120,120,120)"),
       opacity=.2,
-      name = "GCC Shrubs",
+      name = "Shrubs: PhenoCam",
       showlegend = TRUE
   )%>%
   add_trace(
@@ -80,7 +80,7 @@ p = plot_ly(
       marker=list(color="rgb(218,165,32)"),
       line = list(width=2, color = "rgb(218,165,32)"),#, line=list(color='rgb(218,165,32)')),
       opacity=.2,
-      name = "GCC Grass",
+      name = "Grass: PhenoCam",
       showlegend = TRUE
   )%>%
   # add_trace(
@@ -97,7 +97,7 @@ p = plot_ly(
     mode = "markers",
     type = "scatter",
      opacity = .6,
-    name='PhenoCam Grass: JORN.00042',
+    name='Grass: PhenoCam JORN.00042',
     marker = list(color="darkgoldenrod")
 
   )
@@ -107,9 +107,10 @@ p <- p %>%
     #title = "Time Series of ibp & JORN.00042",
     xaxis = list(
         type = 'Date',
-        tickformat = " %B<br>%Y"),
+        tickformat = " %Y"),
         xaxis = list(title='Date'),
-        yaxis = list(title = 'PhenoCam GCC'))
-orca(p, 'phenocam_plot_v3.png', height = 8 * 96, width = 11 * 96)
+        yaxis = list(title = 'PhenoCam <br> GCC'), 
+    limit=c('01/01/2017', '12/31/2019'))
+#orca(p, 'phenocam_plot_v4.png', height = 8 * 96, width = 11 * 96)
 p
 ```

@@ -1,0 +1,118 @@
+---
+title: "Scale PhenoCam to MODIS"
+author: "K Duffy"
+date: "5/18/2020"
+output: html_document
+---
+
+```{r}
+library(lubridate)
+df_EVI <- read.table('/Users/kdw223/Research/PostDoc/PhenoSynth_Presentation/ibp_ndvi_data.csv', header = TRUE, sep = ",", stringsAsFactors = FALSE)
+
+df_EVI$date=ymd(df_EVI$date)
+df_EVI=df_EVI%>%
+  filter(date>'2013-11-1')%>%
+ # group_by(pixel)%>%
+  arrange(date)
+grass=df_EVI%>%
+  filter(pixel=='44_44')
+both=df_EVI%>%
+  filter(pixel=='47_44')
+shrub=df_EVI%>%
+  filter(pixel=='43_46')
+df_BOTH=(df_GR1$gcc_90+ df_SH$gcc_90)/2
+```
+
+```{r}
+ay <- list(
+  tickfont = list(color = "navy"),
+  overlaying = "y",
+  side = "right",
+  title = "PhenoCam GCC", 
+  side='right', 
+  title='MODIS NDVI'
+)
+ay2 <- list(
+  tickfont = list(color = "navy"),
+  overlaying = "y",
+  side = "left",
+  title = "Temperature Maximum (C)"
+)
+x <- list(
+  title = "Date")
+y <- list(
+  title = "PhenoCam GCC")
+p = plot_ly(
+    data = df_SH,
+    x = ~ date,
+    yaxis="y1",
+    y = ~ df_BOTH, #-.336,
+    showlegend = TRUE,
+    type = 'scatter',
+    mode = 'markers', 
+     opacity = 0.7,
+    name='PhenoCam Shrubs & Grass: Weighted',
+    marker=list(color="royalblue"),
+    line=list(color="royalblue"), opacity=.4)
+
+p=p %>%
+  add_trace(
+    x=~both$date,
+    y=~both$ndvi_filtered,
+    yaxis='y2',#-.31,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='MODIS Mixed Shrub/Grass NDVI',
+    marker = list(color="grey"), 
+    line=list(color="grey"), opacity=.4)
+
+
+p <- p %>% layout(
+     yaxis2 = ay, #yaxis=ay2,
+     yaxis=list(title='MODIS NDVI'),
+    xaxis = list(type = 'Date',
+        tickformat = " %B<br>%Y")#,
+        #legend=list(x=500, y=.5))
+  )
+p
+```
+
+```{r}
+ay <- list(
+  tickfont = list(color = "navy"),
+  overlaying = "y",
+  side = "right",
+  title = "PhenoCam GCC", 
+  side='right', 
+  title='MODIS NDVI'
+)
+ay2 <- list(
+  tickfont = list(color = "navy"),
+  overlaying = "y",
+  side = "left",
+  title = "Temperature Maximum (C)"
+)
+fig_clim <- plot_ly()
+fig_clim <- fig_clim %>% add_trace(
+    x = ~ df_SH$date,
+    y = ~ df_SH$gcc_90, yaxis="y1",     type = 'scatter',
+    mode = 'markers', line=list(color="crimson"), opacity=.4)#, showlegend=FALSE)
+fig_clim <- fig_clim %>% add_trace(x=~shrub$date,
+    y=~shrub$ndvi_filtered, #-.31,
+    mode = "markers",
+    type = "scatter",
+     opacity = 0.8,
+    name='MODIS Shrub NDVI',
+    marker = list(color="grey"), yaxis = "y2", line=list(color="navy", dash='dot'), opacity=.7)#, showlegend=FALSE)
+fig_clim <- fig_clim %>% layout(
+     yaxis2 = ay, #yaxis=ay2,
+     yaxis=list(title='Vapor Pressure Deficit'),
+    xaxis = list(type = 'date',
+        tickformat = " %B<br>%Y")#,
+        #legend=list(x=500, y=.5))
+  )
+
+fig_clim <- fig_clim %>% layout(legend = list(x = 1, y = 1))
+fig_clim
+```

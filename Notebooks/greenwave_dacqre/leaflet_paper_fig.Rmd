@@ -12,7 +12,7 @@ Extract the sites
 # GO RUN global.R for variables and libraries required in this RMD file
 ####################################################################################
 df = read.csv('jornada_sites.csv', stringsAsFactors = FALSE)
-sites_df = subset(df, df$Name %in% c("ibp", "NEON.D14.JORN.DP1.00042"))
+sites_df = subset(df, df$Name %in% c("ibp", "NEON.D14.JORN.DP1.00042", 'jernort'))
 paper_sites = sites_df$Name
 ```
 

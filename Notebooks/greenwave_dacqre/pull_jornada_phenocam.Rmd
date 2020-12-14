@@ -8,12 +8,11 @@ output: html_document
 
 ```{r, silent=TRUE}
 library(phenocamapi)
-library(plotly)
 library(phenocamr)
 library(dplyr)
 ```
 
-Let's start by pulling in a list of PhenoCam sites:
+Start by pulling in a list of PhenoCam sites:
 
 
 
@@ -26,15 +25,16 @@ full_list=get_rois()
 
 ```
 
-Now let's filter for NEON sites:
+Filter for sites used in this paper and remove non-vegetated ROIs:
 ```{r}
-site_names=c('ibp', 'jernort', 'jerbajada', 'jergrassland', 'jernovel', 'jernwern', 'jersand', 'jershrubland', 'NEON.D14.JORN.DP1.00033', 'NEON.D14.JORN.DP1.00042')
+site_names=c('ibp', 'jernort', 'NEON.D14.JORN.DP1.00042')
 jer=phenos%>%
 filter(is.element(phenos$site,site_names))
 head(jer)
 
 jer_full_list= full_list%>%
-  filter(is.element(full_list$site,site_names))
+  filter(is.element(full_list$site,site_names))%>%
+  filter(!roitype=='NV') #remove 'No Vegetation' NV ROIs 
 head(jer_full_list)
 ```
 
@@ -44,12 +44,20 @@ for(i in seq(1, n, by = 1)){
   phenocamr::download_phenocam(
   frequency = 3,
   veg_type = jer$primary_veg_type[i],
-  roi_id = jer$roi_id_number,
+  roi_id = 1000,
   site = jer$site[i],
-  phenophase = TRUE,
-  out_dir = "/Users/kdw223/Research/PostDoc/phenoSynth/Notebooks/greenwave_dacqre/phenocam_data"
+  phenophase = FALSE,
+  out_dir = "YOUR/PATH/HERE"
   )
 }
 ```
 
-You'll probably only really want the dates, gcc90 and smoothed data?  Not sure so I'll stop here but let me know how else I can help :)
+
+Alternately, if you only want to pull the phenocam data into your R session:
+
+```{r}
+ibp_SH=get_pheno_ts('ibp', 'SH', 1000, '3day')
+#where you can eighter directly reference the phenos df, different PFT's or ROI 3's, or timesteps.
+```
+Hope this helps!
+K

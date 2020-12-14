@@ -105,6 +105,8 @@ qc_df_tera = read.csv('./www/MOD13Q1-006-250m-16-days-VI-Quality-lookup.csv',str
 qc_df_aqua = read.csv('./www/MYD13Q1-006-250m-16-days-VI-Quality-lookup.csv',stringsAsFactors = FALSE)
 qc_vals=read.csv('./www/qc_vals.csv', stringsAsFactors = FALSE)
 names(qc_vals)[1]='Value'
+# qc_vals=qc_vals%>%
+#   filter(Aerosol.Quantity== 'Low')
 
 
 #Allow for email mode (depreciated but still useful)

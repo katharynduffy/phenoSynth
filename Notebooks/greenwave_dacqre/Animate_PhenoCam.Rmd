@@ -34,16 +34,17 @@ Then we create an empty directory same as the site name to later download the im
 dir.create('NEON.D15.ONAQ.DP1.00033', showWarnings = FALSE)
 ```
 Obtain the timeseries
+
 #getting the timeseries from the phenocam server
 ```{r}
 gcc_ts <- get_pheno_ts(site, 
                        vegType = vegType, 
                        roiID = roiID, 
-                       type = '3day')
-gcc_ts_sh <- get_pheno_ts(site, 
-                       vegType = 'SH', 
-                       roiID = roiID, 
-                       type = '3day')
+                       type = '1day')
+gcc_ts_sh <- get_pheno_ts(site,
+                       vegType = 'SH',
+                       roiID = roiID,
+                       type = '1day')
 ```
 
 ```{r}
@@ -54,16 +55,19 @@ gcc_ts[,midday_url:=sprintf('https://phenocam.sr.unh.edu/data/archive/%s/%04d/%0
                             site, year, month, midday_filename)] #making the URL of midday images
 gcc_ts_sh[, month:=month(YYYYMMDD)] # extracting month from the date
 gcc_ts_sh[, YYYYMMDD:=as.Date(YYYYMMDD)] # convert to the right format
-gcc_ts_sh[,midday_url:=sprintf('https://phenocam.sr.unh.edu/data/archive/%s/%04d/%02d/%s', 
+gcc_ts_sh[,midday_url:=sprintf('https://phenocam.sr.unh.edu/data/archive/%s/%04d/%02d/%s',
                             site, year, month, midday_filename)] #making the URL of midday images
+library(dplyr)
+gcc_ts=gcc_ts%>%
+  filter(!is.na(gcc_ts$midday_gcc))
 ```
 
 
 # organizing the data into a new data.table including the URL, date and GCC90 values
 ```{r}
 gcc_file_tbl <- gcc_ts[year%in%(Years),.(midday_url, YYYYMMDD, gcc_90)] 
-gcc_file_tbl_sh<- gcc_ts_sh[year%in%(Years),.(midday_url, YYYYMMDD, gcc_90)] 
-gcc_file_tbl$gcc_sh=gcc_file_tbl_sh$gcc_90
+gcc_file_tbl_sh<- gcc_ts_sh[year%in%(Years),.(midday_url, YYYYMMDD, gcc_90)]
+# gcc_file_tbl$gcc_sh=gcc_file_tbl_sh$gcc_90
 ```
 
 # creating the destination filename to download each midday image
@@ -101,7 +105,7 @@ show_midday <- function(i){
   
   img <- readJPEG(gcc_file_tbl$midday_dest[i])
   rasterImage(img, 0, 0, 1, 1)
-  mtext('Greenup Seasonality at ONAQ', col = '#51fddc')
+  mtext('Canopy Greenness', side = 3, line = 0, col = '#51fddc', cex = 2, font = 2)
   
   par(fig = c(0,1, 0, 0.3), new = T, mar=c(2,2,0,0))  
   plot(gcc_file_tbl$YYYYMMDD[1:i], 
@@ -113,20 +117,22 @@ show_midday <- function(i){
        col = '#51fddc', 
        col.axis = '#51fddc',
        xlim = range(gcc_file_tbl$YYYYMMDD),
-       ylim = range(gcc_file_tbl$gcc, na.rm = TRUE)
+       ylim = range(gcc_file_tbl$gcc, na.rm = TRUE),
+       yaxt='n'
   )
-    plot(gcc_file_tbl$YYYYMMDD[1:i], 
-       gcc_file_tbl$gcc_sh[1:i], 
-       bty ='n', 
+    plot(gcc_file_tbl$YYYYMMDD[1:i],
+       gcc_file_tbl$gcc_sh[1:i],
+       bty ='n',
        type = 'l',
        lwd = 2,
        cex.axis =1.5,
-       col = '#51b5fd', 
+       col = '#51b5fd',
        col.axis = '#51fddc',
        xlim = range(gcc_file_tbl$YYYYMMDD),
-       ylim = range(gcc_file_tbl$gcc, na.rm = TRUE)
+       ylim = range(gcc_file_tbl$gcc, na.rm = TRUE),
+       yaxt='n'
   )
-  mtext('Canopy Greenness', side = 2, line = 0, col = '#51fddc', cex = 2, font = 2)
+  mtext('Canopy Greenness', side = 3, line = 0, col = '#51fddc', cex = 2, font = 2)
   
   points(gcc_file_tbl$YYYYMMDD[i], 
          gcc_file_tbl$gcc[i], 
@@ -196,9 +202,9 @@ saveVideo(interval = 0.25, # animation interval in seconds
           ani.res = 75, # resolution, not important here
           video.name = paste0(site, '.mp4'),
           
-          for(i in seq(20, 110, by = 1)){
+          for(i in seq(30, 310, by = 1)){
             cat(i, '\n')
-            show_midday2(i)
+            show_midday(i)
           })
 ```
 
